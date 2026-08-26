@@ -139,7 +139,9 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
 .sub{color:var(--ink-3);font-size:15px;margin:4px 0 0}
 
 /* Source chip — squarish, neutral, colour only in the dot. Mirrors the phone. */
-.srcchip{display:inline-flex;align-items:center;gap:7px;background:var(--surface-2);
+/* Uses --track, the segmented-control colour, not --surface-2: in light mode surface-2 sits two
+   steps from the page and the chip reads as no chip at all. */
+.srcchip{display:inline-flex;align-items:center;gap:7px;background:var(--track);
   border-radius:var(--r-box);padding:7px 11px;margin-top:6px;font-size:13px;flex:0 0 auto}
 .dot{width:7px;height:7px;border-radius:50%;flex:0 0 7px}
 .srcchip .cv{color:var(--ink-3);font-size:12px}
@@ -724,9 +726,8 @@ var TABS = [
   ["reports",   "Reports",   function () { return editions().length; }],
   ["liked",     "Liked",     function () { return arr(S.data && S.data.likedTitles).length; }],
   ["disliked",  "Disliked",  function () { return arr(S.data && S.data.dislikedTitles).length; }],
-  ["threats",   "Threats",   function () { return arr(S.data && S.data.savedReports).length; }],
   ["database",  "Database",  function () { return arr(S.data && S.data.competitors).length; }],
-  ["snapshots", "Snapshots", function () { return arr(S.data && S.data.restorePoints).length; }]
+  ["restorepoints", "Restore points", function () { return arr(S.data && S.data.restorePoints).length; }]
 ];
 var TAB_TITLE = {
   alerts:    ["News",      "Window market intelligence"],
@@ -735,9 +736,8 @@ var TAB_TITLE = {
   reports:   ["Reports",   "Download a past edition"],
   liked:     ["Liked",     "What you marked useful"],
   disliked:  ["Disliked",  "What you pushed away"],
-  threats:   ["Threats",   "Competitor threat analyses"],
   database:  ["Data",      "Competitors, markets and codes"],
-  snapshots: ["Snapshots", "Restore points on your phone"]
+  restorepoints: ["Restore points", "Snapshots your phone can roll back to"]
 };
 
 /* ---------- drawer ---------- */
@@ -986,28 +986,7 @@ function render() {
     if (!out.length) app.appendChild(emptyState(S.tab === "liked" ? "Nothing liked yet." : "Nothing disliked yet."));
     else out.forEach(function (a) { app.appendChild(articleCard(a, {})); });
   }
-  else if (S.tab === "threats") {
-    var reps = arr(d.savedReports).slice().sort(function (a, b) { return (b.timestamp || 0) - (a.timestamp || 0); });
-    if (!reps.length) app.appendChild(emptyState("No threat analyses yet."));
-    reps.forEach(function (r) {
-      var card = el("div", "card");
-      var top = el("div", "crow");
-      // Threat level is the one place colour is earned here — it is a severity, not decoration.
-      var lv = el("span", "cat", r.threatLevel || "—");
-      var sev = { CRITICAL: "var(--danger)", HIGH: "var(--danger)", MEDIUM: "var(--paid)", LOW: "var(--free)" };
-      if (sev[String(r.threatLevel || "").toUpperCase()]) lv.style.color = sev[String(r.threatLevel).toUpperCase()];
-      top.appendChild(lv);
-      top.appendChild(el("span", "meta", r.timestamp ? new Date(r.timestamp).toLocaleDateString("en-GB") : ""));
-      card.appendChild(top);
-      card.appendChild(el("p", "ttl", (r.competitorName || "Competitor") + " · " + (r.countryName || "")));
-      if (r.summaryText) card.appendChild(el("p", "sum", r.summaryText));
-      if (r.designTactics)    card.appendChild(kv("Design", r.designTactics));
-      if (r.marketingTactics) card.appendChild(kv("Marketing", r.marketingTactics));
-      if (r.marketTrends)     card.appendChild(kv("Trends", r.marketTrends));
-      app.appendChild(card);
-    });
-  }
-  else if (S.tab === "snapshots") {
+  else if (S.tab === "restorepoints") {
     var rps = arr(d.restorePoints).slice().sort(function (a, b) { return (b.timestamp || 0) - (a.timestamp || 0); });
     if (!rps.length) app.appendChild(emptyState("No restore points."));
     rps.forEach(function (rp) {

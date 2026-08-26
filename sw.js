@@ -11,7 +11,7 @@
 
    Bump VERSION on every deploy. That is what tells every installed copy that
    something changed. */
-const VERSION = "elemental-2026-08-26-d";
+const VERSION = "elemental-2026-08-26-e";
 
 const ASSETS = [
   "./",
