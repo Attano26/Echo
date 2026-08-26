@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Elemental</title>
-<meta name="description" content="Read your Elemental market intelligence, verify stories, and publish reports.">
+<meta name="description" content="Read the market intelligence your phone gathered, verify what holds up, and publish it as a report.">
 <meta name="theme-color" content="#F5F5F7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0E0E0E" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -12,246 +12,459 @@
 <link rel="manifest" href="manifest.webmanifest">
 
 <!--
-  ─────────────────────────────────────────────────────────────────────────────
-   Elemental — the web mirror of the Elemental Android app.
-  ─────────────────────────────────────────────────────────────────────────────
+  Elemental — the web mirror of the Elemental Android app.
 
-   WHAT THIS IS
-   A single static page. There is no server and no database. Your data lives in
-   YOUR Google Drive, written there by the phone app, and this page reads it back.
+  WHAT THIS IS
+  A single static page. There is no server and no database. Your data lives in
+  YOUR Google Drive, written there by the phone app, and this page reads it back.
 
-   WHAT IT DELIBERATELY DOES NOT DO
-   It never fetches news. Fetching costs money and only the phone does it. This
-   page reads what the phone has already gathered, lets you verify stories, and
-   turns the verified ones into a report.
+  WHAT IT DELIBERATELY DOES NOT DO
+  It never fetches news. Fetching costs money and only the phone does it. This
+  page reads what the phone already gathered, lets you verify stories, and turns
+  the verified ones into a report.
 
-   THE SAFETY RULE — TWO FILES, ONE WRITER EACH
-     elemental-data.json          the phone writes it, this page only READS it
-     elemental-web-actions.json   this page writes it, the phone only READS it
-   Because no field is written by both sides, neither can overwrite the other and
-   no version is ever silently lost. This page can never destroy a news fetch the
-   phone made while you were here.
+  THE SAFETY RULE — TWO FILES, ONE WRITER EACH
+    elemental-data.json          the phone writes it, this page only READS it
+    elemental-web-actions.json   this page writes it, the phone only READS it
+  Because no field is written by both sides, neither can overwrite the other and
+  no version is ever silently lost. This page can never destroy a news fetch the
+  phone made while you were here.
 
-   ON SECRETS
-   Nothing secret is in this file. The OAuth *client ID* below is public by design —
-   every web OAuth app ships one, and it is useless without a matching authorised
-   origin. There is no client secret (the browser token flow does not use one), no
-   API key, and no Gemini key: this page makes no AI calls at all. Your Google
-   access token lives only in your own browser.
+  ON SECRETS
+  Nothing secret is in this file. The OAuth *client ID* below is public by design —
+  every web OAuth app ships one, and it is useless without a matching authorised
+  origin. There is no client secret (the browser token flow does not use one), no
+  API key, and no Gemini key: this page makes no AI calls at all. Your Google
+  access token lives only in your own browser.
 -->
 
 <style>
-  /* Palette lifted from the phone app so the two read as one product.
-     Accent #6366F1 (Electric Indigo). Backgrounds follow the Sightline palette so the
-     phone, Sightline and this page all read as one family. */
-  :root{
-    --accent:#6366F1; --accent-soft:rgba(99,102,241,.13);
-    --bg:#0E0E0E; --card:#161618; --raised:#1F1F22;
-    --text:#F5F5F7; --text2:#C9CAD3; --muted:#9A9CAB; --line:rgba(154,156,171,.15);
-    --danger:#F0616D; --ok:#10B981;
-    --radius:14px;
+/* ============================================================
+   ELEMENTAL
+   The phone app's language on the web: one accent that only ever
+   means "interactive", layered near-black surfaces, sentence case,
+   and a large iOS-style title over a segmented control.
+   ============================================================ */
+
+:root{
+  --paper:#F5F5F7;      /* page */
+  --surface:#FFFFFF;    /* cards, sheets */
+  --surface-2:#F7F7F9;  /* inset panels, quiet chips */
+  --track:#EAEAEF;      /* segmented-control track */
+  --track-on:#FFFFFF;   /* selected segment */
+  --ink:#1D1D1F;
+  --ink-2:#3F4048;
+  --ink-3:#5D5E66;
+  --line:#E3E3E6;
+  --accent:#6366F1;     /* Electric Indigo — the app's single accent */
+  --accent-soft:rgba(99,102,241,.12);
+  --free:#34C759;       /* the free feed */
+  --paid:#E5A33B;       /* anything that spends */
+  --danger:#F0616D;
+  --sh-2:0 2px 6px rgba(0,0,0,.06),0 14px 34px rgba(0,0,0,.09);
+  --r-card:14px;
+  --r-box:10px;
+  --r-pill:999px;
+  --fs:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --apph:100dvh;
+}
+/* System dark, unless the viewer has explicitly chosen light. */
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E0E0E; --surface:#161618; --surface-2:#1F1F22;
+    --track:#232329; --track-on:#43434E;
+    --ink:#F5F5F7; --ink-2:#C9CAD3; --ink-3:#9A9CAB;
+    --line:#2A2A2F;
+    --accent-soft:rgba(99,102,241,.16);
+    --sh-2:0 2px 6px rgba(0,0,0,.55),0 14px 34px rgba(0,0,0,.5);
   }
-  @media (prefers-color-scheme: light){
-    :root{
-      --bg:#F5F5F7; --card:#FFFFFF; --raised:#F7F7F9;
-      --text:#1D1D1F; --text2:#3F4048; --muted:#5D5E66; --line:rgba(93,94,102,.18);
-    }
-  }
-  *{box-sizing:border-box}
-  html,body{margin:0;padding:0}
-  body{
-    background:var(--bg); color:var(--text);
-    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    -webkit-font-smoothing:antialiased;
-    padding-bottom:64px;
-  }
-  .wrap{max-width:880px;margin:0 auto;padding:0 20px}
-  a{color:var(--accent)}
+}
+/* An explicit choice wins over the system, in both directions. */
+:root[data-theme="dark"]{
+  --paper:#0E0E0E; --surface:#161618; --surface-2:#1F1F22;
+  --track:#232329; --track-on:#43434E;
+  --ink:#F5F5F7; --ink-2:#C9CAD3; --ink-3:#9A9CAB;
+  --line:#2A2A2F;
+  --accent-soft:rgba(99,102,241,.16);
+  --sh-2:0 2px 6px rgba(0,0,0,.55),0 14px 34px rgba(0,0,0,.5);
+}
 
-  /* ---- top bar ---- */
-  header{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
-  .bar{display:flex;align-items:center;gap:12px;padding:14px 0}
-  .brand{font-size:17px;font-weight:600;letter-spacing:-.2px;flex:1}
-  .brand span{color:var(--muted);font-weight:400}
-  .who{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);min-width:0}
-  .who b{color:var(--text);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:38vw}
+*{box-sizing:border-box;min-width:0}
+/* An app shell, not a scrolling document: the header and tabs hold still and only
+   the list moves. dvh tracks the browser chrome as it retracts; --apph is written
+   from visualViewport because on a first launch dvh resolves against a viewport
+   that has not settled yet, which leaves the bottom of the app below the fold. */
+html,body{height:100%}
+html,body{height:100dvh}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:var(--fs);font-size:15px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+  overflow:hidden;
+  /* Kills the double-tap zoom on a mis-tapped control, and the 300ms delay
+     browsers otherwise hold every tap for while they wait for a second one. */
+  touch-action:manipulation;
+  -webkit-text-size-adjust:100%;text-size-adjust:100%;
+}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:none;padding:0}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+::-webkit-scrollbar{width:12px;height:12px}
+::-webkit-scrollbar-thumb{background:var(--line);border-radius:10px;border:4px solid transparent;background-clip:content-box}
 
-  /* ---- buttons ---- */
-  button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
-  .btn{background:var(--accent);color:#fff;border-radius:24px;padding:11px 20px;font-size:14px;font-weight:600}
-  .btn:disabled{opacity:.45;cursor:default}
-  .btn.ghost{background:none;color:var(--text);border:1px solid var(--line)}
-  .btn.sm{padding:8px 14px;font-size:13px}
-  .link{color:var(--accent);font-weight:600;font-size:14px;padding:8px 10px;border-radius:8px}
-  .link:hover{background:var(--accent-soft)}
+/* ---------- shell ---------- */
+#shell{height:var(--apph);display:flex;flex-direction:column;overflow:hidden}
+.wrap{width:100%;max-width:880px;margin:0 auto;padding:0 20px}
+#top{flex:0 0 auto;padding-top:max(14px,env(safe-area-inset-top))}
+#scroll{flex:1 1 auto;overflow-y:auto;overscroll-behavior:contain;padding-bottom:40px}
 
-  /* ---- tabs ---- */
-  nav.tabs{display:flex;gap:2px;background:var(--card);border-radius:12px;padding:3px;margin:16px 0 8px;overflow-x:auto}
-  nav.tabs button{flex:1;white-space:nowrap;padding:9px 12px;border-radius:9px;font-size:13.5px;font-weight:500;color:var(--muted)}
-  nav.tabs button.on{background:var(--raised);color:var(--text);font-weight:600}
-  nav.tabs .n{opacity:.65;font-weight:400;margin-left:5px}
+/* ---------- top bar ---------- */
+.bar{display:flex;align-items:center;gap:12px;padding:2px 0 14px}
+.mark{width:26px;height:26px;flex:0 0 26px;color:var(--ink)}
+.bar .sp{flex:1}
+.iconbtn{width:38px;height:38px;border-radius:var(--r-pill);display:grid;place-items:center;color:var(--ink-3)}
+.iconbtn:hover{background:var(--surface-2);color:var(--ink)}
 
-  /* ---- section label ---- */
-  .lbl{font-size:11px;font-weight:600;letter-spacing:.8px;color:var(--muted);text-transform:uppercase;margin:22px 0 10px}
+/* ---------- title row ---------- */
+.titlerow{display:flex;align-items:flex-start;gap:14px;padding:8px 0 2px}
+.titlerow .tt{flex:1}
+h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
+.sub{color:var(--ink-3);font-size:15px;margin:4px 0 0}
 
-  /* ---- article card ---- */
-  .card{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:10px}
-  .cat{font-size:11px;font-weight:600;letter-spacing:.5px;color:var(--accent);text-transform:uppercase}
-  .meta{font-size:12px;color:var(--muted)}
-  .ttl{font-size:15.5px;font-weight:600;line-height:1.4;margin:8px 0 0}
-  .sum{font-size:13.5px;color:var(--text2);line-height:1.6;margin:8px 0 0}
-  .adv{font-size:13px;color:var(--text2);line-height:1.6;margin:10px 0 0;padding-left:12px;border-left:2px solid var(--accent)}
-  .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-  .row.top{justify-content:space-between}
-  .acts{display:flex;align-items:center;gap:6px;margin-top:12px}
+/* Source chip — squarish, neutral, colour only in the dot. Mirrors the phone. */
+.srcchip{display:inline-flex;align-items:center;gap:7px;background:var(--surface-2);
+  border-radius:var(--r-box);padding:7px 11px;margin-top:6px;font-size:13px;flex:0 0 auto}
+.dot{width:7px;height:7px;border-radius:50%;flex:0 0 7px}
+.srcchip .cv{color:var(--ink-3);font-size:12px}
 
-  /* verify control — a real checkbox so it is keyboard reachable and screen-reader sane */
-  .vf{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer;
-      padding:7px 12px;border-radius:20px;border:1px solid var(--line)}
-  .vf input{accent-color:var(--accent);width:15px;height:15px;margin:0;cursor:pointer}
-  .vf.on{color:var(--accent);border-color:var(--accent);background:var(--accent-soft);font-weight:600}
+/* ---------- segmented control ---------- */
+.seg{display:flex;gap:2px;background:var(--track);border-radius:var(--r-box);padding:3px;
+  margin:16px 0 0;overflow-x:auto;scrollbar-width:none}
+.seg::-webkit-scrollbar{display:none}
+.seg button{flex:1 0 auto;white-space:nowrap;padding:9px 14px;border-radius:8px;
+  font-size:13.5px;font-weight:500;color:var(--ink-3)}
+.seg button.on{background:var(--track-on);color:var(--ink);font-weight:600}
+.seg .n{opacity:.6;font-weight:400;margin-left:5px}
 
-  .pill{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:var(--raised);color:var(--muted)}
-  .pill.ok{background:rgba(16,185,129,.15);color:var(--ok)}
+/* ---------- section label ---------- */
+.lbl{font-size:11px;font-weight:600;letter-spacing:.8px;color:var(--ink-3);
+  text-transform:uppercase;margin:22px 0 10px}
 
-  /* ---- info box (mirrors the phone's notice style) ---- */
-  .info{display:flex;gap:12px;background:var(--card);border-radius:8px;padding:14px;margin:16px 0;font-size:13px;color:var(--text2);line-height:1.6}
-  .info .i{flex:0 0 20px;height:20px;border-radius:50%;background:var(--raised);color:var(--muted);
-           display:grid;place-items:center;font-size:12px;font-weight:700;font-style:italic}
-  .info b{color:var(--text);font-weight:600;display:block;margin-bottom:4px}
+/* ---------- cards ---------- */
+.list{padding-top:12px}
+.card{background:var(--surface);border-radius:var(--r-card);padding:16px;margin-bottom:10px}
+.crow{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.cat{font-size:11px;font-weight:600;letter-spacing:.5px;color:var(--accent);text-transform:uppercase}
+.meta{font-size:12px;color:var(--ink-3)}
+.ttl{font-size:15.5px;font-weight:600;line-height:1.4;margin:8px 0 0}
+.sum{font-size:13.5px;color:var(--ink-2);line-height:1.6;margin:8px 0 0}
+.adv{font-size:13px;color:var(--ink-2);line-height:1.6;margin:10px 0 0;
+  padding-left:12px;border-left:2px solid var(--accent)}
+.acts{display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap}
+.kv{display:flex;padding:5px 0;font-size:13.5px}
+.kv .k{color:var(--ink-3);width:130px;flex:0 0 130px}
+.kv .v{color:var(--ink-2);flex:1}
 
-  /* ---- report bar: appears once something is verified ---- */
-  .repbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--card);border-top:1px solid var(--line);
-          padding:12px 20px;display:none}
-  .repbar.on{display:block}
-  .repbar .inner{max-width:880px;margin:0 auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-  .repbar .cnt{flex:1;font-size:14px;min-width:150px}
-  .repbar .cnt b{font-weight:600}
+/* ---------- buttons ---------- */
+.btn{background:var(--accent);color:#fff;border-radius:var(--r-pill);
+  padding:11px 20px;font-size:14px;font-weight:600}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.ghost{background:none;color:var(--ink);border:1px solid var(--line)}
+.btn.sm{padding:8px 15px;font-size:13px}
+.link{color:var(--accent);font-weight:600;font-size:13.5px;padding:7px 9px;border-radius:8px}
+.link:hover{background:var(--accent-soft);text-decoration:none}
 
-  /* ---- empty / status ---- */
-  .empty{text-align:center;color:var(--muted);padding:56px 20px;font-size:14px;line-height:1.7}
-  .status{font-size:13px;color:var(--muted);padding:10px 0}
-  .err{color:var(--danger)}
+/* Verify control — a real checkbox, so it is keyboard reachable and reads correctly
+   to a screen reader instead of being a div that happens to look checkable. */
+.vf{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-3);
+  cursor:pointer;padding:7px 12px;border-radius:var(--r-pill);border:1px solid var(--line)}
+.vf input{accent-color:var(--accent);width:15px;height:15px;margin:0;cursor:pointer}
+.vf.on{color:var(--accent);border-color:var(--accent);background:var(--accent-soft);font-weight:600}
+.pill{font-size:11px;font-weight:600;padding:3px 9px;border-radius:var(--r-pill);
+  background:var(--surface-2);color:var(--ink-3)}
+.pill.ok{background:rgba(52,199,89,.15);color:var(--free)}
 
-  /* ---- gate (signed out) ---- */
-  .gate{max-width:440px;margin:14vh auto;text-align:center;padding:0 20px}
-  .gate h1{font-size:30px;font-weight:600;letter-spacing:-.5px;margin:0 0 10px}
-  .gate p{color:var(--muted);font-size:14.5px;line-height:1.7;margin:0 0 24px}
+/* ---------- info box ---------- */
+.info{display:flex;gap:12px;background:var(--surface);border-radius:var(--r-box);
+  padding:14px;margin:16px 0 4px;font-size:13px;color:var(--ink-2);line-height:1.6}
+.info .i{flex:0 0 20px;height:20px;border-radius:50%;background:var(--surface-2);
+  color:var(--ink-3);display:grid;place-items:center;font-size:12px;font-weight:700;font-style:italic}
+.info b{color:var(--ink);font-weight:600;display:block;margin-bottom:4px}
 
-  /* ---- simple data tables (Database tab) ---- */
-  .kv{display:flex;padding:5px 0;font-size:13.5px}
-  .kv span:first-child{color:var(--muted);width:120px;flex:0 0 120px}
-  .kv span:last-child{color:var(--text2);flex:1}
+/* ---------- report bar ---------- */
+#repbar{flex:0 0 auto;background:var(--surface);border-top:1px solid var(--line);
+  padding:12px 0 max(12px,env(safe-area-inset-bottom));display:none}
+#repbar.on{display:block}
+#repbar .inner{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#repbar .cnt{flex:1;font-size:14px;min-width:150px}
 
-  /* ---- print: the PDF route. Only the report prints. ---- */
-  #report{display:none}
-  @media print{
-    body{background:#fff;color:#000;padding:0}
-    header,nav.tabs,.repbar,#app{display:none !important}
-    #report{display:block;padding:0}
-    #report .r-art{page-break-inside:avoid;margin:0 0 18px;padding:0 0 14px;border-bottom:1px solid #ddd}
-    #report h1{font-size:22px;margin:0 0 4px}
-    #report .r-sub{color:#555;font-size:12px;margin:0 0 22px}
-    #report h2{font-size:14px;margin:0 0 6px;line-height:1.35}
-    #report .r-meta{font-size:11px;color:#666;margin:0 0 6px}
-    #report .r-sum{font-size:12px;line-height:1.6;margin:0}
-    #report .r-adv{font-size:11.5px;line-height:1.6;margin:6px 0 0;padding-left:9px;border-left:2px solid #6366F1;color:#333}
-    a{color:#000;text-decoration:none}
-  }
+/* ---------- states ---------- */
+.empty{text-align:center;color:var(--ink-3);padding:56px 20px;font-size:14px;line-height:1.7}
+.status{font-size:13px;color:var(--ink-3);padding:10px 0}
+.status.err{color:var(--danger)}
+.skel{background:var(--surface);border-radius:var(--r-card);height:104px;margin-bottom:10px;
+  animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.5}50%{opacity:.85}}
+
+/* ---------- gate ---------- */
+#gate{height:var(--apph);display:grid;place-items:center;padding:0 24px;text-align:center}
+#gate .in{max-width:430px}
+#gate .mark{width:56px;height:56px;margin:0 auto 22px;color:var(--ink)}
+#gate h1{font-size:30px;letter-spacing:-.4px}
+#gate p{color:var(--ink-3);font-size:14.5px;line-height:1.7;margin:12px 0 26px}
+
+/* ---------- ask (replaces confirm/prompt) ---------- */
+#ask{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.45);
+  display:grid;place-items:center;padding:24px}
+.askbox{background:var(--surface);border-radius:18px;box-shadow:var(--sh-2);
+  padding:22px;width:100%;max-width:380px}
+.askttl{font-size:17px;font-weight:600;margin:0 0 8px}
+.askbody{font-size:14px;color:var(--ink-2);line-height:1.6;margin:0 0 12px}
+.askrow{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+
+/* ---------- toast ---------- */
+#toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);z-index:70;
+  background:var(--ink);color:var(--paper);padding:11px 18px;border-radius:var(--r-pill);
+  font-size:13.5px;font-weight:500;box-shadow:var(--sh-2);opacity:0;pointer-events:none;
+  transition:opacity .2s,transform .2s;max-width:80vw;text-align:center}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* ---------- update bar ---------- */
+#upd{flex:0 0 auto;background:var(--accent);color:#fff;display:none;padding:11px 0;font-size:13.5px}
+#upd.on{display:block}
+#upd .inner{display:flex;align-items:center;gap:12px}
+#upd button{color:#fff;font-weight:700;text-decoration:underline;flex:0 0 auto}
+
+/* ---------- responsive ---------- */
+@media (max-width:560px){
+  h1{font-size:30px}
+  .wrap{padding:0 16px}
+  .titlerow{flex-direction:column;gap:2px}
+  .srcchip{margin-top:10px}
+  .kv{flex-direction:column;gap:1px}
+  .kv .k{width:auto;flex:none}
+}
+
+/* ---------- print: only the report prints ---------- */
+#report{display:none}
+@media print{
+  body{background:#fff;color:#000;overflow:visible}
+  #shell,#gate,#toast,#ask,#upd{display:none !important}
+  #report{display:block}
+  #report .r-art{page-break-inside:avoid;margin:0 0 18px;padding:0 0 14px;border-bottom:1px solid #ddd}
+  #report h1{font-size:22px;margin:0 0 4px}
+  #report .r-sub{color:#555;font-size:12px;margin:0 0 22px}
+  #report h2{font-size:14px;margin:0 0 6px;line-height:1.35}
+  #report .r-meta{font-size:11px;color:#666;margin:0 0 6px}
+  #report .r-sum{font-size:12px;line-height:1.6;margin:0}
+  #report .r-adv{font-size:11.5px;line-height:1.6;margin:6px 0 0;padding-left:9px;
+    border-left:2px solid #6366F1;color:#333}
+  a{color:#000;text-decoration:none}
+}
 </style>
 </head>
 <body>
 
-<!-- Signed-out gate -->
-<div id="gate" class="gate">
-  <h1>Elemental</h1>
-  <p>Read the market intelligence your phone has gathered, verify what holds up, and turn it into a report.</p>
-  <button class="btn" id="signin">Sign in with Google</button>
-  <div class="status" id="gate-status"></div>
+<div id="gate">
+  <div class="in">
+    <div class="mark" id="gateMark"></div>
+    <h1>Elemental</h1>
+    <p>Read the market intelligence your phone has gathered, verify what holds up, and turn it into a report.</p>
+    <button class="btn" id="signin">Sign in with Google</button>
+    <div class="status" id="gateStatus"></div>
+  </div>
 </div>
 
-<!-- Signed-in shell -->
 <div id="shell" hidden>
-  <header>
-    <div class="wrap bar">
-      <div class="brand">Elemental <span>· market intelligence</span></div>
-      <div class="who"><b id="acct"></b><button class="link" id="signout">Sign out</button></div>
+  <div id="upd"><div class="wrap inner"><span>A newer version is ready.</span><button id="updGo">Reload</button></div></div>
+
+  <div id="top">
+    <div class="wrap">
+      <div class="bar">
+        <div class="mark" id="topMark"></div>
+        <div class="sp"></div>
+        <button class="iconbtn" id="btnTheme" title="Switch theme" aria-label="Switch theme"></button>
+        <button class="iconbtn" id="btnSettings" title="Settings" aria-label="Settings"></button>
+      </div>
+      <div class="titlerow">
+        <div class="tt">
+          <h1 id="pageTitle">News</h1>
+          <p class="sub" id="pageSub">Window market intelligence</p>
+        </div>
+        <div class="srcchip" id="srcChip" hidden></div>
+      </div>
+      <nav class="seg" id="tabs"></nav>
+      <div class="status" id="status"></div>
     </div>
-  </header>
+  </div>
 
-  <div class="wrap">
-    <nav class="tabs" id="tabs"></nav>
-    <div class="status" id="status"></div>
-    <div id="app"></div>
+  <div id="scroll"><div class="wrap"><div id="app" class="list"></div></div></div>
+
+  <div id="repbar">
+    <div class="wrap inner">
+      <div class="cnt"><b id="vcount">0</b> verified and ready to publish</div>
+      <button class="btn sm ghost" id="genWord">Word</button>
+      <button class="btn sm" id="genPdf">Generate PDF</button>
+    </div>
   </div>
 </div>
 
-<!-- Report bar -->
-<div class="repbar" id="repbar">
-  <div class="inner">
-    <div class="cnt"><b id="vcount">0</b> verified and ready to publish</div>
-    <button class="btn sm ghost" id="gen-word">Word</button>
-    <button class="btn sm" id="gen-pdf">Generate PDF</button>
-  </div>
-</div>
-
-<!-- Print-only report body, filled just before printing -->
+<div id="ask" hidden></div>
+<div id="toast"></div>
 <div id="report"></div>
 
 <script>
 "use strict";
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   Configuration
-   ═══════════════════════════════════════════════════════════════════════════
+/* ============================================================
+   CONFIG
+   ============================================================
    The client ID is PUBLIC by design. Google identifies the app by it and then
    checks the request came from an authorised origin, so publishing it grants
    nobody anything. There is no client secret in the browser token flow, and this
    page holds no API key of any kind. */
-const CLIENT_ID = "653924371691-687hjiimvicq77nbk4l6osqoaio3nl4b.apps.googleusercontent.com";
-const SCOPE     = "https://www.googleapis.com/auth/drive.file";
-const DATA_FILE    = "elemental-data.json";        // phone writes, we read
-const ACTIONS_FILE = "elemental-web-actions.json"; // we write, phone reads
+var CLIENT_ID    = "653924371691-687hjiimvicq77nbk4l6osqoaio3nl4b.apps.googleusercontent.com";
+var SCOPE        = "https://www.googleapis.com/auth/drive.file";
+var DATA_FILE    = "elemental-data.json";
+var ACTIONS_FILE = "elemental-web-actions.json";
+var K = "elemental.web.v1";
 
-const LS = "elemental.web.v1";
-
-/* Local state. `data` is the phone's snapshot (read-only to us). `actions` is
-   the only thing we ever write, and it only ever grows. */
-const S = {
-  token: "", tokenExp: 0, email: "",
-  data: null,
-  actions: { schema: 1, updatedAtMillis: 0, verifiedTitles: [], publishedTitles: [], publishedNews: [], reportEditions: [] },
-  tab: "alerts", busy: false
+/* ============================================================
+   TINY HELPERS
+   ============================================================ */
+var $ = function (s) { return document.querySelector(s); };
+var el = function (t, c, x) {
+  var n = document.createElement(t);
+  if (c) n.className = c;
+  if (x != null) n.textContent = x;
+  return n;
+};
+var arr = function (v) { return Array.isArray(v) ? v : []; };
+var key = function (s) { return String(s || "").trim().toLowerCase(); };
+var esc = function (s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, function (m) {
+    return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[m];
+  });
 };
 
-const $  = id => document.getElementById(id);
-const key = s => String(s || "").trim().toLowerCase();
-const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c =>
-  ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+function toast(msg) {
+  var t = $("#toast");
+  t.textContent = msg; t.classList.add("on");
+  clearTimeout(t._h);
+  t._h = setTimeout(function () { t.classList.remove("on"); }, 2200);
+}
+function setStatus(msg, isErr) {
+  var e = $("#status"); e.textContent = msg || ""; e.className = "status" + (isErr ? " err" : "");
+}
+function setGateStatus(msg, isErr) {
+  var e = $("#gateStatus"); e.textContent = msg || ""; e.className = "status" + (isErr ? " err" : "");
+}
 
-/* ── persistence ───────────────────────────────────────────────────────────
-   The token is kept so a page refresh does not send you back to a sign-in
-   screen. It expires in about an hour and is scoped to one file in your Drive. */
-function save(){
-  try{
-    localStorage.setItem(LS, JSON.stringify({
-      token:S.token, tokenExp:S.tokenExp, email:S.email, actions:S.actions, tab:S.tab
+/* The Elemental mark, inline so it takes currentColor and needs no network.
+   Same 1024 grid as favicon.svg and ElementalLogo() in the Android app, so the
+   web, the launcher icon and the phone's top bar can never drift apart. */
+var MARK = '<svg viewBox="0 0 1024 1024" width="100%" height="100%" role="img" aria-label="Elemental">' +
+  '<path fill="currentColor" d="M112 110 H912 V336 H112 Z' +
+  ' M112 398 H338 A226 226 0 0 1 112 624 Z' +
+  ' M400 398 H912 V624 H626 A226 226 0 0 1 400 398 Z' +
+  ' M112 686 A226 226 0 0 1 338 912 H112 Z' +
+  ' M400 912 A226 226 0 0 1 626 686 H912 V912 Z"/></svg>';
+var ICON_SUN = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.2 5.2l1.4 1.4M17.4 17.4l1.4 1.4M18.8 5.2l-1.4 1.4M6.6 17.4l-1.4 1.4"/></svg>';
+var ICON_MOON = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z"/></svg>';
+/* A real cog, not a circle with spokes — spokes sit right next to the sun/moon
+   toggle and read as a second sun. */
+var ICON_GEAR = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>';
+
+/* ============================================================
+   STORE
+   ============================================================
+   `data` is the phone's snapshot, read-only to us. `actions` is the ONLY thing
+   this page ever writes, and it only ever grows. */
+var S = {
+  token: "", tokenExp: 0, email: "", theme: "",
+  data: null,
+  actions: {
+    schema: 1, updatedAtMillis: 0,
+    verifiedTitles: [], publishedTitles: [], publishedNews: [], reportEditions: []
+  },
+  tab: "alerts", loading: false
+};
+
+function save() {
+  try {
+    localStorage.setItem(K, JSON.stringify({
+      token: S.token, tokenExp: S.tokenExp, email: S.email,
+      theme: S.theme, actions: S.actions, tab: S.tab
     }));
-  }catch(e){ /* private mode — the app still works, it just forgets on reload */ }
+  } catch (e) { /* private mode: still works, it just forgets on reload */ }
 }
-function load(){
-  try{
-    const o = JSON.parse(localStorage.getItem(LS) || "{}");
-    if(o.token && o.tokenExp > Date.now()){ S.token = o.token; S.tokenExp = o.tokenExp; }
-    if(o.email) S.email = o.email;
-    if(o.actions) S.actions = Object.assign(S.actions, o.actions);
-    if(o.tab) S.tab = o.tab;
-  }catch(e){}
+function load() {
+  try {
+    var o = JSON.parse(localStorage.getItem(K) || "{}");
+    if (o.token && o.tokenExp > Date.now()) { S.token = o.token; S.tokenExp = o.tokenExp; }
+    if (o.email) S.email = o.email;
+    if (o.theme) S.theme = o.theme;
+    if (o.actions) S.actions = Object.assign(S.actions, o.actions);
+    if (o.tab) S.tab = o.tab;
+  } catch (e) {}
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   Google sign-in
-   ═══════════════════════════════════════════════════════════════════════════
+/* ---------- derived views ---------- */
+function verifiedSet() { return new Set(S.actions.verifiedTitles.map(key)); }
+function publishedSet() {
+  var s = new Set(S.actions.publishedTitles.map(key));
+  arr(S.data && S.data.publishedTitles).forEach(function (t) { s.add(key(t)); });
+  return s;
+}
+/* Alerts = what the phone shows, minus anything published on either side.
+   Publishing HIDES a story from Alerts; it never deletes it. */
+function alerts() {
+  var pub = publishedSet();
+  return arr(S.data && S.data.alerts).filter(function (a) { return !pub.has(key(a.title)); });
+}
+function published() {
+  var seen = new Set(), out = [];
+  arr(S.actions.publishedNews).concat(arr(S.data && S.data.publishedNews)).forEach(function (a) {
+    var k = key(a && a.title);
+    if (a && a.title && !seen.has(k)) { seen.add(k); out.push(a); }
+  });
+  return out;
+}
+function editions() {
+  var seen = new Set(), out = [];
+  arr(S.actions.reportEditions).concat(arr(S.data && S.data.reportEditions)).forEach(function (e) {
+    if (e && !seen.has(e.id)) { seen.add(e.id); out.push(e); }
+  });
+  return out.sort(function (a, b) { return (b.createdAtMillis || 0) - (a.createdAtMillis || 0); });
+}
+function verifiedArticles() {
+  var v = verifiedSet();
+  return alerts().filter(function (a) { return v.has(key(a.title)); });
+}
+
+/* ============================================================
+   THEME
+   ============================================================
+   Three states: "" follows the system, "light"/"dark" override it. The attribute
+   on <html> is what the CSS blocks key on. */
+function systemDark() { return window.matchMedia("(prefers-color-scheme: dark)").matches; }
+function isDark() { return S.theme ? S.theme === "dark" : systemDark(); }
+function applyTheme() {
+  var r = document.documentElement;
+  if (S.theme) r.setAttribute("data-theme", S.theme); else r.removeAttribute("data-theme");
+  var b = $("#btnTheme");
+  if (b) {
+    b.innerHTML = isDark() ? ICON_SUN : ICON_MOON;
+    b.title = isDark() ? "Switch to light" : "Switch to dark";
+  }
+}
+function toggleTheme() { S.theme = isDark() ? "light" : "dark"; save(); applyTheme(); }
+
+/* ============================================================
+   GOOGLE SIGN-IN
+   ============================================================
    We ask for a SCOPE, not an identity — "may I touch this one file?", not
    "who are you?". Google hands back a short-lived access token.
 
@@ -259,532 +472,649 @@ function load(){
    time and returns silently every time after, because Google remembers the grant.
    prompt:"consent" would re-ask forever, which reads as a login wall on every
    visit. Never use it here. */
-let tokenClient = null;
+var tokenClient = null;
 
-function loadGIS(){
-  return new Promise((res, rej) => {
-    if(window.google && google.accounts && google.accounts.oauth2) return res(true);
-    const s = document.createElement("script");
+function loadGIS() {
+  return new Promise(function (res, rej) {
+    if (window.google && google.accounts && google.accounts.oauth2) return res(true);
+    var s = document.createElement("script");
     s.src = "https://accounts.google.com/gsi/client";
     s.async = true; s.defer = true;
-    s.onload = () => res(true);
-    s.onerror = () => rej(new Error("Could not reach Google sign-in. Check your connection, or an extension may be blocking it."));
+    s.onload = function () { res(true); };
+    s.onerror = function () {
+      rej(new Error("Could not reach Google sign-in. Check your connection, or an extension may be blocking it."));
+    };
     document.head.appendChild(s);
   });
 }
 
 /* Google checks the page's ORIGIN against the list registered for this client. A page
-   opened straight off disk (file://) or from a preview pane has origin "null", so there
-   is nothing to check and Google rejects the request with a bare
-   "Required parameter is missing: response_type". That error names the wrong cause, so
-   catch the condition here and say what actually needs doing. */
-function originUsable(){
+   opened straight off disk (file://) has origin "null", so there is nothing to check
+   and Google rejects it with a bare "Required parameter is missing: response_type".
+   That error names the wrong cause, so catch the condition and say what to actually do. */
+function originUsable() {
   return location.protocol === "https:" ||
-         (location.protocol === "http:" && /^(localhost|127\.0\.0\.1)$/.test(location.hostname));
+    (location.protocol === "http:" && /^(localhost|127\.0\.0\.1)$/.test(location.hostname));
 }
 
-async function signIn(){
-  if(!originUsable()){
-    throw new Error(
-      "Google sign-in needs this page to be served over https (or from localhost). " +
-      "Opened straight from a file it has no web address for Google to check, so sign-in is refused. " +
-      "Publish it to GitHub Pages and open it from there."
-    );
+function signIn() {
+  if (!originUsable()) {
+    return Promise.reject(new Error(
+      "Google sign-in needs this page served over https (or from localhost). Opened as a file it has " +
+      "no web address for Google to check, so sign-in is refused. Publish it and open it from there."));
   }
-  await loadGIS();
-  return new Promise((res, rej) => {
-    tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: CLIENT_ID,
-      scope: SCOPE,
-      // Pre-selects the account you used last, so a chooser (if one appears) is one tap.
-      hint: S.email || undefined,
-      callback: r => {
-        if(r && r.access_token){
-          S.token = r.access_token;
-          S.tokenExp = Date.now() + ((r.expires_in || 3600) * 1000);
-          save(); res(S.token);
-        } else rej(new Error("Google did not return access."));
-      },
-      error_callback: e => {
-        const t = (e && e.type) || "";
-        if(t === "popup_closed") return rej(new Error("Sign-in was closed before it finished."));
-        if(t === "popup_failed_to_open") return rej(new Error("The sign-in window was blocked. Allow pop-ups for this site and try again."));
-        rej(new Error("Google refused the sign-in."));
-      }
+  return loadGIS().then(function () {
+    return new Promise(function (res, rej) {
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPE,
+        hint: S.email || undefined,
+        callback: function (r) {
+          if (r && r.access_token) {
+            S.token = r.access_token;
+            S.tokenExp = Date.now() + ((r.expires_in || 3600) * 1000);
+            save(); res(S.token);
+          } else rej(new Error("Google did not return access."));
+        },
+        error_callback: function (e) {
+          var t = (e && e.type) || "";
+          if (t === "popup_closed") return rej(new Error("Sign-in was closed before it finished."));
+          if (t === "popup_failed_to_open") return rej(new Error("The sign-in window was blocked. Allow pop-ups for this site and try again."));
+          rej(new Error("Google refused the sign-in."));
+        }
+      });
+      tokenClient.requestAccessToken({ prompt: "" });
     });
-    tokenClient.requestAccessToken({ prompt: "" });
   });
 }
 
-/* Sign out is LOCAL ONLY — we forget the token, we do not revoke it.
-   Revoking would delete the grant, so the next sign-in would show the consent
-   screen again. Nothing in your Drive is touched. */
-function signOut(){
+/* Sign out is LOCAL ONLY — we forget the token, we do not revoke it. Revoking would
+   delete the grant, so the next sign-in would show the consent screen again. Nothing
+   in the user's Drive is touched. */
+function signOut() {
   S.token = ""; S.tokenExp = 0; S.data = null;
   save();
-  $("shell").hidden = true;
-  $("gate").style.display = "";
-  $("repbar").classList.remove("on");
+  $("#shell").hidden = true;
+  $("#gate").style.display = "";
   setGateStatus("Signed out here. Nothing was deleted from Drive.");
 }
+function tokenAlive() { return S.token && S.tokenExp > Date.now() + 30000; }
+function ensureToken() { return tokenAlive() ? Promise.resolve(S.token) : signIn(); }
 
-function tokenAlive(){ return S.token && S.tokenExp > Date.now() + 30000; }
+/* ============================================================
+   DRIVE
+   ============================================================ */
+var FILES  = "https://www.googleapis.com/drive/v3/files";
+var UPLOAD = "https://www.googleapis.com/upload/drive/v3/files";
 
-async function ensureToken(){
-  if(tokenAlive()) return S.token;
-  return signIn();   // silent when the grant already exists
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   Drive
-   ═══════════════════════════════════════════════════════════════════════════ */
-const FILES  = "https://www.googleapis.com/drive/v3/files";
-const UPLOAD = "https://www.googleapis.com/upload/drive/v3/files";
-
-async function dFetch(url, opts){
-  const t = await ensureToken();
-  const o = Object.assign({}, opts || {});
+async function dFetch(url, opts) {
+  var t = await ensureToken();
+  var o = Object.assign({}, opts || {});
   o.headers = Object.assign({}, o.headers || {}, { Authorization: "Bearer " + t });
-  let r = await fetch(url, o);
-  if(r.status === 401){                       // token died mid-flight — renew once
+  var r = await fetch(url, o);
+  if (r.status === 401) {          // token died mid-flight — renew once, silently
     S.token = ""; S.tokenExp = 0;
-    const t2 = await ensureToken();
-    o.headers.Authorization = "Bearer " + t2;
+    o.headers.Authorization = "Bearer " + (await ensureToken());
     r = await fetch(url, o);
   }
   return r;
 }
-
-async function findFile(name){
-  const q = encodeURIComponent("name = '" + name + "' and trashed = false");
-  const r = await dFetch(FILES + "?q=" + q + "&fields=files(id,modifiedTime)&orderBy=modifiedTime desc&pageSize=10");
-  if(!r.ok) throw new Error("Drive list failed (" + r.status + ").");
-  const j = await r.json();
+async function findFile(name) {
+  var q = encodeURIComponent("name = '" + name + "' and trashed = false");
+  var r = await dFetch(FILES + "?q=" + q + "&fields=files(id,modifiedTime)&orderBy=modifiedTime desc&pageSize=10");
+  if (!r.ok) throw new Error("Drive list failed (" + r.status + ").");
+  var j = await r.json();
   return (j.files && j.files[0]) || null;
 }
-
-async function readJson(name){
-  const f = await findFile(name);
-  if(!f) return null;
-  const r = await dFetch(FILES + "/" + f.id + "?alt=media");
-  if(!r.ok) throw new Error("Could not read " + name + " (" + r.status + ").");
-  return await r.json();
+async function readJson(name) {
+  var f = await findFile(name);
+  if (!f) return null;
+  var r = await dFetch(FILES + "/" + f.id + "?alt=media");
+  if (!r.ok) throw new Error("Could not read " + name + " (" + r.status + ").");
+  return r.json();
 }
-
-/* Create-then-write, deliberately not multipart: it is simpler and it is the
-   same shape the phone uses, so both sides behave identically. */
-async function writeJson(name, obj){
-  let f = await findFile(name);
-  if(!f){
-    const c = await dFetch(FILES + "?fields=id", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json; charset=utf-8" },
-      body: JSON.stringify({ name })
+/* Create-then-write, deliberately not multipart: simpler, and the same shape the
+   phone uses, so both sides behave identically. */
+async function writeJson(name, obj) {
+  var f = await findFile(name);
+  if (!f) {
+    var c = await dFetch(FILES + "?fields=id", {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify({ name: name })
     });
-    if(!c.ok) throw new Error("Could not create " + name + " (" + c.status + ").");
+    if (!c.ok) throw new Error("Could not create " + name + " (" + c.status + ").");
     f = await c.json();
   }
-  const r = await dFetch(UPLOAD + "/" + f.id + "?uploadType=media&fields=id", {
-    method:"PATCH",
-    headers:{ "Content-Type":"application/json" },
+  var r = await dFetch(UPLOAD + "/" + f.id + "?uploadType=media&fields=id", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(obj)
   });
-  if(!r.ok) throw new Error("Could not save " + name + " (" + r.status + ").");
+  if (!r.ok) throw new Error("Could not save " + name + " (" + r.status + ").");
   return true;
 }
-
-/* The account email, from the same drive.file permission — no extra scope. */
-async function accountEmail(){
-  try{
-    const r = await dFetch(FILES.replace("/files","/about") + "?fields=user(emailAddress)");
-    if(!r.ok) return "";
-    const j = await r.json();
+/* The account email, from the same drive.file permission — no extra scope asked. */
+async function accountEmail() {
+  try {
+    var r = await dFetch("https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)");
+    if (!r.ok) return "";
+    var j = await r.json();
     return (j.user && j.user.emailAddress) || "";
-  }catch(e){ return ""; }
+  } catch (e) { return ""; }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   Data helpers
-   ═══════════════════════════════════════════════════════════════════════════ */
-const arr = v => Array.isArray(v) ? v : [];
-
-function verifiedSet(){ return new Set(S.actions.verifiedTitles.map(key)); }
-function publishedSet(){
-  const s = new Set(S.actions.publishedTitles.map(key));
-  arr(S.data && S.data.publishedTitles).forEach(t => s.add(key(t)));
-  return s;
-}
-
-/* Alerts = what the phone shows, minus anything published (here or there).
-   Publishing HIDES a story from Alerts; it never deletes it. */
-function alerts(){
-  const pub = publishedSet();
-  return arr(S.data && S.data.alerts).filter(a => !pub.has(key(a.title)));
-}
-function published(){
-  const seen = new Set(); const out = [];
-  arr(S.actions.publishedNews).concat(arr(S.data && S.data.publishedNews)).forEach(a => {
-    const k = key(a.title);
-    if(a.title && !seen.has(k)){ seen.add(k); out.push(a); }
-  });
-  return out;
-}
-function editions(){
-  const seen = new Set(); const out = [];
-  arr(S.actions.reportEditions).concat(arr(S.data && S.data.reportEditions)).forEach(e => {
-    if(e && !seen.has(e.id)){ seen.add(e.id); out.push(e); }
-  });
-  return out.sort((a,b) => (b.createdAtMillis||0) - (a.createdAtMillis||0));
-}
-function verifiedArticles(){
-  const v = verifiedSet();
-  return alerts().filter(a => v.has(key(a.title)));
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   Rendering
-   ═══════════════════════════════════════════════════════════════════════════ */
-const TABS = [
-  ["alerts",      "Alerts",      () => alerts().length],
-  ["saved",       "Saved",       () => arr(S.data && S.data.savedNews).length],
-  ["published",   "Published",   () => published().length],
-  ["reports",     "Reports",     () => editions().length],
-  ["liked",       "Liked",       () => arr(S.data && S.data.likedTitles).length],
-  ["disliked",    "Disliked",    () => arr(S.data && S.data.dislikedTitles).length],
-  ["database",    "Database",    () => arr(S.data && S.data.competitors).length]
-];
-
-function renderTabs(){
-  $("tabs").innerHTML = TABS.map(([id,label,count]) =>
-    `<button data-tab="${id}" class="${S.tab===id?"on":""}">${label}<span class="n">${count()}</span></button>`
-  ).join("");
-  $("tabs").querySelectorAll("button").forEach(b => {
-    b.onclick = () => { S.tab = b.dataset.tab; save(); render(); window.scrollTo(0,0); };
-  });
-}
-
-function articleCard(a, opts){
-  opts = opts || {};
-  const k = key(a.title);
-  const on = opts.verifiable && verifiedSet().has(k);
-  return `<div class="card">
-    <div class="row top">
-      <span class="cat">${esc(a.category || "News")}</span>
-      <span class="meta">${esc(a.date || "")}</span>
-    </div>
-    <p class="ttl">${esc(a.title)}</p>
-    ${a.summary ? `<p class="sum">${esc(a.summary)}</p>` : ""}
-    ${a.pmAdvisory ? `<p class="adv">${esc(a.pmAdvisory)}</p>` : ""}
-    <div class="acts">
-      ${a.sourceUrl ? `<a class="link" href="${esc(a.sourceUrl)}" target="_blank" rel="noopener noreferrer">${esc(a.source || "Source")} ↗</a>`
-                    : `<span class="meta">${esc(a.source || "")}</span>`}
-      ${opts.verifiable ? `<label class="vf ${on?"on":""}">
-          <input type="checkbox" data-verify="${esc(a.title)}" ${on?"checked":""}>
-          ${on ? "Verified" : "Mark verified"}
-        </label>` : ""}
-      ${opts.publishedPill ? `<span class="pill ok">Published</span>` : ""}
-    </div>
-  </div>`;
-}
-
-function listOr(html, emptyMsg){
-  return html || `<div class="empty">${emptyMsg}</div>`;
-}
-
-function render(){
-  renderTabs();
-  const app = $("app");
-  const d = S.data;
-  if(!d){ app.innerHTML = `<div class="empty">Nothing loaded yet.</div>`; return; }
-
-  if(S.tab === "alerts"){
-    const list = alerts();
-    app.innerHTML = listOr(
-      list.map(a => articleCard(a, {verifiable:true})).join(""),
-      "No alerts. Everything here has been published, or your phone has not backed up yet."
-    );
-  }
-
-  else if(S.tab === "saved"){
-    app.innerHTML = listOr(
-      arr(d.savedNews).map(a => articleCard(a, {})).join(""),
-      "Nothing saved."
-    );
-  }
-
-  else if(S.tab === "published"){
-    app.innerHTML = listOr(
-      published().map(a => articleCard(a, {publishedPill:true})).join(""),
-      "Nothing published yet. Verify some alerts, then generate a report."
-    );
-  }
-
-  else if(S.tab === "reports"){
-    const eds = editions();
-    app.innerHTML = listOr(eds.map(e => `<div class="card">
-        <div class="row top">
-          <span class="cat">${esc(e.weekLabel || "Report")}</span>
-          <span class="meta">${esc(e.dateLabel || "")}</span>
-        </div>
-        <p class="ttl">${esc(e.title || "Market report")}</p>
-        <p class="sum">${arr(e.articles).length} article(s) · ${e.competitorsCount||0} competitor(s) · ${e.countriesCount||0} market(s)</p>
-        <div class="acts">
-          <button class="btn sm ghost" data-ed-word="${esc(String(e.id))}">Word</button>
-          <button class="btn sm" data-ed-pdf="${esc(String(e.id))}">PDF</button>
-        </div>
-      </div>`).join(""),
-      "No reports yet."
-    );
-    app.querySelectorAll("[data-ed-pdf]").forEach(b => b.onclick = () => {
-      const e = eds.find(x => String(x.id) === b.dataset.edPdf);
-      if(e) printReport(e.title || "Market report", e.dateLabel || "", arr(e.articles));
-    });
-    app.querySelectorAll("[data-ed-word]").forEach(b => b.onclick = () => {
-      const e = eds.find(x => String(x.id) === b.dataset.edWord);
-      if(e) downloadWord(e.title || "Market report", e.dateLabel || "", arr(e.articles));
-    });
-  }
-
-  else if(S.tab === "liked" || S.tab === "disliked"){
-    const titles = arr(S.tab === "liked" ? d.likedTitles : d.dislikedTitles).map(key);
-    const pool = arr(d.newsArticles).concat(arr(d.alerts), arr(d.publishedNews));
-    const seen = new Set(); const out = [];
-    titles.forEach(t => {
-      const hit = pool.find(a => key(a.title) === t);
-      if(hit && !seen.has(t)){ seen.add(t); out.push(hit); }
-      else if(!hit && !seen.has(t)){ seen.add(t); out.push({ title:t, category:"", summary:"", source:"" }); }
-    });
-    app.innerHTML = listOr(out.map(a => articleCard(a, {})).join(""),
-      S.tab === "liked" ? "Nothing liked yet." : "Nothing disliked yet.");
-  }
-
-  else if(S.tab === "database"){
-    const comps = arr(d.competitors), prods = arr(d.competitorProducts);
-    const countries = arr(d.countries), norms = arr(d.normCodes);
-    let h = `<div class="lbl">Competitors</div>`;
-    h += listOr(comps.map(c => {
-      const mine = prods.filter(p => key(p.competitorName) === key(c.name));
-      return `<div class="card">
-        <p class="ttl">${esc(c.name)}</p>
-        ${c.websiteUrl ? `<div class="acts"><a class="link" href="${esc(c.websiteUrl)}" target="_blank" rel="noopener noreferrer">${esc(c.websiteUrl.replace(/^https?:\/\//,""))} ↗</a></div>` : ""}
-        ${c.keyProduct ? `<div class="kv"><span>Key product</span><span>${esc(c.keyProduct)}</span></div>` : ""}
-        ${c.markets ? `<div class="kv"><span>Markets</span><span>${esc(c.markets)}</span></div>` : ""}
-        ${mine.length ? `<div class="kv"><span>Products</span><span>${mine.map(p => esc(p.name)).join(", ")}</span></div>` : ""}
-        ${c.insights ? `<p class="sum">${esc(c.insights)}</p>` : ""}
-      </div>`;
-    }).join(""), "No competitors onboarded.");
-
-    h += `<div class="lbl">Markets</div>`;
-    h += listOr(countries.map(c => `<div class="card">
-        <p class="ttl">${esc(c.name)}</p>
-        ${c.constructionGdp ? `<div class="kv"><span>Construction GDP</span><span>${esc(c.constructionGdp)}</span></div>` : ""}
-        ${c.cagr ? `<div class="kv"><span>CAGR</span><span>${esc(c.cagr)}</span></div>` : ""}
-      </div>`).join(""), "No markets onboarded.");
-
-    h += `<div class="lbl">Norms &amp; codes</div>`;
-    h += listOr(norms.map(n => `<div class="card">
-        <div class="row top"><span class="cat">${esc(n.type || "Norm")}</span><span class="meta">${esc(n.timeValue || "")}</span></div>
-        <p class="ttl">${esc(n.name)}</p>
-        <div class="kv"><span>Applies to</span><span>${esc(n.countryName || "All")} · ${esc(n.competitorName || "All")}</span></div>
-        ${n.linkUrl ? `<div class="acts"><a class="link" href="${esc(n.linkUrl)}" target="_blank" rel="noopener noreferrer">Open ↗</a></div>` : ""}
-      </div>`).join(""), "No norms or codes onboarded.");
-
-    app.innerHTML = h;
-  }
-
-  // Verify checkboxes (Alerts only)
-  app.querySelectorAll("[data-verify]").forEach(cb => {
-    cb.onchange = () => { toggleVerify(cb.dataset.verify); };
-  });
-
-  refreshReportBar();
-}
-
-function refreshReportBar(){
-  const n = verifiedArticles().length;
-  $("vcount").textContent = n;
-  $("repbar").classList.toggle("on", n > 0 && S.tab === "alerts");
-}
-
-function toggleVerify(title){
-  const k = key(title);
-  const cur = S.actions.verifiedTitles.map(key);
-  const i = cur.indexOf(k);
-  if(i >= 0) S.actions.verifiedTitles.splice(i, 1);
-  else S.actions.verifiedTitles.push(k);
-  save();
-  render();
-  // Saved locally already, so a failed upload is not data loss — say so rather than
-  // throwing an unhandled rejection into the console.
-  pushActions().catch(e => setStatus("Verified here, but not saved to Drive yet: " + e.message, true));
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   Report generation
-   ═══════════════════════════════════════════════════════════════════════════ */
-function reportHtml(title, dateLabel, articles){
-  return `<h1>${esc(title)}</h1><p class="r-sub">${esc(dateLabel)} · ${articles.length} article(s)</p>` +
-    articles.map(a => `<div class="r-art">
-      <div class="r-meta">${esc(a.category || "News")}${a.date ? " · " + esc(a.date) : ""}${a.source ? " · " + esc(a.source) : ""}</div>
-      <h2>${esc(a.title)}</h2>
-      ${a.summary ? `<p class="r-sum">${esc(a.summary)}</p>` : ""}
-      ${a.pmAdvisory ? `<p class="r-adv">${esc(a.pmAdvisory)}</p>` : ""}
-    </div>`).join("");
-}
-
-/* PDF via the browser's own print dialogue ("Save as PDF"). No library, no CDN,
-   and the output matches what you see rather than a re-implementation of it. */
-function printReport(title, dateLabel, articles){
-  $("report").innerHTML = reportHtml(title, dateLabel, articles);
-  const prev = document.title;
-  document.title = title + " — " + dateLabel;
-  window.print();
-  setTimeout(() => { document.title = prev; }, 500);
-}
-
-/* Word: an HTML document served with Word's MIME type. Word and Google Docs both
-   open it as a normal editable document, and it needs no zip library. */
-function downloadWord(title, dateLabel, articles){
-  const doc =
-`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-<head><meta charset="utf-8"><title>${esc(title)}</title>
-<style>
-body{font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#000}
-h1{font-size:18pt;margin:0 0 4pt}
-.r-sub{color:#555;font-size:9pt;margin:0 0 18pt}
-h2{font-size:12pt;margin:0 0 4pt}
-.r-meta{font-size:8.5pt;color:#666;margin:0 0 4pt}
-.r-sum{font-size:10pt;line-height:1.5;margin:0}
-.r-adv{font-size:9.5pt;line-height:1.5;margin:5pt 0 0;padding-left:8pt;border-left:2pt solid #6366F1;color:#333}
-.r-art{margin:0 0 14pt;padding:0 0 10pt;border-bottom:1pt solid #ddd}
-</style></head><body>${reportHtml(title, dateLabel, articles)}</body></html>`;
-  const blob = new Blob(["﻿", doc], { type: "application/msword" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = title.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-") + "-" + (dateLabel || "").replace(/\s+/g,"-") + ".doc";
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-}
-
-/* Publishing. Verified stories become a report edition, move to Published, and
-   leave Alerts. Everything here is ADDITIVE — we append to our own file and never
-   touch the phone's, so nothing the phone holds can be lost. */
-async function publishVerified(kind){
-  const list = verifiedArticles();
-  if(!list.length) return;
-  const now = Date.now();
-  const dateLabel = new Date(now).toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric" });
-  const title = "Window Market Report";
-
-  if(kind === "pdf") printReport(title, dateLabel, list);
-  else downloadWord(title, dateLabel, list);
-
-  const wk = Math.ceil((((new Date(now) - new Date(new Date(now).getFullYear(),0,1)) / 86400000) + 1) / 7);
-  S.actions.reportEditions.push({
-    id: now, title, dateLabel, weekLabel: "Week " + wk, createdAtMillis: now,
-    articles: list, verifiedTitles: list.map(a => key(a.title)),
-    competitorsCount: arr(S.data && S.data.competitors).length,
-    countriesCount: arr(S.data && S.data.countries).length
-  });
-  list.forEach(a => {
-    S.actions.publishedNews.push(a);
-    S.actions.publishedTitles.push(key(a.title));
-  });
-  // Those stories are published now, so they are no longer "awaiting verification".
-  const goneKeys = new Set(list.map(a => key(a.title)));
-  S.actions.verifiedTitles = S.actions.verifiedTitles.filter(t => !goneKeys.has(key(t)));
-  save();
-  render();
-  setStatus("Saving to Drive…");
-  try{
-    await pushActions(true);
-    setStatus(list.length + " article(s) published. Your phone will pick this up on its next sync.");
-  }catch(e){
-    setStatus("Published here, but saving to Drive failed: " + e.message, true);
-  }
-}
-
-let pushTimer = null;
-function pushActions(immediate){
-  // Debounced: ticking several checkboxes should not mean several uploads.
+var pushTimer = null;
+/* Debounced: ticking several checkboxes should not mean several uploads. */
+function pushActions(immediate) {
   clearTimeout(pushTimer);
-  return new Promise((res, rej) => {
-    pushTimer = setTimeout(async () => {
-      try{
+  return new Promise(function (res, rej) {
+    pushTimer = setTimeout(async function () {
+      try {
         S.actions.updatedAtMillis = Date.now();
         await writeJson(ACTIONS_FILE, S.actions);
         res(true);
-      }catch(e){ rej(e); }
+      } catch (e) { rej(e); }
     }, immediate ? 0 : 1200);
   });
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   Boot
-   ═══════════════════════════════════════════════════════════════════════════ */
-function setStatus(msg, isErr){
-  const el = $("status");
-  el.textContent = msg || "";
-  el.className = "status" + (isErr ? " err" : "");
+/* ============================================================
+   ASK — replaces confirm() and prompt()
+   ============================================================
+   The native ones print the origin across the top, so a prompt here read
+   "attano26.github.io says". A page cannot change that line and should not be able
+   to: a site dressing its dialog as the browser's own is the attack the rule
+   prevents. The only way to control the wording is not to use them. */
+function askShell(build) {
+  return new Promise(function (resolve) {
+    var a = $("#ask");
+    a.hidden = false; a.innerHTML = "";
+    var box = el("div", "askbox");
+    a.appendChild(box);
+    var done = function (v) {
+      a.hidden = true; a.innerHTML = "";
+      document.removeEventListener("keydown", a._key); a._key = null;
+      resolve(v);
+    };
+    build(box, done);
+    a.onclick = function (e) { if (e.target === a) done(null); };
+    a._key = function (e) { if (e.key === "Escape") { e.preventDefault(); done(null); } };
+    document.addEventListener("keydown", a._key);
+  });
 }
-function setGateStatus(msg, isErr){
-  const el = $("gate-status");
-  el.textContent = msg || "";
-  el.className = "status" + (isErr ? " err" : "");
+function askConfirm(opts) {
+  return askShell(function (box, done) {
+    box.appendChild(el("h2", "askttl", opts.title));
+    if (opts.body) box.appendChild(el("p", "askbody", opts.body));
+    var row = el("div", "askrow");
+    var no = el("button", "btn sm ghost", opts.cancel || "Cancel");
+    no.onclick = function () { done(false); };
+    var yes = el("button", "btn sm", opts.ok || "Continue");
+    yes.onclick = function () { done(true); };
+    row.appendChild(no); row.appendChild(yes);
+    box.appendChild(row);
+    yes.focus();
+  });
 }
 
-async function loadEverything(){
+/* ============================================================
+   RENDER
+   ============================================================ */
+var TABS = [
+  ["alerts",    "Alerts",    function () { return alerts().length; }],
+  ["saved",     "Saved",     function () { return arr(S.data && S.data.savedNews).length; }],
+  ["published", "Published", function () { return published().length; }],
+  ["reports",   "Reports",   function () { return editions().length; }],
+  ["liked",     "Liked",     function () { return arr(S.data && S.data.likedTitles).length; }],
+  ["disliked",  "Disliked",  function () { return arr(S.data && S.data.dislikedTitles).length; }],
+  ["database",  "Database",  function () { return arr(S.data && S.data.competitors).length; }]
+];
+var TAB_TITLE = {
+  alerts:    ["News",      "Window market intelligence"],
+  saved:     ["Saved",     "Bookmarked stories"],
+  published: ["Published", "Stories already in a report"],
+  reports:   ["Reports",   "Download a past edition"],
+  liked:     ["Liked",     "What you marked useful"],
+  disliked:  ["Disliked",  "What you pushed away"],
+  database:  ["Data",      "Competitors, markets and codes"]
+};
+
+function renderTabs() {
+  var n = $("#tabs"); n.innerHTML = "";
+  TABS.forEach(function (t) {
+    var b = el("button", S.tab === t[0] ? "on" : "");
+    b.appendChild(document.createTextNode(t[1]));
+    b.appendChild(el("span", "n", String(t[2]())));
+    b.onclick = function () { S.tab = t[0]; save(); render(); $("#scroll").scrollTop = 0; };
+    n.appendChild(b);
+  });
+}
+function renderTitle() {
+  var t = TAB_TITLE[S.tab] || TAB_TITLE.alerts;
+  $("#pageTitle").textContent = t[0];
+  $("#pageSub").textContent = t[1];
+  /* Source chip: which feed the PHONE is set to. Read-only here — the web never
+     fetches, so this is information, not a control. */
+  var chip = $("#srcChip"), v = (S.data && S.data.newsSource) || "";
+  if (!v) { chip.hidden = true; return; }
+  var map = {
+    rss: ["Free RSS", "var(--free)"],
+    grounded: ["Grounded", "var(--paid)"],
+    hybrid: ["Hybrid", "var(--paid)"]
+  };
+  var m = map[v] || [v, "var(--ink-3)"];
+  chip.hidden = false; chip.innerHTML = "";
+  var d = el("span", "dot"); d.style.background = m[1];
+  chip.appendChild(d);
+  chip.appendChild(el("span", null, m[0]));
+  chip.appendChild(el("span", "cv", "on phone"));
+}
+
+function articleCard(a, opts) {
+  opts = opts || {};
+  var card = el("div", "card");
+  var top = el("div", "crow");
+  top.appendChild(el("span", "cat", a.category || "News"));
+  top.appendChild(el("span", "meta", a.date || ""));
+  card.appendChild(top);
+  card.appendChild(el("p", "ttl", a.title));
+  if (a.summary) card.appendChild(el("p", "sum", a.summary));
+  if (a.pmAdvisory) card.appendChild(el("p", "adv", a.pmAdvisory));
+
+  var acts = el("div", "acts");
+  if (a.sourceUrl) {
+    var link = el("a", "link", (a.source || "Source") + " ↗");
+    link.href = a.sourceUrl; link.target = "_blank"; link.rel = "noopener noreferrer";
+    acts.appendChild(link);
+  } else if (a.source) {
+    acts.appendChild(el("span", "meta", a.source));
+  }
+  if (opts.verifiable) {
+    var on = verifiedSet().has(key(a.title));
+    var lab = el("label", "vf" + (on ? " on" : ""));
+    var cb = el("input"); cb.type = "checkbox"; cb.checked = on;
+    cb.onchange = function () { toggleVerify(a.title); };
+    lab.appendChild(cb);
+    lab.appendChild(document.createTextNode(on ? "Verified" : "Mark verified"));
+    acts.appendChild(lab);
+  }
+  if (opts.publishedPill) acts.appendChild(el("span", "pill ok", "Published"));
+  card.appendChild(acts);
+  return card;
+}
+function emptyState(msg) { return el("div", "empty", msg); }
+function kv(k, v) {
+  var r = el("div", "kv");
+  r.appendChild(el("span", "k", k));
+  r.appendChild(el("span", "v", v));
+  return r;
+}
+function linkRow(href, text) {
+  var acts = el("div", "acts");
+  var a = el("a", "link", text);
+  a.href = href; a.target = "_blank"; a.rel = "noopener noreferrer";
+  acts.appendChild(a);
+  return acts;
+}
+
+function render() {
+  renderTabs(); renderTitle();
+  var app = $("#app"); app.innerHTML = "";
+  var d = S.data, i;
+
+  if (S.loading) {
+    for (i = 0; i < 4; i++) app.appendChild(el("div", "skel"));
+    refreshReportBar(); return;
+  }
+  if (!d) { app.appendChild(emptyState("Nothing loaded yet.")); refreshReportBar(); return; }
+
+  if (S.tab === "alerts") {
+    var list = alerts();
+    if (!list.length) app.appendChild(emptyState("No alerts. Everything here has been published, or your phone has not backed up yet."));
+    else list.forEach(function (a) { app.appendChild(articleCard(a, { verifiable: true })); });
+  }
+  else if (S.tab === "saved") {
+    var sv = arr(d.savedNews);
+    if (!sv.length) app.appendChild(emptyState("Nothing saved."));
+    else sv.forEach(function (a) { app.appendChild(articleCard(a, {})); });
+  }
+  else if (S.tab === "published") {
+    var pb = published();
+    if (!pb.length) app.appendChild(emptyState("Nothing published yet. Verify some alerts, then generate a report."));
+    else pb.forEach(function (a) { app.appendChild(articleCard(a, { publishedPill: true })); });
+  }
+  else if (S.tab === "reports") {
+    var eds = editions();
+    if (!eds.length) app.appendChild(emptyState("No reports yet."));
+    else eds.forEach(function (e) {
+      var c = el("div", "card");
+      var top = el("div", "crow");
+      top.appendChild(el("span", "cat", e.weekLabel || "Report"));
+      top.appendChild(el("span", "meta", e.dateLabel || ""));
+      c.appendChild(top);
+      c.appendChild(el("p", "ttl", e.title || "Market report"));
+      c.appendChild(el("p", "sum", arr(e.articles).length + " article(s) · " +
+        (e.competitorsCount || 0) + " competitor(s) · " + (e.countriesCount || 0) + " market(s)"));
+      var acts = el("div", "acts");
+      var w = el("button", "btn sm ghost", "Word");
+      w.onclick = function () { downloadWord(e.title || "Market report", e.dateLabel || "", arr(e.articles)); };
+      var p = el("button", "btn sm", "PDF");
+      p.onclick = function () { printReport(e.title || "Market report", e.dateLabel || "", arr(e.articles)); };
+      acts.appendChild(w); acts.appendChild(p);
+      c.appendChild(acts);
+      app.appendChild(c);
+    });
+  }
+  else if (S.tab === "liked" || S.tab === "disliked") {
+    var titles = arr(S.tab === "liked" ? d.likedTitles : d.dislikedTitles).map(key);
+    var pool = arr(d.newsArticles).concat(arr(d.alerts), arr(d.publishedNews), arr(d.savedNews));
+    var seen = new Set(), out = [];
+    titles.forEach(function (t) {
+      if (seen.has(t)) return;
+      seen.add(t);
+      var hit = pool.filter(function (a) { return key(a.title) === t; })[0];
+      out.push(hit || { title: t, category: "", summary: "", source: "" });
+    });
+    if (!out.length) app.appendChild(emptyState(S.tab === "liked" ? "Nothing liked yet." : "Nothing disliked yet."));
+    else out.forEach(function (a) { app.appendChild(articleCard(a, {})); });
+  }
+  else if (S.tab === "database") {
+    var comps = arr(d.competitors), prods = arr(d.competitorProducts);
+    app.appendChild(el("div", "lbl", "Competitors"));
+    if (!comps.length) app.appendChild(emptyState("No competitors onboarded."));
+    comps.forEach(function (c) {
+      var card = el("div", "card");
+      card.appendChild(el("p", "ttl", c.name));
+      if (c.websiteUrl) card.appendChild(linkRow(c.websiteUrl, c.websiteUrl.replace(/^https?:\/\//, "") + " ↗"));
+      if (c.keyProduct) card.appendChild(kv("Key product", c.keyProduct));
+      if (c.markets) card.appendChild(kv("Markets", c.markets));
+      var mine = prods.filter(function (p) { return key(p.competitorName) === key(c.name); });
+      if (mine.length) card.appendChild(kv("Products", mine.map(function (p) { return p.name; }).join(", ")));
+      if (c.insights) card.appendChild(el("p", "sum", c.insights));
+      app.appendChild(card);
+    });
+
+    app.appendChild(el("div", "lbl", "Markets"));
+    var nations = arr(d.countries);
+    if (!nations.length) app.appendChild(emptyState("No markets onboarded."));
+    nations.forEach(function (c) {
+      var card = el("div", "card");
+      card.appendChild(el("p", "ttl", c.name));
+      if (c.constructionGdp) card.appendChild(kv("Construction GDP", c.constructionGdp));
+      if (c.cagr) card.appendChild(kv("CAGR", c.cagr));
+      app.appendChild(card);
+    });
+
+    app.appendChild(el("div", "lbl", "Norms and codes"));
+    var norms = arr(d.normCodes);
+    if (!norms.length) app.appendChild(emptyState("No norms or codes onboarded."));
+    norms.forEach(function (n) {
+      var card = el("div", "card");
+      var top = el("div", "crow");
+      top.appendChild(el("span", "cat", n.type || "Norm"));
+      top.appendChild(el("span", "meta", n.timeValue || ""));
+      card.appendChild(top);
+      card.appendChild(el("p", "ttl", n.name));
+      card.appendChild(kv("Applies to", (n.countryName || "All") + " · " + (n.competitorName || "All")));
+      if (n.linkUrl) card.appendChild(linkRow(n.linkUrl, "Open ↗"));
+      app.appendChild(card);
+    });
+  }
+
+  /* The explanatory note lives at the foot of Alerts only — it explains this tab. */
+  if (S.tab === "alerts" && alerts().length) {
+    var box = el("div", "info");
+    box.appendChild(el("div", "i", "i"));
+    var c2 = el("div");
+    c2.appendChild(el("b", null, "What happens when you publish"));
+    c2.appendChild(document.createTextNode(
+      "Verified stories become a report and move to Published, exactly as on the phone. " +
+      "This page writes only its own file in your Drive, so it can never overwrite news your phone fetched."));
+    box.appendChild(c2);
+    app.appendChild(box);
+  }
+  refreshReportBar();
+}
+
+function refreshReportBar() {
+  var n = verifiedArticles().length;
+  $("#vcount").textContent = String(n);
+  $("#repbar").classList.toggle("on", n > 0 && S.tab === "alerts");
+}
+function toggleVerify(title) {
+  var k = key(title);
+  var cur = S.actions.verifiedTitles.map(key);
+  var i = cur.indexOf(k);
+  if (i >= 0) S.actions.verifiedTitles.splice(i, 1); else S.actions.verifiedTitles.push(k);
+  save(); render();
+  /* Already saved locally, so a failed upload is not data loss — say so rather than
+     throwing an unhandled rejection into the console. */
+  pushActions().catch(function (e) {
+    setStatus("Verified here, but not saved to Drive yet: " + e.message, true);
+  });
+}
+
+/* ============================================================
+   REPORTS
+   ============================================================ */
+function reportHtml(title, dateLabel, articles) {
+  return "<h1>" + esc(title) + "</h1><p class='r-sub'>" + esc(dateLabel) + " · " +
+    articles.length + " article(s)</p>" +
+    articles.map(function (a) {
+      return "<div class='r-art'>" +
+        "<div class='r-meta'>" + esc(a.category || "News") +
+          (a.date ? " · " + esc(a.date) : "") +
+          (a.source ? " · " + esc(a.source) : "") + "</div>" +
+        "<h2>" + esc(a.title) + "</h2>" +
+        (a.summary ? "<p class='r-sum'>" + esc(a.summary) + "</p>" : "") +
+        (a.pmAdvisory ? "<p class='r-adv'>" + esc(a.pmAdvisory) + "</p>" : "") +
+      "</div>";
+    }).join("");
+}
+/* PDF via the browser's own print dialogue ("Save as PDF"). No library, no CDN, and
+   the output matches what you see rather than a re-implementation of it. */
+function printReport(title, dateLabel, articles) {
+  $("#report").innerHTML = reportHtml(title, dateLabel, articles);
+  var prev = document.title;
+  document.title = title + " — " + dateLabel;
+  window.print();
+  setTimeout(function () { document.title = prev; }, 500);
+}
+/* Word: an HTML document served with Word's MIME type. Word and Google Docs both
+   open it as a normal editable document, and it needs no zip library. */
+function downloadWord(title, dateLabel, articles) {
+  var doc =
+    '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">' +
+    '<head><meta charset="utf-8"><title>' + esc(title) + '</title><style>' +
+    'body{font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#000}' +
+    'h1{font-size:18pt;margin:0 0 4pt}.r-sub{color:#555;font-size:9pt;margin:0 0 18pt}' +
+    'h2{font-size:12pt;margin:0 0 4pt}.r-meta{font-size:8.5pt;color:#666;margin:0 0 4pt}' +
+    '.r-sum{font-size:10pt;line-height:1.5;margin:0}' +
+    '.r-adv{font-size:9.5pt;line-height:1.5;margin:5pt 0 0;padding-left:8pt;border-left:2pt solid #6366F1;color:#333}' +
+    '.r-art{margin:0 0 14pt;padding:0 0 10pt;border-bottom:1pt solid #ddd}' +
+    '</style></head><body>' + reportHtml(title, dateLabel, articles) + '</body></html>';
+  var blob = new Blob(["﻿", doc], { type: "application/msword" });
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = String(title).replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-") + "-" +
+    String(dateLabel).replace(/\s+/g, "-") + ".doc";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+}
+
+/* Publishing. Verified stories become an edition, move to Published, and leave
+   Alerts. Everything here is ADDITIVE — we append to our own file and never touch
+   the phone's, so nothing the phone holds can be lost. */
+async function publishVerified(kind) {
+  var list = verifiedArticles();
+  if (!list.length) return;
+  var ok = await askConfirm({
+    title: "Publish " + list.length + " article(s)?",
+    body: "They move out of Alerts and into Published, and become a report you can download again later. Your phone picks this up on its next sync.",
+    ok: "Publish"
+  });
+  if (!ok) return;
+
+  var now = Date.now();
+  var dateLabel = new Date(now).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  var title = "Window Market Report";
+  if (kind === "pdf") printReport(title, dateLabel, list); else downloadWord(title, dateLabel, list);
+
+  var jan1 = new Date(new Date(now).getFullYear(), 0, 1).getTime();
+  var wk = Math.ceil((((now - jan1) / 86400000) + 1) / 7);
+  S.actions.reportEditions.push({
+    id: now, title: title, dateLabel: dateLabel, weekLabel: "Week " + wk, createdAtMillis: now,
+    articles: list,
+    verifiedTitles: list.map(function (a) { return key(a.title); }),
+    competitorsCount: arr(S.data && S.data.competitors).length,
+    countriesCount: arr(S.data && S.data.countries).length
+  });
+  list.forEach(function (a) {
+    S.actions.publishedNews.push(a);
+    S.actions.publishedTitles.push(key(a.title));
+  });
+  var gone = new Set(list.map(function (a) { return key(a.title); }));
+  S.actions.verifiedTitles = S.actions.verifiedTitles.filter(function (t) { return !gone.has(key(t)); });
+  save(); render();
+  setStatus("Saving to Drive…");
+  try {
+    await pushActions(true);
+    setStatus("");
+    toast(list.length + " article(s) published");
+  } catch (e) {
+    setStatus("Published here, but saving to Drive failed: " + e.message, true);
+  }
+}
+
+/* ============================================================
+   LOAD
+   ============================================================ */
+async function loadEverything() {
+  S.loading = true; render();
   setStatus("Loading from Drive…");
-  const data = await readJson(DATA_FILE);
-  if(!data){
-    setStatus("Nothing in Drive yet. Open Elemental on your phone, go to Settings → Storage, and tap Back up.", true);
+  var data = null;
+  try { data = await readJson(DATA_FILE); }
+  finally { S.loading = false; }
+
+  if (!data) {
     S.data = { alerts: [] };
-    render();
-    return;
+    setStatus("Nothing in Drive yet. On your phone open Settings → Storage and press Back up.", true);
+    render(); return;
   }
   S.data = data;
 
-  // Merge whatever this browser previously wrote, so a fresh device sees it too.
-  const remote = await readJson(ACTIONS_FILE).catch(() => null);
-  if(remote){
-    const merge = (a, b, byKey) => {
-      const out = arr(a).slice(); const seen = new Set(out.map(byKey));
-      arr(b).forEach(x => { const k = byKey(x); if(!seen.has(k)){ seen.add(k); out.push(x); } });
+  /* Merge whatever this browser previously wrote, so a fresh device sees it too. */
+  var remote = await readJson(ACTIONS_FILE).catch(function () { return null; });
+  if (remote) {
+    var merge = function (a, b, byKey) {
+      var out = arr(a).slice(), seen = new Set(out.map(byKey));
+      arr(b).forEach(function (x) {
+        var k = byKey(x);
+        if (!seen.has(k)) { seen.add(k); out.push(x); }
+      });
       return out;
     };
     S.actions.verifiedTitles  = merge(S.actions.verifiedTitles,  remote.verifiedTitles,  key);
     S.actions.publishedTitles = merge(S.actions.publishedTitles, remote.publishedTitles, key);
-    S.actions.publishedNews   = merge(S.actions.publishedNews,   remote.publishedNews,   a => key(a && a.title));
-    S.actions.reportEditions  = merge(S.actions.reportEditions,  remote.reportEditions,  e => e && e.id);
+    S.actions.publishedNews   = merge(S.actions.publishedNews,   remote.publishedNews,
+      function (a) { return key(a && a.title); });
+    S.actions.reportEditions  = merge(S.actions.reportEditions,  remote.reportEditions,
+      function (e) { return e && e.id; });
     save();
   }
-
-  const stamp = data.updatedAtMillis ? new Date(data.updatedAtMillis).toLocaleString("en-GB") : "";
-  setStatus(stamp ? "Your phone last backed up " + stamp + "." : "");
+  setStatus(data.updatedAtMillis
+    ? "Your phone last backed up " + new Date(data.updatedAtMillis).toLocaleString("en-GB") + "."
+    : "");
   render();
 }
 
-async function start(){
-  $("gate").style.display = "none";
-  $("shell").hidden = false;
-  if(!S.email){ S.email = await accountEmail(); save(); }
-  $("acct").textContent = S.email || "Connected";
-  try{ await loadEverything(); }
-  catch(e){ setStatus(e.message, true); }
+async function start() {
+  $("#gate").style.display = "none";
+  $("#shell").hidden = false;
+  applyTheme();
+  if (!S.email) { S.email = await accountEmail(); save(); }
+  try { await loadEverything(); }
+  catch (e) { S.loading = false; setStatus(e.message, true); render(); }
 }
 
-$("signin").onclick = async () => {
+/* ============================================================
+   SETTINGS
+   ============================================================ */
+async function openSettings() {
+  var out = await askShell(function (box, done) {
+    box.appendChild(el("h2", "askttl", "Settings"));
+    box.appendChild(el("p", "askbody", "Signed in as " + (S.email || "this account") + "."));
+    box.appendChild(el("p", "askbody",
+      "This page never fetches news — only your phone does. It reads your Drive backup and " +
+      "writes back only what you verify or publish here."));
+    box.appendChild(el("p", "askbody",
+      "Signing out forgets the connection in this browser only. Nothing in your Drive is deleted, " +
+      "and signing back in will not ask again."));
+    var row = el("div", "askrow");
+    var close = el("button", "btn sm ghost", "Close");
+    close.onclick = function () { done(false); };
+    var so = el("button", "btn sm", "Sign out");
+    so.onclick = function () { done(true); };
+    row.appendChild(close); row.appendChild(so);
+    box.appendChild(row);
+  });
+  if (out) signOut();
+}
+
+/* ============================================================
+   WIRING
+   ============================================================ */
+/* Phone height is not one number: on a first launch the browser still reports the
+   chrome it is about to retract, so the app lays out taller than the screen and the
+   report bar ends up below the fold. visualViewport is the value that settles. */
+function sizeShell() {
+  var h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+  document.documentElement.style.setProperty("--apph", h + "px");
+}
+window.addEventListener("resize", sizeShell);
+if (window.visualViewport) window.visualViewport.addEventListener("resize", sizeShell);
+sizeShell();
+
+$("#gateMark").innerHTML = MARK;
+$("#topMark").innerHTML = MARK;
+$("#btnSettings").innerHTML = ICON_GEAR;
+
+$("#signin").onclick = async function () {
   setGateStatus("Opening Google sign-in…");
-  try{ await signIn(); setGateStatus(""); await start(); }
-  catch(e){ setGateStatus(e.message, true); }
+  try { await signIn(); setGateStatus(""); await start(); }
+  catch (e) { setGateStatus(e.message, true); }
 };
-$("signout").onclick = signOut;
-$("gen-pdf").onclick  = () => publishVerified("pdf");
-$("gen-word").onclick = () => publishVerified("word");
+$("#btnTheme").onclick = toggleTheme;
+$("#btnSettings").onclick = openSettings;
+$("#genPdf").onclick  = function () { publishVerified("pdf"); };
+$("#genWord").onclick = function () { publishVerified("word"); };
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyTheme);
+
+/* Offline + update. A new version is downloaded quietly and applied only when the
+   user taps — never swapped under someone mid-read. */
+if ("serviceWorker" in navigator && location.protocol === "https:") {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("./sw.js").then(function (reg) {
+      reg.addEventListener("updatefound", function () {
+        var w = reg.installing;
+        if (!w) return;
+        w.addEventListener("statechange", function () {
+          if (w.state === "installed" && navigator.serviceWorker.controller) $("#upd").classList.add("on");
+        });
+      });
+      $("#updGo").onclick = function () {
+        if (reg.waiting) reg.waiting.postMessage("applyUpdate");
+        location.reload();
+      };
+    }).catch(function () {});
+  });
+}
 
 load();
-if(tokenAlive()) start();
-else if(S.email) setGateStatus("Signed in before as " + S.email + ". Press the button to continue — it should not ask again.");
+applyTheme();
+if (tokenAlive()) start();
+else if (S.email) setGateStatus("Signed in before as " + S.email + ". Press the button to continue — it should not ask again.");
 </script>
 </body>
 </html>
