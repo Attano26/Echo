@@ -1,0 +1,23 @@
+# Elemental is a static site (the web mirror of the Elemental competitor-intel app).
+# Nothing here is built, and nothing secret belongs in it. Each user signs in with
+# their own Google account and enters their own Gemini key at runtime, stored only in
+# their own browser — so no key, token, or credential may ever appear in this repo.
+.DS_Store
+Thumbs.db
+*.log
+
+# The OAuth *client ID* is public by design and DOES ship in the page (like Sightline).
+# But never commit a client secret, an API key, a keystore, or a .env.
+.env
+*.keystore
+*.jks
+
+# Internal working documents live alongside this repo in ../Elemental docs/, not inside it.
+# Listed here so dropping a copy back in does not quietly publish it.
+PRD.md
+ARCHITECTURE.md
+DESIGN.md
+PROMPTING.md
+RULES.md
+MEMORY.md
+README-full.md
