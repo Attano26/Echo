@@ -1,4 +1,4 @@
-/* Elemental offline worker.
+﻿/* Elemental offline worker.
 
    In plain terms: it keeps a copy of the app on the device so it opens without a
    connection, and it tells the page when a newer version exists so you can take it
@@ -11,7 +11,7 @@
 
    Bump VERSION on every deploy. That is what tells every installed copy that
    something changed. */
-const VERSION = "elemental-2026-08-26-a";
+const VERSION = "elemental-2026-08-26-b";
 
 const ASSETS = [
   "./",
@@ -46,7 +46,7 @@ self.addEventListener("fetch", e => {
 
   const url = new URL(req.url);
   // Never touch anything off this origin. Google sign-in and the Drive API must go
-  // straight to the network, and caching a Drive response would be actively wrong —
+  // straight to the network, and caching a Drive response would be actively wrong â€”
   // it would serve yesterday's news as though it were today's.
   if (url.origin !== self.location.origin) return;
 
