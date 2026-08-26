@@ -724,7 +724,9 @@ var TABS = [
   ["reports",   "Reports",   function () { return editions().length; }],
   ["liked",     "Liked",     function () { return arr(S.data && S.data.likedTitles).length; }],
   ["disliked",  "Disliked",  function () { return arr(S.data && S.data.dislikedTitles).length; }],
-  ["database",  "Database",  function () { return arr(S.data && S.data.competitors).length; }]
+  ["threats",   "Threats",   function () { return arr(S.data && S.data.savedReports).length; }],
+  ["database",  "Database",  function () { return arr(S.data && S.data.competitors).length; }],
+  ["snapshots", "Snapshots", function () { return arr(S.data && S.data.restorePoints).length; }]
 ];
 var TAB_TITLE = {
   alerts:    ["News",      "Window market intelligence"],
@@ -733,7 +735,9 @@ var TAB_TITLE = {
   reports:   ["Reports",   "Download a past edition"],
   liked:     ["Liked",     "What you marked useful"],
   disliked:  ["Disliked",  "What you pushed away"],
-  database:  ["Data",      "Competitors, markets and codes"]
+  threats:   ["Threats",   "Competitor threat analyses"],
+  database:  ["Data",      "Competitors, markets and codes"],
+  snapshots: ["Snapshots", "Restore points on your phone"]
 };
 
 /* ---------- drawer ---------- */
@@ -773,6 +777,27 @@ function renderDrawerNav() {
   });
 }
 
+/* Describe the RECURRENCE, not a single next firing — "9:00 AM on weekdays" tells you what
+   the rule is, where a lone timestamp reads as broken once it has passed. Mirrors the phone. */
+function alertScheduleText(g) {
+  var s = S.data && S.data.alertSchedule;
+  if (!s || !s.enabled) return g.alertInterval || "Off";
+  var h = s.hour == null ? 9 : s.hour, m = s.minute == null ? 0 : s.minute;
+  var ampm = h < 12 ? "AM" : "PM";
+  var h12 = (h % 12) === 0 ? 12 : (h % 12);
+  var time = h12 + ":" + (m < 10 ? "0" + m : m) + " " + ampm;
+  // Calendar.DAY_OF_WEEK: 1 = Sunday … 7 = Saturday.
+  var names = ["", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  var days = arr(s.days).slice().sort(function (a, b) { return a - b; });
+  var when;
+  if (days.length === 7) when = "every day";
+  else if (days.length === 5 && days.join() === "2,3,4,5,6") when = "Mon–Fri";
+  else if (days.length === 2 && days.join() === "1,7") when = "weekends";
+  else if (!days.length) when = "no days set";
+  else when = days.map(function (d) { return names[d] || d; }).join(", ");
+  return time + " · " + when;
+}
+
 /* The phone's settings list, mirrored READ-ONLY. The phone owns every value, so these
    are stated rather than offered — a control here would imply the web could change the
    phone, which it deliberately cannot. Values arrive in the backup's `settings` block. */
@@ -795,7 +820,7 @@ function renderDrawerSettings() {
     ["Spent today", rupee(g.spendToday)],
     ["Spent this month", rupee(g.spendMonth)],
     ["Google API key", g.hasApiKey ? "Set" : "Not set"],
-    ["Alerts", g.alertInterval || "Off"],
+    ["Alerts", alertScheduleText(g)],
     ["Automatic backup", g.autoRestoreInterval || "None"],
     ["Restore points", String(g.restorePointCount != null ? g.restorePointCount : "—")],
     ["Liked", String(g.likedCount != null ? g.likedCount : "—")],
@@ -960,6 +985,49 @@ function render() {
     });
     if (!out.length) app.appendChild(emptyState(S.tab === "liked" ? "Nothing liked yet." : "Nothing disliked yet."));
     else out.forEach(function (a) { app.appendChild(articleCard(a, {})); });
+  }
+  else if (S.tab === "threats") {
+    var reps = arr(d.savedReports).slice().sort(function (a, b) { return (b.timestamp || 0) - (a.timestamp || 0); });
+    if (!reps.length) app.appendChild(emptyState("No threat analyses yet."));
+    reps.forEach(function (r) {
+      var card = el("div", "card");
+      var top = el("div", "crow");
+      // Threat level is the one place colour is earned here — it is a severity, not decoration.
+      var lv = el("span", "cat", r.threatLevel || "—");
+      var sev = { CRITICAL: "var(--danger)", HIGH: "var(--danger)", MEDIUM: "var(--paid)", LOW: "var(--free)" };
+      if (sev[String(r.threatLevel || "").toUpperCase()]) lv.style.color = sev[String(r.threatLevel).toUpperCase()];
+      top.appendChild(lv);
+      top.appendChild(el("span", "meta", r.timestamp ? new Date(r.timestamp).toLocaleDateString("en-GB") : ""));
+      card.appendChild(top);
+      card.appendChild(el("p", "ttl", (r.competitorName || "Competitor") + " · " + (r.countryName || "")));
+      if (r.summaryText) card.appendChild(el("p", "sum", r.summaryText));
+      if (r.designTactics)    card.appendChild(kv("Design", r.designTactics));
+      if (r.marketingTactics) card.appendChild(kv("Marketing", r.marketingTactics));
+      if (r.marketTrends)     card.appendChild(kv("Trends", r.marketTrends));
+      app.appendChild(card);
+    });
+  }
+  else if (S.tab === "snapshots") {
+    var rps = arr(d.restorePoints).slice().sort(function (a, b) { return (b.timestamp || 0) - (a.timestamp || 0); });
+    if (!rps.length) app.appendChild(emptyState("No restore points."));
+    rps.forEach(function (rp) {
+      var card = el("div", "card");
+      card.appendChild(el("p", "ttl", rp.name));
+      card.appendChild(el("p", "sum", rp.timestamp ? new Date(rp.timestamp).toLocaleString("en-GB") : ""));
+      app.appendChild(card);
+    });
+    if (rps.length) {
+      var note = el("div", "info");
+      note.appendChild(el("div", "i", "i"));
+      var nc = el("div");
+      nc.appendChild(el("b", null, "Listed, not stored here"));
+      nc.appendChild(document.createTextNode(
+        "Each snapshot holds a full copy of every table. Sending those would turn one backup into " +
+        "several copies of the whole database, so only the name and date travel. Restoring one is " +
+        "done on the phone."));
+      note.appendChild(nc);
+      app.appendChild(note);
+    }
   }
   else if (S.tab === "database") {
     var comps = arr(d.competitors), prods = arr(d.competitorProducts);
