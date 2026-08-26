@@ -144,14 +144,45 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
 .dot{width:7px;height:7px;border-radius:50%;flex:0 0 7px}
 .srcchip .cv{color:var(--ink-3);font-size:12px}
 
-/* ---------- segmented control ---------- */
-.seg{display:flex;gap:2px;background:var(--track);border-radius:var(--r-box);padding:3px;
-  margin:16px 0 0;overflow-x:auto;scrollbar-width:none}
-.seg::-webkit-scrollbar{display:none}
-.seg button{flex:1 0 auto;white-space:nowrap;padding:9px 14px;border-radius:8px;
-  font-size:13.5px;font-weight:500;color:var(--ink-3)}
-.seg button.on{background:var(--track-on);color:var(--ink);font-weight:600}
-.seg .n{opacity:.6;font-weight:400;margin-left:5px}
+/* ---------- drawer ---------- */
+/* Slides over the page rather than pushing it, so the article you were reading does
+   not reflow while you navigate. The scrim is a sibling, never a parent, so closing
+   it can never leave an invisible layer over the app. */
+#scrim{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.45);opacity:0;
+  transition:opacity .22s ease;
+  /* pointer-events, not just opacity. A transparent element still absorbs clicks, so
+     while the scrim fades out it would block the app for the length of the animation —
+     and if the tidy-up timer were ever missed, forever. This makes that impossible. */
+  pointer-events:none}
+#scrim.on{opacity:1;pointer-events:auto}
+#drawer{position:fixed;top:0;left:0;bottom:0;z-index:50;width:min(310px,84vw);
+  background:var(--surface);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;
+  transform:translateX(-100%);transition:transform .24s cubic-bezier(.32,.72,0,1);
+  padding:max(18px,env(safe-area-inset-top)) 0 max(18px,env(safe-area-inset-bottom))}
+#drawer.on{transform:translateX(0)}
+@media (prefers-reduced-motion:reduce){
+  #drawer,#scrim{transition:none}
+}
+.dhead{display:flex;align-items:center;gap:11px;padding:0 18px 18px}
+.dhead .mark{width:24px;height:24px;flex:0 0 24px}
+.dhead .nm{font-size:16px;font-weight:600;letter-spacing:-.2px;flex:1}
+.dsec{font-size:11px;font-weight:600;letter-spacing:.8px;color:var(--ink-3);
+  text-transform:uppercase;padding:16px 18px 7px}
+.drow{display:flex;align-items:center;gap:11px;width:100%;text-align:left;
+  padding:10px 18px;font-size:14.5px;color:var(--ink-2);border-left:2.5px solid transparent}
+.drow:hover{background:var(--surface-2);color:var(--ink)}
+.drow.on{color:var(--accent);font-weight:600;border-left-color:var(--accent);
+  background:var(--accent-soft)}
+.drow .dn{margin-left:auto;font-size:12.5px;color:var(--ink-3);font-weight:400}
+.drow.on .dn{color:var(--accent);opacity:.8}
+/* Read-only settings rows: the phone owns these values, so they are stated, not offered. */
+.srow{display:flex;align-items:baseline;gap:12px;padding:8px 18px;font-size:13.5px}
+.srow .sk{color:var(--ink-3);flex:1}
+.srow .sv{color:var(--ink);text-align:right;font-weight:500}
+.srow .sv.dim{color:var(--ink-3);font-weight:400}
+.dnote{font-size:11.5px;color:var(--ink-3);line-height:1.6;padding:10px 18px 0}
+.dsep{height:1px;background:var(--line);margin:14px 18px 0}
 
 /* ---------- section label ---------- */
 .lbl{font-size:11px;font-weight:600;letter-spacing:.8px;color:var(--ink-3);
@@ -292,6 +323,8 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
   <div id="top">
     <div class="wrap">
       <div class="bar">
+        <button class="iconbtn" id="btnMenu" title="Menu" aria-label="Open menu"
+                aria-controls="drawer" aria-expanded="false"></button>
         <div class="mark" id="topMark"></div>
         <div class="sp"></div>
         <button class="iconbtn themebtn" id="btnTheme" title="Switch theme" aria-label="Switch theme"></button>
@@ -304,7 +337,6 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
         </div>
         <div class="srcchip" id="srcChip" hidden></div>
       </div>
-      <nav class="seg" id="tabs"></nav>
       <div class="status" id="status"></div>
     </div>
   </div>
@@ -319,6 +351,18 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
     </div>
   </div>
 </div>
+
+<div id="scrim" hidden></div>
+<nav id="drawer" aria-label="Sections and settings">
+  <div class="dhead">
+    <div class="mark" id="drawerMark"></div>
+    <div class="nm">Elemental</div>
+    <button class="iconbtn" id="btnClose" title="Close" aria-label="Close menu"></button>
+  </div>
+  <div id="drawerNav"></div>
+  <div class="dsep"></div>
+  <div id="drawerSettings"></div>
+</nav>
 
 <div id="ask" hidden></div>
 <div id="toast"></div>
@@ -384,6 +428,8 @@ var ICON_SUN = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stro
 var ICON_MOON = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z"/></svg>';
 /* A real cog, not a circle with spokes — spokes sit right next to the sun/moon
    toggle and read as a second sun. */
+var ICON_MENU = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
+var ICON_X = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 var ICON_GEAR = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>';
 
 /* ============================================================
@@ -690,15 +736,101 @@ var TAB_TITLE = {
   database:  ["Data",      "Competitors, markets and codes"]
 };
 
-function renderTabs() {
-  var n = $("#tabs"); n.innerHTML = "";
+/* ---------- drawer ---------- */
+function openDrawer() {
+  $("#scrim").hidden = false;
+  // Next frame, so the browser has a non-hidden starting state to transition FROM.
+  requestAnimationFrame(function () {
+    $("#scrim").classList.add("on");
+    $("#drawer").classList.add("on");
+  });
+  $("#btnMenu").setAttribute("aria-expanded", "true");
+  $("#btnClose").focus();
+}
+function closeDrawer() {
+  $("#scrim").classList.remove("on");
+  $("#drawer").classList.remove("on");
+  $("#btnMenu").setAttribute("aria-expanded", "false");
+  // Hide only after the fade, or the scrim would vanish instantly and the drawer
+  // would appear to slide out over nothing.
+  setTimeout(function () { if (!$("#drawer").classList.contains("on")) $("#scrim").hidden = true; }, 240);
+}
+function drawerOpen() { return $("#drawer").classList.contains("on"); }
+
+function renderDrawerNav() {
+  var n = $("#drawerNav"); n.innerHTML = "";
+  n.appendChild(el("div", "dsec", "Sections"));
   TABS.forEach(function (t) {
-    var b = el("button", S.tab === t[0] ? "on" : "");
-    b.appendChild(document.createTextNode(t[1]));
-    b.appendChild(el("span", "n", String(t[2]())));
-    b.onclick = function () { S.tab = t[0]; save(); render(); $("#scroll").scrollTop = 0; };
+    var b = el("button", "drow" + (S.tab === t[0] ? " on" : ""));
+    b.appendChild(el("span", null, t[1]));
+    b.appendChild(el("span", "dn", String(t[2]())));
+    b.onclick = function () {
+      S.tab = t[0]; save(); render();
+      $("#scroll").scrollTop = 0;
+      closeDrawer();
+    };
     n.appendChild(b);
   });
+}
+
+/* The phone's settings list, mirrored READ-ONLY. The phone owns every value, so these
+   are stated rather than offered — a control here would imply the web could change the
+   phone, which it deliberately cannot. Values arrive in the backup's `settings` block. */
+function renderDrawerSettings() {
+  var n = $("#drawerSettings"); n.innerHTML = "";
+  var g = (S.data && S.data.settings) || null;
+
+  n.appendChild(el("div", "dsec", "Settings on your phone"));
+  if (!g) {
+    n.appendChild(el("div", "dnote",
+      "Your phone has not sent its settings yet. Open Settings → Storage on the phone and press Back up."));
+    return;
+  }
+
+  var rupee = function (v) { return "₹" + (Number(v) || 0).toFixed(2); };
+  var srcName = { rss: "Free RSS", grounded: "Grounded", hybrid: "Hybrid" }[g.newsSource] || g.newsSource || "—";
+  var rows = [
+    ["News source", srcName, g.newsSource === "rss" ? "free" : "paid"],
+    ["Daily cost cap", g.dailyCostCap != null ? rupee(g.dailyCostCap) : "—"],
+    ["Spent today", rupee(g.spendToday)],
+    ["Spent this month", rupee(g.spendMonth)],
+    ["Google API key", g.hasApiKey ? "Set" : "Not set"],
+    ["Alerts", g.alertInterval || "Off"],
+    ["Automatic backup", g.autoRestoreInterval || "None"],
+    ["Restore points", String(g.restorePointCount != null ? g.restorePointCount : "—")],
+    ["Liked", String(g.likedCount != null ? g.likedCount : "—")],
+    ["Disliked", String(g.dislikedCount != null ? g.dislikedCount : "—")],
+    ["Theme", g.theme === "dark" ? "Dark" : "Light"],
+    ["Accent", g.accent || "—"],
+    ["Haptics", g.haptics ? "On" : "Off"]
+  ];
+  rows.forEach(function (r) {
+    var row = el("div", "srow");
+    row.appendChild(el("span", "sk", r[0]));
+    var v = el("span", "sv", r[1]);
+    // The one place colour is allowed here: the free-vs-paid signal, same as the phone.
+    if (r[2] === "free") v.style.color = "var(--free)";
+    if (r[2] === "paid") v.style.color = "var(--paid)";
+    row.appendChild(v);
+    n.appendChild(row);
+  });
+
+  n.appendChild(el("div", "dsec", "Device"));
+  [
+    ["App", (g.appVersion || "—") + " (" + (g.appBuild != null ? g.appBuild : "—") + ") · " + (g.flavor || "—")],
+    ["Phone", g.device || "—"],
+    ["Android", g.android || "—"],
+    ["Last backup", S.data.updatedAtMillis ? new Date(S.data.updatedAtMillis).toLocaleString("en-GB") : "—"]
+  ].forEach(function (r) {
+    var row = el("div", "srow");
+    row.appendChild(el("span", "sk", r[0]));
+    row.appendChild(el("span", "sv dim", r[1]));
+    n.appendChild(row);
+  });
+
+  n.appendChild(el("div", "dnote",
+    "These are shown as your phone last reported them. They cannot be changed here — " +
+    "the phone owns every setting, which is what stops this page overwriting anything."));
 }
 function renderTitle() {
   var t = TAB_TITLE[S.tab] || TAB_TITLE.alerts;
@@ -769,7 +901,7 @@ function linkRow(href, text) {
 }
 
 function render() {
-  renderTabs(); renderTitle();
+  renderDrawerNav(); renderDrawerSettings(); renderTitle();
   var app = $("#app"); app.innerHTML = "";
   var d = S.data, i;
 
@@ -1089,6 +1221,16 @@ sizeShell();
 $("#gateMark").innerHTML = MARK;
 $("#topMark").innerHTML = MARK;
 $("#btnSettings").innerHTML = ICON_GEAR;
+$("#btnMenu").innerHTML = ICON_MENU;
+$("#btnClose").innerHTML = ICON_X;
+$("#drawerMark").innerHTML = MARK;
+$("#btnMenu").onclick = openDrawer;
+$("#btnClose").onclick = closeDrawer;
+$("#scrim").onclick = closeDrawer;
+// Escape closes the drawer, matching the ask dialog.
+document.addEventListener("keydown", function (e) {
+  if (e.key === "Escape" && drawerOpen()) { e.preventDefault(); closeDrawer(); }
+});
 
 $("#signin").onclick = async function () {
   setGateStatus("Opening Google sign-in…");
