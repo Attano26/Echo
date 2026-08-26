@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Elemental</title>
 <meta name="description" content="Read your Elemental market intelligence, verify stories, and publish reports.">
-<meta name="theme-color" content="#0F0F12">
+<meta name="theme-color" content="#F5F5F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 
 <!--
@@ -39,18 +40,19 @@
 
 <style>
   /* Palette lifted from the phone app so the two read as one product.
-     Accent #6366F1 (Electric Indigo), canvas #0F0F12, card #1A1A22. */
+     Accent #6366F1 (Electric Indigo). Backgrounds follow the Sightline palette so the
+     phone, Sightline and this page all read as one family. */
   :root{
     --accent:#6366F1; --accent-soft:rgba(99,102,241,.13);
-    --bg:#0F0F12; --card:#1A1A22; --raised:#232331;
-    --text:#FFFFFF; --text2:#C9CAD3; --muted:#9A9CAB; --line:rgba(154,156,171,.15);
+    --bg:#000000; --card:#161618; --raised:#1F1F22;
+    --text:#F5F5F7; --text2:#C9CAD3; --muted:#9A9CAB; --line:rgba(154,156,171,.15);
     --danger:#F0616D; --ok:#10B981;
     --radius:14px;
   }
   @media (prefers-color-scheme: light){
     :root{
-      --bg:#FFFFFF; --card:#EFF0F3; --raised:#E4E5EA;
-      --text:#16161A; --text2:#3F4048; --muted:#5D5E66; --line:rgba(93,94,102,.18);
+      --bg:#F5F5F7; --card:#FFFFFF; --raised:#F7F7F9;
+      --text:#1D1D1F; --text2:#3F4048; --muted:#5D5E66; --line:rgba(93,94,102,.18);
     }
   }
   *{box-sizing:border-box}
