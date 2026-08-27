@@ -476,8 +476,11 @@ body.in .dhead .mark{ animation:railsweep 14s linear infinite }
 .w-stamp{margin-left:auto;font-size:calc(9 * var(--u));font-weight:500;color:var(--ink-3);
   line-height:1;font-variant-numeric:tabular-nums;flex:none;align-self:flex-start}
 /* The headline band: two lines' worth, whether it holds a figure or a word. Top-aligned, so
-   a one-line topic starts where a two-line one does instead of floating in the middle. */
-.w-head{height:calc(40 * var(--u));flex:0 0 auto;display:flex;align-items:flex-start}
+   a one-line topic starts where a two-line one does instead of floating in the middle.
+   overflow:hidden is a backstop: the band is a fixed 40u and everything below it is positioned
+   against that, so anything taller must clip rather than push into the description. */
+.w-head{height:calc(40 * var(--u));flex:0 0 auto;display:flex;align-items:flex-start;
+  overflow:hidden}
 .w-hero{display:flex;align-items:center;gap:calc(6 * var(--u))}
 /* Every hero figure in Arial Nova Light: one numeric voice across all eight. A light face at
    display size needs looser tracking than a bold one would. */
@@ -500,8 +503,15 @@ body.in .dhead .mark{ animation:railsweep 14s linear infinite }
 .w-foot{flex:0 0 auto;height:calc(33 * var(--u));
   display:flex;flex-direction:column;justify-content:center}
 /* The one hero WORD, set in the same light face as the hero figures. */
-.w-topic{font-family:var(--fs);font-weight:300;font-size:calc(19 * var(--u));
-  letter-spacing:-.012em;line-height:1.12;color:var(--ink);
+/* Two lines of this must fit the 40u band INCLUDING descenders. Squeezing the line-height
+   alone did not do it: at 1.02 the line boxes fitted (60px in 62px) but the painted glyphs
+   needed 65px, so the "gy" in "Thermal & energy" was shaved off. A line-height under about
+   1.15 cannot contain a descender, so the size comes down instead and the leading goes back up.
+   16u at 1.16 leaves real headroom: two lines paint in ~60px inside a 62px band. 17u fitted the
+   line boxes but still needed 63px once the glyphs were drawn, which is a 1px shave on anything
+   that wraps. */
+.w-topic{font-family:var(--fs);font-weight:300;font-size:calc(16 * var(--u));
+  letter-spacing:-.012em;line-height:1.16;color:var(--ink);
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 
 /* Status pill: state encoded as form, not only as colour. */
@@ -2900,8 +2910,10 @@ function renderWidgetStrip(w) {
        saying "7d" here was simply a different claim from the one the number answers. */
     g.appendChild(wTop("Top mover", "3M"));
     g.appendChild(wHead(el("p", "w-topic", w.moverName || "No mover")));
-    g.appendChild(wSay((up ? "Up " : "Down ") + Math.abs(d) + " points of share against its " +
-                       "own average. Now " + (w.moverSharePct || 0) + "% of coverage."));
+    // Two lines is the whole budget here. The long form ran to three and the third was
+    // clamped away, so the sentence ended mid-thought.
+    g.appendChild(wSay((up ? "Up " : "Down ") + Math.abs(d) + " pts on its own average. " +
+                       (w.moverSharePct || 0) + "% of coverage."));
     var f = wFoot();
     var series = arr(w.moverSeries);
     if (series.length > 1) {
