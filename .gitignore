@@ -1,4 +1,4 @@
-# Elemental is a static site (the web mirror of the Elemental competitor-intel app).
+# Echo is a static site (the web mirror of the Echo competitor-intel app).
 # Nothing here is built, and nothing secret belongs in it. Each user signs in with
 # their own Google account and enters their own Gemini key at runtime, stored only in
 # their own browser — so no key, token, or credential may ever appear in this repo.
@@ -12,7 +12,7 @@ Thumbs.db
 *.keystore
 *.jks
 
-# Internal working documents live alongside this repo in ../Elemental docs/, not inside it.
+# Internal working documents live alongside this repo in ../Echo docs/, not inside it.
 # Listed here so dropping a copy back in does not quietly publish it.
 PRD.md
 ARCHITECTURE.md

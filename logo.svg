@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-<!-- Elemental app tile: the mark on the app's own dark canvas (#0E0E0E), so the icon,
+<!-- Echo app tile: the mark on the app's own dark canvas (#0E0E0E), so the icon,
      the splash screen and the dark UI are all the same ground. -->
 <rect width="1024" height="1024" fill="#0E0E0E"/>
 <path fill="#F5F5F7" d="M112 110 H912 V336 H112 Z

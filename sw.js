@@ -1,4 +1,4 @@
-/* Elemental offline worker.
+/* Echo offline worker.
 
    In plain terms: it keeps a copy of the app on the device so it opens without a
    connection, and it tells the page when a newer version exists so you can take it
@@ -11,12 +11,12 @@
 
    Bump VERSION on every deploy. That is what tells every installed copy that
    something changed. */
-const VERSION = "elemental-2026-08-26-g";
+const VERSION = "echo-2026-08-26-g";
 
 const ASSETS = [
   "./",
   "./index.html",
-  "./elemental.html",
+  "./echo.html",
   "./manifest.webmanifest",
   "./logo.svg",
   "./favicon.svg",
@@ -63,7 +63,7 @@ self.addEventListener("fetch", e => {
           caches.open(VERSION).then(c => c.put(req, copy)).catch(() => {});
           return res;
         })
-        .catch(() => caches.match(req).then(hit => hit || caches.match("./elemental.html")))
+        .catch(() => caches.match(req).then(hit => hit || caches.match("./echo.html")))
     );
     return;
   }

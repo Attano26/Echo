@@ -1,10 +1,10 @@
-# Elemental
+# Echo
 
 Competitor and market intelligence for the outward-opening aluminium window industry. The phone app
 gathers the news. This is the web half: you read what it found, decide what holds up, and turn the
 verified stories into a report.
 
-**Use it at [attano26.github.io/Product_Market_Intel/elemental.html](https://attano26.github.io/Product_Market_Intel/elemental.html)**
+**Use it at [attano26.github.io/Product_Market_Intel/echo.html](https://attano26.github.io/Product_Market_Intel/echo.html)**
 
 ## What it does
 
@@ -26,8 +26,8 @@ Two files in your Drive, each with one writer:
 
 | File | Written by | Read by |
 |---|---|---|
-| `elemental-data.json` | the phone | this page |
-| `elemental-web-actions.json` | this page | the phone |
+| `echo-data.json` | the phone | this page |
+| `echo-web-actions.json` | this page | the phone |
 
 Because no field is written by both sides, neither can overwrite the other. This page can never
 destroy a news fetch your phone made while you were reading. Everything it writes is additive.

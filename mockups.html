@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Elemental — layout options</title>
+<title>Echo — layout options</title>
 <meta name="theme-color" content="#F5F5F7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0E0E0E" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 
 <!--
-  Elemental — layout options.
+  Echo — layout options.
 
   A THROWAWAY page for choosing a direction, not shipping code. It is deliberately
-  separate from elemental.html so nothing here can affect the live app, and it is not
+  separate from echo.html so nothing here can affect the live app, and it is not
   in the service worker's asset list so it will never be cached as part of the app.
 
   Three layouts, same real data shape, same design tokens as the phone. Switch between
@@ -326,7 +326,7 @@ function render(v){
   Array.prototype.forEach.call($("#pick").children, function(b){
     b.classList.toggle("on", b.dataset.v === v);
   });
-  try { localStorage.setItem("elemental.mock.layout", v); } catch(e){}
+  try { localStorage.setItem("echo.mock.layout", v); } catch(e){}
 }
 $("#pick").onclick = function(e){
   var b = e.target.closest("button"); if(b) render(b.dataset.v);
@@ -389,7 +389,7 @@ function paintHow(){
   var box = $("#installRow"); box.innerHTML = "";
   if (installed) return;
   if (deferredPrompt) {
-    var b = el("button","btn","Install Elemental");
+    var b = el("button","btn","Install Echo");
     b.onclick = async function(){
       b.disabled = true;
       deferredPrompt.prompt();
@@ -424,7 +424,7 @@ function paintSize(){ $("#wsize").textContent = window.innerWidth + "px wide"; }
 window.addEventListener("resize", function(){ paintSize(); paintHow(); });
 
 var saved = "a";
-try { saved = localStorage.getItem("elemental.mock.layout") || "a"; } catch(e){}
+try { saved = localStorage.getItem("echo.mock.layout") || "a"; } catch(e){}
 render(saved);
 paintSize();
 paintHow();

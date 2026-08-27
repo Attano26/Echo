@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Elemental</title>
+<title>Echo</title>
 <meta name="description" content="Read the market intelligence your phone gathered, verify what holds up, and publish it as a report.">
 <meta name="theme-color" content="#F5F5F7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0E0E0E" media="(prefers-color-scheme: dark)">
@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 
 <!--
-  Elemental — the web mirror of the Elemental Android app.
+  Echo — the web mirror of the Echo Android app.
 
   WHAT THIS IS
   A single static page. There is no server and no database. Your data lives in
@@ -24,8 +24,8 @@
   the verified ones into a report.
 
   THE SAFETY RULE — TWO FILES, ONE WRITER EACH
-    elemental-data.json          the phone writes it, this page only READS it
-    elemental-web-actions.json   this page writes it, the phone only READS it
+    echo-data.json          the phone writes it, this page only READS it
+    echo-web-actions.json   this page writes it, the phone only READS it
   Because no field is written by both sides, neither can overwrite the other and
   no version is ever silently lost. This page can never destroy a news fetch the
   phone made while you were here.
@@ -40,7 +40,7 @@
 
 <style>
 /* ============================================================
-   ELEMENTAL
+   ECHO
    The phone app's language on the web: one accent that only ever
    means "interactive", layered near-black surfaces, sentence case,
    and a large iOS-style title over a segmented control.
@@ -239,6 +239,14 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
 .btn:disabled{opacity:.45;cursor:default}
 .btn.ghost{background:none;color:var(--ink);border:1px solid var(--line)}
 .btn.sm{padding:8px 15px;font-size:13px}
+/* Google sign-in. Google's brand rules require the G mark to sit on white, so on our
+   accent pill it gets its own white disc rather than being dropped straight on the blue. */
+.btn.google{display:inline-flex;align-items:center;gap:11px;padding:5px 22px 5px 5px}
+.btn.google .glogo{
+  width:30px;height:30px;border-radius:50%;background:#fff;flex:none;
+  display:flex;align-items:center;justify-content:center
+}
+.btn.google .glogo svg{width:17px;height:17px;display:block}
 .link{color:var(--accent);font-weight:600;font-size:13.5px;padding:7px 9px;border-radius:8px}
 .link:hover{background:var(--accent-soft);text-decoration:none}
 
@@ -340,9 +348,19 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
   <button class="iconbtn themebtn" id="btnThemeGate" title="Switch theme" aria-label="Switch theme"></button>
   <div class="in">
     <div class="mark" id="gateMark"></div>
-    <h1>Elemental</h1>
+    <h1>Echo</h1>
     <p>Read the market intelligence your phone has gathered, verify what holds up, and turn it into a report.</p>
-    <button class="btn" id="signin">Sign in with Google</button>
+    <button class="btn google" id="signin">
+      <span class="glogo" aria-hidden="true">
+        <svg viewBox="0 0 48 48" focusable="false">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        </svg>
+      </span>
+      Sign in with Google
+    </button>
     <div class="status" id="gateStatus"></div>
   </div>
 </div>
@@ -386,7 +404,7 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
 <nav id="drawer" aria-label="Sections and settings">
   <div class="dhead">
     <div class="mark" id="drawerMark"></div>
-    <div class="nm">Elemental</div>
+    <div class="nm">Echo</div>
     <button class="iconbtn" id="btnClose" title="Close" aria-label="Close menu"></button>
   </div>
   <div id="drawerNav"></div>
@@ -411,9 +429,9 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
    page holds no API key of any kind. */
 var CLIENT_ID    = "653924371691-687hjiimvicq77nbk4l6osqoaio3nl4b.apps.googleusercontent.com";
 var SCOPE        = "https://www.googleapis.com/auth/drive.file";
-var DATA_FILE    = "elemental-data.json";
-var ACTIONS_FILE = "elemental-web-actions.json";
-var K = "elemental.web.v1";
+var DATA_FILE    = "echo-data.json";
+var ACTIONS_FILE = "echo-web-actions.json";
+var K = "echo.web.v1";
 
 /* ============================================================
    TINY HELPERS
@@ -446,10 +464,10 @@ function setGateStatus(msg, isErr) {
   var e = $("#gateStatus"); e.textContent = msg || ""; e.className = "status" + (isErr ? " err" : "");
 }
 
-/* The Elemental mark, inline so it takes currentColor and needs no network.
-   Same 1024 grid as favicon.svg and ElementalLogo() in the Android app, so the
+/* The Echo mark, inline so it takes currentColor and needs no network.
+   Same 1024 grid as favicon.svg and EchoLogo() in the Android app, so the
    web, the launcher icon and the phone's top bar can never drift apart. */
-var MARK = '<svg viewBox="0 0 1024 1024" width="100%" height="100%" role="img" aria-label="Elemental">' +
+var MARK = '<svg viewBox="0 0 1024 1024" width="100%" height="100%" role="img" aria-label="Echo">' +
   '<path fill="currentColor" d="M112 110 H912 V336 H112 Z' +
   ' M112 398 H338 A226 226 0 0 1 112 624 Z' +
   ' M400 398 H912 V624 H626 A226 226 0 0 1 400 398 Z' +
@@ -653,8 +671,23 @@ async function findFile(name) {
   var j = await r.json();
   return (j.files && j.files[0]) || null;
 }
+/* Falls back to the pre-rename filename.
+
+   The product was called "Elemental" until 2026-08-27. The PHONE renames its Drive file to the
+   echo-* name on its next backup, not the moment this page updates — so for the window between
+   this page going live and that push happening, the only file in Drive still carries the old name.
+   Without the fallback the page would find nothing and correctly report an empty backup, while the
+   real data sat beside it under a name nobody was asking for.
+
+   Read-only: this never RENAMES anything. The phone owns that file and does the rename itself, so
+   two writers can never race over it. Once the phone has pushed once, the fallback stops matching
+   and can be deleted. */
+var LEGACY_NAME = { "echo-data.json": "elemental-data.json",
+                    "echo-web-actions.json": "elemental-web-actions.json" };
+
 async function readJson(name) {
   var f = await findFile(name);
+  if (!f && LEGACY_NAME[name]) f = await findFile(LEGACY_NAME[name]);
   if (!f) return null;
   var r = await dFetch(FILES + "/" + f.id + "?alt=media");
   if (!r.ok) throw new Error("Could not read " + name + " (" + r.status + ").");
@@ -664,6 +697,24 @@ async function readJson(name) {
    phone uses, so both sides behave identically. */
 async function writeJson(name, obj) {
   var f = await findFile(name);
+  /* Adopt the pre-rename file rather than creating a second one beside it.
+
+     This page OWNS the actions file, so renaming it here is safe — there is no other writer to
+     race with. Skipping this would be the one way the rename could actually lose data: writeJson
+     would create an empty echo-web-actions.json, the phone's migration would then see the new name
+     already present and leave the old file alone, and everything the user had verified on the web
+     would be stranded in a file neither side reads. */
+  if (!f && LEGACY_NAME[name]) {
+    var old = await findFile(LEGACY_NAME[name]);
+    if (old) {
+      var mv = await dFetch(FILES + "/" + old.id, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify({ name: name })
+      });
+      if (mv.ok) f = old;
+    }
+  }
   if (!f) {
     var c = await dFetch(FILES + "?fields=id", {
       method: "POST",
