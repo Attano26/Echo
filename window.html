@@ -2896,7 +2896,7 @@ function renderWidgetStrip(w) {
     var g = el("div", "widget");
     var grid = arr(w.monthGrid), mx = w.monthMax || 1;
     g.appendChild(wTop("Coverage", w.monthLabel || null));
-    g.appendChild(wHead(wHero(w.monthTotal || 0, "stories<br>this month")));
+    g.appendChild(wHead(wHero(w.monthTotal || 0, "received<br>in " + (w.monthLabel || "this month"))));
     /* monthGrid is a 42-cell CALENDAR: -1 outside the month, and days 1..N sitting at an
        offset that depends on the weekday the month starts on. Taking the last 16 CELLS gave
        trailing padding, not recent days.
@@ -3177,7 +3177,7 @@ function renderDashboard(app, d) {
   anVolume(c.body, a);
   add(c);
 
-  c = anCard("News overview", "Of news received in " + AN_WIN + ", what you did with it");
+  c = anCard("News overview", "Of news received in the " + anPhrase(AN_WIN) + ", what you did with it");
   anOverview(c.body, cv, arr(d.alerts).length);
   add(c);
 
