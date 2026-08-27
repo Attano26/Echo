@@ -2752,7 +2752,10 @@ function renderWidgetStrip(w) {
   /* 1. Ready to publish. The only widget that nags: verified stories go stale quietly. */
   (function () {
     var g = el("div", "widget");
-    var ready = w.readyCount || 0;
+    /* This page's own list, like the Unverified tile: verified AND still in Alerts. The report
+       bar at the bottom of Alerts counts exactly this, and a tile that disagreed with the bar
+       two clicks away is worse than one that lags the phone by a backup. */
+    var ready = verifiedArticles().length;
     /* readyOldestDays is -1 when the stored dates cannot give an age. That is a sentinel, not
        a duration, and the phone's own widget guards on >= 1 before printing it. Do the same
        here rather than rendering "waited -1 days", which is what an unguarded read produces. */
@@ -2790,7 +2793,8 @@ function renderWidgetStrip(w) {
     var realDays = grid.filter(function (c) { return c >= 0; });
     var asOf = new Date((S.data && S.data.updatedAtMillis) || Date.now());
     var elapsed = realDays.slice(0, Math.max(1, asOf.getDate()));
-    var recent = elapsed.slice(-16);              // oldest left, most recent right
+    /* Most recent FIRST, so today is the leftmost bar and the days run backwards from it. */
+    var recent = elapsed.slice(-16).reverse();
     var live = recent.filter(function (c) { return c > 0; }).length;
     g.appendChild(wSay(recent.length
       ? live + " of the last " + recent.length + " days carried news."
@@ -2798,10 +2802,11 @@ function renderWidgetStrip(w) {
     var f = wFoot();
     if (recent.length) {
       var ticks = el("div", "wticks cov");
-      var firstDay = asOf.getDate() - recent.length + 1;
+      // recent[0] is today, so the day number counts DOWN as the bars go right.
+      var today = asOf.getDate();
       recent.forEach(function (c, i) {
         var t = el("i", c > 0 ? null : "spent");
-        t.title = (w.monthLabel || "") + " " + (firstDay + i) + ": " +
+        t.title = (w.monthLabel || "") + " " + (today - i) + ": " +
                   c + (c === 1 ? " story" : " stories");
         ticks.appendChild(t);
       });
