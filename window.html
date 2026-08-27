@@ -78,8 +78,17 @@
   --apph:100dvh;
   /* The Echo mark as a mask, so anything can wear its shape. Same path as MARK. */
   --echo-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024'><path fill='%23000' d='M112 110 H912 V336 H112 Z M112 398 H338 A226 226 0 0 1 112 624 Z M400 398 H912 V624 H626 A226 226 0 0 1 400 398 Z M112 686 A226 226 0 0 1 338 912 H112 Z M400 912 A226 226 0 0 1 626 686 H912 V912 Z'/></svg>");
-  /* The phone's five-stop brand ramp, in order. */
-  --brand-ramp:#F5D7FF,#FBC79B,#FF7B81,#5067FF,#F5D7FF;
+  /* The brand ramp for the WEB's sidebar sweep, listed as TWO identical periods.
+     Two periods is what makes the loop seamless: see .dhead .mark.
+
+     It is not the phone's ramp, deliberately. The phone plays this once, fast, as a landing
+     flourish, where a hard blue is the point. Here it runs forever in the corner of your eye,
+     where the same blue reads as a flashing light. So the blue is lighter, holds less of the
+     cycle, and returns through a soft violet rather than cutting straight back to lilac. */
+  --brand-ramp:
+    #F5D7FF 0%,  #FBC79B 11%, #FF9AA6 22%, #9AA6F0 32%, #CDB9F7 41%,
+    #F5D7FF 50%, #FBC79B 61%, #FF9AA6 72%, #9AA6F0 82%, #CDB9F7 91%,
+    #F5D7FF 100%;
   --bento-gap:14px;
   /* The widget set's status ramp, from the widget mockups. Deliberately NOT the accent:
      --accent means "interactive", and a widget is not. These four mean what they say. */
@@ -262,18 +271,26 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
   #drawer,#scrim{transition:none}
 }
 .dhead{display:flex;align-items:center;gap:11px;padding:0 18px 18px}
-/* The mark wears the brand gradient and sweeps it, matching the phone's landing flourish and
-   its resting sweep: same ramp, same bottom-left to top-right axis, same 4.5s cycle.
-   The div carries the gradient; the mask carries the shape. */
+/* The mark wears the brand gradient and sweeps it. The div carries the gradient; the mask
+   carries the shape, because a path filled with currentColor cannot hold a gradient. */
 .dhead .mark{
   width:24px;height:24px;flex:0 0 24px;
   background:linear-gradient(to top right,var(--brand-ramp));
-  background-size:280% 280%;
+  /* 200% + a two-period ramp is the whole seamless trick. See the keyframes. */
+  background-size:200% 200%;
   -webkit-mask:var(--echo-mask) center/contain no-repeat;
   mask:var(--echo-mask) center/contain no-repeat;
-  animation:railsweep 4.5s linear infinite;
 }
-/* Bottom-left to top-right, one whole period per cycle, so it loops without a seam. */
+/* THE ANIMATION IS GATED ON BEING SIGNED IN, and lives on <body> rather than on #shell:
+   the drawer is a SIBLING of #shell, not a child, so a descendant selector on #shell could
+   never reach it. start() adds .in, signOut() removes it, so the sweep cannot run on the
+   sign-in screen and costs nothing there. */
+body.in .dhead .mark{ animation:railsweep 14s linear infinite }
+
+/* Bottom-left to top-right by EXACTLY one period.
+   At background-size:200% the image is twice the box, so sliding from one edge to the other
+   moves it by one box width — and the image holds two identical periods, so one box width IS
+   one period. The last frame is pixel-identical to the first and the loop has no seam. */
 @keyframes railsweep{
   from{background-position:0% 100%}
   to{background-position:100% 0%}
@@ -1268,6 +1285,7 @@ function signOut() {
   S.token = ""; S.tokenExp = 0; S.data = null;
   save();
   $("#shell").hidden = true;
+  document.body.classList.remove("in");
   $("#gate").style.display = "";
   setGateStatus("Signed out here. Nothing was deleted from Drive.");
 }
@@ -2762,17 +2780,29 @@ function renderWidgetStrip(w) {
     var grid = arr(w.monthGrid), mx = w.monthMax || 1;
     g.appendChild(wTop("Coverage", w.monthLabel || null));
     g.appendChild(wHead(wHero(w.monthTotal || 0, "stories<br>this month")));
-    var recent = grid.slice(-16);
+    /* monthGrid is a 42-cell CALENDAR: -1 outside the month, and days 1..N sitting at an
+       offset that depends on the weekday the month starts on. Taking the last 16 CELLS gave
+       trailing padding, not recent days.
+
+       So: keep only real days, then drop the ones that have not happened yet. The backup's own
+       timestamp is what "today" means for this data — using the browser's clock would silently
+       disagree whenever the backup is a day or more old. */
+    var realDays = grid.filter(function (c) { return c >= 0; });
+    var asOf = new Date((S.data && S.data.updatedAtMillis) || Date.now());
+    var elapsed = realDays.slice(0, Math.max(1, asOf.getDate()));
+    var recent = elapsed.slice(-16);              // oldest left, most recent right
     var live = recent.filter(function (c) { return c > 0; }).length;
-    g.appendChild(wSay(grid.length
+    g.appendChild(wSay(recent.length
       ? live + " of the last " + recent.length + " days carried news."
       : "No daily breakdown recorded yet."));
     var f = wFoot();
-    if (grid.length) {
+    if (recent.length) {
       var ticks = el("div", "wticks cov");
-      recent.forEach(function (c) {
+      var firstDay = asOf.getDate() - recent.length + 1;
+      recent.forEach(function (c, i) {
         var t = el("i", c > 0 ? null : "spent");
-        t.title = c + (c === 1 ? " story" : " stories");
+        t.title = (w.monthLabel || "") + " " + (firstDay + i) + ": " +
+                  c + (c === 1 ? " story" : " stories");
         ticks.appendChild(t);
       });
       f.appendChild(ticks);
@@ -2881,7 +2911,14 @@ function renderWidgetStrip(w) {
      divider between two things when there is only one. */
   (function () {
     var g = el("div", "widget");
-    var un = w.alertsUnverified || 0, tot = w.alertsTotal || 0;
+    /* THIS PAGE'S OWN NUMBERS, not the phone's snapshot. The snapshot is the phone's feed
+       as of its last backup; this page hides anything published here since, and counts
+       anything verified here. Showing the phone's figure beside this page's alert list made
+       one screen disagree with itself: "86 of 112" over a sidebar reading 94. */
+    var open = alerts();
+    var vset = verifiedSet();
+    var tot = open.length;
+    var un = open.filter(function (a) { return !vset.has(key(a.title)); }).length;
     var pct = tot ? Math.round((un / tot) * 100) : 0;
     g.appendChild(wTop("Unverified"));
     g.appendChild(wHead(wHero(un, "of " + tot + "<br>in alerts",
@@ -3418,7 +3455,11 @@ function chAnsMetric(q, d, ix) {
   /* A bare "how many / status" question: what you hold, not what it cost. */
   stats = [
     ["Stories held", String(ix.docs.length), "everything the phone has sent"],
-    ["In alerts", String(alerts().length), (w.alertsUnverified || 0) + " unverified"],
+    ["In alerts", String(alerts().length), (function () {
+      // Same rule as the Unverified tile: this page's list, this page's verified set.
+      var vs = verifiedSet();
+      return alerts().filter(function (a) { return !vs.has(key(a.title)); }).length + " unverified";
+    })()],
     ["Published", String(published().length), chPl(editions().length, "edition", "editions")],
     ["Ready to publish", String(w.readyCount || 0),
      w.readyOldestDays ? "oldest waiting " + w.readyOldestDays + "d" : "verified, not yet in a report"]
@@ -4051,6 +4092,8 @@ async function loadEverything() {
 }
 
 async function start() {
+  // Signed in: the sidebar mark's gradient sweep keys off this. See body.in in the stylesheet.
+  document.body.classList.add("in");
   $("#gate").style.display = "none";
   $("#shell").hidden = false;
   applyTheme();
