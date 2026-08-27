@@ -128,6 +128,11 @@ a:hover{text-decoration:underline}
 /* ---------- shell ---------- */
 #shell{height:var(--apph);display:flex;flex-direction:column;overflow:hidden}
 .wrap{width:100%;max-width:880px;margin:0 auto;padding:0 20px}
+/* The dashboard is the one view that WANTS the whole screen. Article lists keep the 880px
+   measure because long headlines are read left-to-right and a 1600px line is punishing; a bento
+   grid is scanned, not read, so starving it of width just makes the tiles small and the page
+   look empty. #shell gets the wide class so the header and the grid stay aligned. */
+#shell.wide .wrap{max-width:1680px}
 #top{flex:0 0 auto;padding-top:max(14px,env(safe-area-inset-top))}
 #scroll{flex:1 1 auto;overflow-y:auto;overscroll-behavior:contain;padding-bottom:40px}
 
@@ -188,6 +193,7 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
   /* The reading column stops widening past a comfortable measure; the rest becomes margin.
      A 1600px-wide line of body text is unreadable however much room there is. */
   .wrap{max-width:820px;margin-left:0}
+  #shell.wide .wrap{max-width:1680px;margin-left:0}
 }
 /* The rail is the navigation on a wide screen, so the drawer's own close button is noise there. */
 @media (min-width:1000px){ #btnClose{display:none} }
@@ -345,18 +351,8 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
 .wtile .wv.sm{font-size:17px;letter-spacing:-.3px;font-weight:400}
 
 /* ---- the bento ---- */
-.bento{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-.bx{
-  background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-card);
-  box-shadow:var(--sh-1);padding:18px 20px;display:flex;flex-direction:column;min-height:132px;
-}
-.bx.w2{grid-column:span 2}
-.bx.w4{grid-column:span 4}
-.bxk{font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink-3)}
-.bxv{font-size:34px;font-weight:300;letter-spacing:-1.4px;line-height:1.1;margin-top:9px}
-.bxv.sm{font-size:22px;letter-spacing:-.5px}
-.bxc{font-size:12.5px;color:var(--ink-3);margin-top:6px;line-height:1.45}
-.bxfoot{margin-top:auto;padding-top:12px;font-size:12px;color:var(--ink-3)}
+.bento{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:start}
+/* A two-value row (metal prices). Everything else in the bento is a bar, a band or a cell. */
 .bxrow{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
   padding:7px 0;border-bottom:1px solid var(--line-2);font-size:13.5px}
 .bxrow:last-child{border-bottom:0}
@@ -371,24 +367,128 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
 .barfill{height:100%;border-radius:3px;background:var(--accent)}
 .barrow .bv{flex:0 0 auto;color:var(--ink-3);font-size:12px;min-width:22px;text-align:right}
 
-/* Coverage calendar: one square per day, the app's own month grid. */
-.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:12px}
-.cald{aspect-ratio:1;border-radius:4px;background:var(--surface-2)}
-.calw{font-size:9.5px;color:var(--ink-3);text-align:center;font-weight:500}
-
-/* Sparkline for the top mover. */
-.spark{width:100%;height:44px;margin-top:10px;display:block;overflow:visible}
-.spark path{fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-
 .dempty{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-card);
   padding:26px 22px;text-align:center;color:var(--ink-3);font-size:13.5px;line-height:1.6}
 
-@media (max-width:900px){ .bento{grid-template-columns:repeat(2,1fr)} .bx.w4{grid-column:span 2} }
+@media (max-width:900px){ .bento{grid-template-columns:repeat(2,1fr)} }
 @media (max-width:620px){
   /* One under another, the way the phone stacks them. */
   .bento{grid-template-columns:1fr}
-  .bx.w2,.bx.w4{grid-column:span 1}
   .wtile{flex-basis:136px}
+}
+
+/* ============================================================
+   ANALYTICS — the phone's Settings -> Analytics, card for card
+   ------------------------------------------------------------
+   Same cards, same order, same palette as AnalyticsPane.kt. The phone stacks them in one
+   column because it is 400px wide; here they sit in the bento so the width earns its keep,
+   but a card never changes what it says just because it has more room.
+   ============================================================ */
+.anhead{display:flex;align-items:baseline;justify-content:space-between;gap:16px;
+  margin:26px 0 12px;flex-wrap:wrap}
+.anhead h2{font-size:19px;font-weight:300;letter-spacing:-.3px}
+.anhead .sub{font-size:12.5px;color:var(--ink-3)}
+/* Window selector: the phone's 1M / 3M / 6M segmented control. */
+.anseg{display:inline-flex;background:var(--surface-2);border-radius:999px;padding:3px;gap:2px}
+.anseg button{border:0;background:transparent;color:var(--ink-3);font:inherit;font-size:12.5px;
+  padding:6px 15px;border-radius:999px;cursor:pointer;transition:background .16s,color .16s}
+.anseg button.on{background:var(--surface);color:var(--ink);box-shadow:var(--sh-1);font-weight:500}
+
+.ancard{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-card);
+  box-shadow:var(--sh-1);padding:18px 20px;display:flex;flex-direction:column;min-height:150px}
+.ancard.w2{grid-column:span 2}
+.ancard.w4{grid-column:span 4}
+.anttl{font-size:15px;font-weight:500;letter-spacing:-.1px}
+.ansub{font-size:12px;color:var(--ink-3);margin-top:3px;line-height:1.45}
+.anbody{margin-top:14px;display:flex;flex-direction:column;flex:1}
+.anempty{font-size:13px;color:var(--ink-3);padding:8px 0}
+.anfoot{margin-top:auto;padding-top:12px;font-size:12px;color:var(--ink-3)}
+
+/* Stat pair: the phone's two headline cards, Top mover and Emerging topic. */
+.anstat{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-card);
+  box-shadow:var(--sh-1);padding:16px 18px;display:flex;flex-direction:column;min-height:118px}
+.anstat .k{font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink-3)}
+.anstat .v{font-size:20px;font-weight:400;letter-spacing:-.3px;margin-top:9px;line-height:1.25}
+.anstat .c{font-size:12px;color:var(--ink-3);margin-top:auto;padding-top:8px;line-height:1.45}
+.anstat .rule{height:2px;border-radius:2px;width:26px;margin-top:10px}
+.anstat.w2{grid-column:span 2}
+
+/* News volume: stacked bars, one column per week, one colour per channel. */
+.stack{display:flex;align-items:flex-end;gap:6px;height:150px;padding-top:6px}
+.stackcol{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;min-width:0}
+.stackbar{width:100%;max-width:54px;margin:0 auto;display:flex;flex-direction:column-reverse;
+  border-radius:4px;overflow:hidden;min-height:2px;background:var(--surface-2)}
+/* A hairline between segments, so a stack of ten channels stays countable. */
+.stackseg{width:100%;min-height:2px;box-shadow:0 -1px 0 var(--surface) inset}
+.stackx{font-size:9.5px;color:var(--ink-3);text-align:center;margin-top:7px;overflow:hidden;
+  white-space:nowrap;text-overflow:ellipsis}
+.anlegend{display:flex;flex-wrap:wrap;gap:9px 14px;margin-top:14px}
+.lgi{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-3)}
+.lgd{width:8px;height:8px;border-radius:2px;flex:0 0 auto}
+
+/* The headline number a card leads with. */
+.anbig{display:flex;align-items:baseline;gap:9px;margin-bottom:12px;flex-wrap:wrap}
+.anbign{font-size:32px;font-weight:300;letter-spacing:-1.2px;line-height:1}
+.anbigl{font-size:12.5px;color:var(--ink-3)}
+
+/* Conversion flow: three columns of proportional bands. Height IS the count. */
+.flow{display:flex;gap:10px;height:190px}
+.flowcol{flex:1;display:flex;flex-direction:column;gap:3px;min-width:0}
+.flowk{font-size:10px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;
+  color:var(--ink-3);margin-bottom:5px}
+.flowband{border-radius:4px;min-height:16px;display:flex;align-items:center;padding:0 8px;
+  overflow:hidden}
+.flowlab{font-size:10.5px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  letter-spacing:.1px}
+
+/* Momentum: name, sparkline, delta. */
+.momrow{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line-2)}
+.momrow:last-child{border-bottom:0}
+.momn{flex:0 0 34%;font-size:13px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap}
+.momspark{flex:1;height:26px;min-width:0;overflow:visible}
+.momspark path{fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.momd{flex:0 0 auto;font-size:12.5px;font-weight:500;min-width:30px;text-align:right}
+
+/* Narrative ownership: one full-width bar per topic, split by competitor. */
+.narrow{display:flex;align-items:center;gap:11px;padding:7px 0;font-size:12.5px}
+.narn{flex:0 0 32%;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.narbar{flex:1;height:9px;border-radius:5px;overflow:hidden;display:flex;background:var(--surface-2)}
+.trendbar{flex:0 0 12px;height:12px;border-radius:6px;overflow:hidden;display:flex;
+  background:var(--surface-2)}
+.narseg{height:100%;min-width:2px}
+
+/* Heatmap: competitor x category. Opacity carries volume, one hue, no colour scale to decode. */
+.heatwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.heat{display:grid;gap:3px;min-width:340px}
+.heathc{font-size:9px;color:var(--ink-3);text-align:center;line-height:1.2;padding-bottom:3px;
+  overflow:hidden}
+.heathr{font-size:11.5px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;align-self:center;padding-right:6px}
+.heatc{height:26px;border-radius:3px;background:var(--surface-2)}
+
+/* Rising / cooling, the pair at the foot of Industry trends. */
+.rcgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:16px}
+.rck{font-size:10px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink-3);
+  margin-bottom:7px}
+.rcrow{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;padding:4px 0}
+.rcrow .n{color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rcrow .d{font-weight:500;flex:0 0 auto}
+
+/* Cost card: three figures across, the phone's Today / This month / Daily cap. */
+.costrow{display:flex;gap:18px;flex-wrap:wrap}
+.costcol{flex:1;min-width:96px}
+.costk{font-size:11.5px;color:var(--ink-3)}
+.costv{font-size:20px;font-weight:400;letter-spacing:-.4px;margin-top:3px}
+.costc{font-size:11px;color:var(--ink-3);line-height:1.5;margin-top:2px}
+
+@media (max-width:900px){ .ancard.w4{grid-column:span 2} }
+@media (max-width:620px){
+  .ancard.w2,.ancard.w4,.anstat.w2{grid-column:span 1}
+  .rcgrid{grid-template-columns:1fr;gap:14px}
+  .flow{height:auto;flex-direction:column}
+  .flowcol{flex-direction:row;align-items:stretch;height:64px;gap:3px;flex-wrap:nowrap}
+  .flowk{display:none}
 }
 
 .skel{background:var(--surface);border-radius:var(--r-card);height:104px;margin-bottom:10px;
@@ -1259,23 +1359,371 @@ function linkRow(href, text) {
 }
 
 /* ============================================================
+   ANALYTICS — the phone's Settings → Analytics, card for card
+   ------------------------------------------------------------
+   Every figure comes from `data.analytics`, which is computeAnalytics() serialised on the phone
+   for all three windows. The phone calculates; this file draws. Re-deriving share-of-voice or the
+   conversion cross-tab in JavaScript would be a second implementation of the same maths, and two
+   implementations drift until the phone and the web disagree in front of someone who trusts both.
+
+   Card order, titles, subtitles and colours follow AnalyticsPane.kt.
+   ============================================================ */
+
+/* The phone's analytics palette, verbatim. Accent first, so the leading series is the brand
+   colour on both screens. `palette` is for competitors, `segmentPalette` for the ten channels. */
+var AN_PALETTE = ["#1F57F5", "#06B6D4", "#F59E0B", "#EF4444", "#8B5CF6", "#10B981"];
+var AN_SEGMENTS = ["#1F57F5", "#06B6D4", "#F59E0B", "#EF4444", "#8B5CF6",
+                   "#10B981", "#EC4899", "#3B82F6", "#84CC16", "#F97316"];
+var AN_WIN = "1M";
+
+/* Window-aware copy, so every subtitle tracks the active filter exactly as on the phone. */
+function anPhrase(w) { return w === "1M" ? "last month" : (w === "3M" ? "last 3 months" : "last 6 months"); }
+function anUnit(w) { return w === "1M" ? "Weekly" : "Monthly"; }
+function anPeriod(w) { return w === "1M" ? "week" : "month"; }
+function anDelta(w) { return w === "1M" ? "week-over-week" : "month-over-month"; }
+
+function anCard(span, title, sub) {
+  var c = el("div", "ancard" + (span ? " " + span : ""));
+  c.appendChild(el("div", "anttl", title));
+  if (sub) c.appendChild(el("div", "ansub", sub));
+  var b = el("div", "anbody");
+  c.appendChild(b);
+  c.body = b;
+  return c;
+}
+function svgNode(name, attrs) {
+  var e = document.createElementNS("http://www.w3.org/2000/svg", name);
+  for (var k in attrs) if (Object.prototype.hasOwnProperty.call(attrs, k)) e.setAttribute(k, attrs[k]);
+  return e;
+}
+/* One bar row: name, proportional track, value. Shared by four cards. */
+function anBar(host, name, value, pct, colour) {
+  var row = el("div", "barrow");
+  row.appendChild(el("div", "bn", name));
+  var track = el("div", "bartrack");
+  var fill = el("div", "barfill");
+  fill.style.width = Math.max(2, pct) + "%";
+  if (colour) fill.style.background = colour;
+  track.appendChild(fill);
+  row.appendChild(track);
+  row.appendChild(el("div", "bv", value));
+  host.appendChild(row);
+  return row;
+}
+function anNote(host, text) { host.appendChild(el("div", "anempty", text)); }
+
+/* ---- API cost. The phone's top card: Today / This month / Daily cap. ---- */
+function anCost(host, st) {
+  var cols = [
+    ["Today", "≈ ₹" + (Number(st.spendToday) || 0).toFixed(2),
+     (st.searchesToday || 0) + " searches · " + (st.callsToday || 0) +
+       (st.callsToday === 1 ? " call" : " calls"),
+     (Number(st.tokensToday) || 0).toLocaleString("en-IN") + " tokens", null],
+    ["This month", "≈ ₹" + (Number(st.spendMonth) || 0).toFixed(2),
+     (st.searchesMonth || 0) + " searches",
+     (Number(st.tokensMonth) || 0).toLocaleString("en-IN") + " tokens", null],
+    ["Daily cap", "₹" + Math.round(Number(st.dailyCostCap) || 0), "in-app stop", "", "var(--accent)"]
+  ];
+  var row = el("div", "costrow");
+  cols.forEach(function (c) {
+    var col = el("div", "costcol");
+    col.appendChild(el("div", "costk", c[0]));
+    var v = el("div", "costv", c[1]);
+    if (c[4]) v.style.color = c[4];
+    col.appendChild(v);
+    if (c[2]) col.appendChild(el("div", "costc", c[2]));
+    if (c[3]) col.appendChild(el("div", "costc", c[3]));
+    row.appendChild(col);
+  });
+  host.appendChild(row);
+  host.appendChild(el("div", "anfoot",
+    "Estimate only — it assumes every search is billed, so the real bill is usually a little lower."));
+}
+
+/* ---- News volume: stacked bars, one column per week, one colour per channel. ---- */
+function anVolume(host, a) {
+  var weeks = arr(a.weekLabels), rows = arr(a.volPerWeek), cats = arr(a.volCategories);
+  if (!weeks.length) { anNote(host, "No news in this window."); return; }
+  var max = 1;
+  rows.forEach(function (r) {
+    max = Math.max(max, arr(r).reduce(function (x, y) { return x + y; }, 0));
+  });
+  var chart = el("div", "stack");
+  weeks.forEach(function (wk, wi) {
+    var col = el("div", "stackcol");
+    var bar = el("div", "stackbar");
+    var vals = arr(rows[wi]);
+    var total = vals.reduce(function (x, y) { return x + y; }, 0);
+    bar.style.height = Math.max(2, (total / max) * 100) + "%";
+    vals.forEach(function (v, ci) {
+      if (!v) return;
+      var seg = el("div", "stackseg");
+      seg.style.height = (v / total) * 100 + "%";
+      seg.style.background = AN_SEGMENTS[ci % AN_SEGMENTS.length];
+      seg.title = (cats[ci] || "") + ": " + v;
+      bar.appendChild(seg);
+    });
+    col.appendChild(bar);
+    col.appendChild(el("div", "stackx", wk));
+    chart.appendChild(col);
+  });
+  host.appendChild(chart);
+  var lg = el("div", "anlegend");
+  cats.forEach(function (c, ci) {
+    var it = el("span", "lgi");
+    var d = el("span", "lgd");
+    d.style.background = AN_SEGMENTS[ci % AN_SEGMENTS.length];
+    it.appendChild(d);
+    it.appendChild(el("span", null, c));
+    lg.appendChild(it);
+  });
+  host.appendChild(lg);
+}
+
+/* ---- News overview: of what arrived in the window, what you did with it. ---- */
+function anOverview(host, cv, inFeed) {
+  var surfaced = cv.surfaced || 0;
+  var head = el("div", "anbig");
+  head.appendChild(el("span", "anbign", String(surfaced)));
+  head.appendChild(el("span", "anbigl", "received · " + inFeed + " in the feed now"));
+  host.appendChild(head);
+  if (!surfaced) { anNote(host, "No news in this window."); return; }
+  [["Liked", cv.liked, "#10B981"], ["Disliked", cv.disliked, "#EF4444"],
+   ["Saved", cv.saved, "#F59E0B"], ["Verified", cv.verified, "#06B6D4"],
+   ["Published", cv.published, "#1F57F5"]].forEach(function (r) {
+    var n = r[1] || 0, pct = Math.round((n / surfaced) * 100);
+    anBar(host, r[0], n + " · " + pct + "%", pct, r[2]);
+  });
+}
+
+/* ---- Conversion flow: in feed / not → saved / not → outcome.
+   Three columns of bands; a band's height is its count, so the columns balance by eye. ---- */
+function anFlow(host, s) {
+  if (!s || !s.received) { anNote(host, "No news in this window."); return; }
+  var ab = arr(s.aToB), out = arr(s.outcomeTotals);
+  var stages = [
+    ["Received", [["in feed", s.inFeed || 0, "#1F57F5"],
+                  ["not in feed", s.notInFeed || 0, "#8E8E93"]]],
+    ["Kept", [["saved", s.saved || 0, "#F59E0B"],
+              ["not saved", s.notSaved || 0, "#8E8E93"]]],
+    ["Outcome", [["published", out[0] || 0, "#1F57F5"],
+                 ["verified", out[1] || 0, "#06B6D4"],
+                 ["deleted", out[2] || 0, "#EF4444"],
+                 ["open", out[3] || 0, "#8E8E93"]]]
+  ];
+  var flow = el("div", "flow");
+  stages.forEach(function (st) {
+    var col = el("div", "flowcol");
+    col.appendChild(el("div", "flowk", st[0]));
+    st[1].forEach(function (b) {
+      if (!b[1]) return;
+      var band = el("div", "flowband");
+      band.style.flexGrow = String(b[1]);
+      band.style.background = b[2];
+      band.title = b[0] + ": " + b[1];
+      band.appendChild(el("span", "flowlab", b[0] + " " + b[1]));
+      col.appendChild(band);
+    });
+    flow.appendChild(col);
+  });
+  host.appendChild(flow);
+  host.appendChild(el("div", "anfoot", (s.received || 0) + " stories routed"));
+}
+
+/* ---- Share of voice, by competitor. ---- */
+function anSov(host, sov) {
+  if (!sov.length) { anNote(host, "No competitor-matched news yet."); return; }
+  var total = sov.reduce(function (t, r) { return t + r.c; }, 0) || 1;
+  sov.slice(0, 8).forEach(function (r, i) {
+    var pct = Math.round((r.c / total) * 100);
+    anBar(host, r.n, r.c + " · " + pct + "%", pct, AN_PALETTE[i % AN_PALETTE.length]);
+  });
+}
+
+/* ---- Momentum: a sparkline per competitor with its delta. ---- */
+function anMomentum(host, list) {
+  if (!list.length) { anNote(host, "Not enough competitor-matched news yet."); return; }
+  list.slice(0, 6).forEach(function (m, i) {
+    var row = el("div", "momrow");
+    row.appendChild(el("div", "momn", m.n));
+    var w = arr(m.w);
+    var svg = svgNode("svg", { "class": "momspark", viewBox: "0 0 100 26", preserveAspectRatio: "none" });
+    if (w.length > 1) {
+      var mx = Math.max.apply(null, w) || 1, d = "";
+      w.forEach(function (v, k) {
+        d += (k ? " L" : "M") + ((k / (w.length - 1)) * 100).toFixed(1) +
+             " " + (24 - (v / mx) * 21).toFixed(1);
+      });
+      var path = svgNode("path", { d: d });
+      path.style.stroke = AN_PALETTE[i % AN_PALETTE.length];
+      svg.appendChild(path);
+    }
+    row.appendChild(svg);
+    var dv = m.d || 0;
+    var dl = el("div", "momd", (dv > 0 ? "+" : "") + dv);
+    dl.style.color = dv > 0 ? "#10B981" : (dv < 0 ? "#EF4444" : "var(--ink-3)");
+    row.appendChild(dl);
+    host.appendChild(row);
+  });
+}
+
+/* ---- Narrative ownership: per topic, whose coverage it is. ---- */
+function anNarrative(host, list, sovNames) {
+  if (!list.length) { anNote(host, "Not enough news yet."); return; }
+  /* Colour a competitor by its share-of-voice rank, so a rival looks the same on every card —
+     the phone does exactly this, and a name that changed colour card to card would read as a
+     different company. */
+  function colourFor(name) {
+    var i = sovNames.indexOf(name);
+    return i < 0 ? "#8E8E93" : AN_PALETTE[i % AN_PALETTE.length];
+  }
+  list.slice(0, 7).forEach(function (row) {
+    var segs = arr(row.seg);
+    var total = segs.reduce(function (t, x) { return t + x.c; }, 0) || 1;
+    var r = el("div", "narrow");
+    r.appendChild(el("div", "narn", row.cat));
+    var bar = el("div", "narbar");
+    segs.forEach(function (sg) {
+      var b = el("div", "narseg");
+      b.style.width = (sg.c / total) * 100 + "%";
+      b.style.background = colourFor(sg.n);
+      b.title = sg.n + ": " + sg.c;
+      bar.appendChild(b);
+    });
+    r.appendChild(bar);
+    r.appendChild(el("div", "bv", String(total)));
+    host.appendChild(r);
+  });
+}
+
+/* ---- Activity heatmap: competitor × category. ---- */
+function anHeat(host, a) {
+  var rows = arr(a.heatRows), cols = arr(a.heatCols), grid = arr(a.heat);
+  if (!rows.length || !cols.length) { anNote(host, "Not enough competitor-matched news yet."); return; }
+  var max = 1;
+  grid.forEach(function (r) { arr(r).forEach(function (v) { max = Math.max(max, v); }); });
+  var wrap = el("div", "heatwrap");
+  var tbl = el("div", "heat");
+  tbl.style.gridTemplateColumns = "minmax(84px,1.3fr) repeat(" + cols.length + ", minmax(26px,1fr))";
+  tbl.appendChild(el("div"));
+  cols.forEach(function (c) {
+    var h = el("div", "heathc", c.length > 10 ? c.slice(0, 9) + "…" : c);
+    h.title = c;
+    tbl.appendChild(h);
+  });
+  rows.forEach(function (rn, ri) {
+    var lab = el("div", "heathr", rn);
+    lab.title = rn;
+    tbl.appendChild(lab);
+    cols.forEach(function (cn, ci) {
+      var v = (arr(grid[ri])[ci]) || 0;
+      var cell = el("div", "heatc");
+      if (v > 0) {
+        // Opacity carries volume. One hue, so the eye reads density instead of decoding a scale.
+        cell.style.background = "var(--accent)";
+        cell.style.opacity = String(0.18 + 0.82 * (v / max));
+      }
+      cell.title = rn + " · " + cn + ": " + v;
+      tbl.appendChild(cell);
+    });
+  });
+  wrap.appendChild(tbl);
+  host.appendChild(wrap);
+}
+
+/* ---- Source diversity: where the intel comes from. ---- */
+function anSources(host, a) {
+  var src = arr(a.sources);
+  if (!src.length) { anNote(host, "No sources yet."); return; }
+  var max = src.reduce(function (t, r) { return Math.max(t, r.c); }, 1);
+  src.slice(0, 8).forEach(function (r, i) {
+    anBar(host, r.n, String(r.c), Math.round((r.c / max) * 100), AN_PALETTE[i % AN_PALETTE.length]);
+  });
+  host.appendChild(el("div", "anfoot",
+    (a.distinctSources || 0) + " distinct outlets in this window"));
+}
+
+/* ---- Industry trends: the tracked-theme mix, then what is rising and cooling. ---- */
+function anTrends(host, a) {
+  var g = arr(a.trendGroups);
+  if (!g.length) { anNote(host, "No tracked industry trends mentioned yet."); return; }
+  var total = g.reduce(function (t, r) { return t + r.c; }, 0) || 1;
+  var bar = el("div", "trendbar");
+  g.forEach(function (r, i) {
+    var b = el("div", "narseg");
+    b.style.width = (r.c / total) * 100 + "%";
+    b.style.background = AN_SEGMENTS[i % AN_SEGMENTS.length];
+    b.title = r.n + ": " + r.c;
+    bar.appendChild(b);
+  });
+  host.appendChild(bar);
+  var lg = el("div", "anlegend");
+  g.forEach(function (r, i) {
+    var it = el("span", "lgi");
+    var d = el("span", "lgd");
+    d.style.background = AN_SEGMENTS[i % AN_SEGMENTS.length];
+    it.appendChild(d);
+    it.appendChild(el("span", null, r.n + " " + r.c));
+    lg.appendChild(it);
+  });
+  host.appendChild(lg);
+
+  var kw = arr(a.keywords);
+  var rising = kw.filter(function (k) { return k.d > 0; })
+                 .sort(function (x, y) { return y.d - x.d; }).slice(0, 5);
+  var cooling = kw.filter(function (k) { return k.d < 0; })
+                  .sort(function (x, y) { return x.d - y.d; }).slice(0, 5);
+  if (!rising.length && !cooling.length) return;
+  var grid = el("div", "rcgrid");
+  [["Heating up", rising, "#10B981"], ["Cooling down", cooling, "#EF4444"]].forEach(function (side) {
+    var col = el("div");
+    col.appendChild(el("div", "rck", side[0]));
+    if (!side[1].length) col.appendChild(el("div", "anempty", "Nothing yet."));
+    side[1].forEach(function (k) {
+      var row = el("div", "rcrow");
+      row.appendChild(el("span", "n", k.n));
+      var d = el("span", "d", (k.d > 0 ? "+" : "") + k.d);
+      d.style.color = side[2];
+      row.appendChild(d);
+      col.appendChild(row);
+    });
+    grid.appendChild(col);
+  });
+  host.appendChild(grid);
+}
+
+/* ---- NALCO metal prices. The phone's Metal tab, at a glance. ---- */
+function anMetal(host, np) {
+  var latest = np[0];
+  var rows = el("div");
+  [["Ingot · IE07", latest.ingot], ["Billet · CH10 · 178–254 mm", latest.billet]].forEach(function (r) {
+    var row = el("div", "bxrow");
+    row.appendChild(el("span", "n", r[0]));
+    row.appendChild(el("span", "v", r[1] ? "₹" + Number(r[1]).toLocaleString("en-IN") + "/MT" : "—"));
+    rows.appendChild(row);
+  });
+  host.appendChild(rows);
+  /* Movement against the previous circular is the useful part — a price alone is just a number. */
+  if (np.length > 1) {
+    var prev = np[1], d = (Number(latest.ingot) || 0) - (Number(prev.ingot) || 0);
+    if (d) {
+      var mv = el("div", "anfoot",
+        "Ingot " + (d > 0 ? "up ₹" : "down ₹") + Math.abs(d).toLocaleString("en-IN") +
+        "/MT since " + (prev.effective || "the last circular"));
+      mv.style.color = d > 0 ? "#EF4444" : "#10B981";
+      host.appendChild(mv);
+    }
+  }
+  host.appendChild(el("div", "anfoot", "Effective " + (latest.effective || "—")));
+}
+
+/* ============================================================
    DASHBOARD
    ------------------------------------------------------------
-   Renders the PHONE'S OWN numbers. `data.widgets` is the WidgetSnapshot the phone
-   computes for its home-screen widgets and now ships in the backup, so a figure here
-   and the same figure on the phone's launcher cannot disagree — there is one
-   implementation of the maths and it lives on the phone. This file only draws.
-
-   If `widgets` is absent the phone is on an older build: say so plainly rather than
-   compute a lookalike, which would be the one way these two could drift apart.
+   Two zones. A horizontal strip of the phone's home-screen widgets for a glance, then the
+   Analytics bento underneath for the detail. The strip answers "is there anything to look at?",
+   the bento answers "what is it?".
    ============================================================ */
-function bx(cls, key, value, caption, opts) {
-  var b = el("div", "bx" + (cls ? " " + cls : ""));
-  b.appendChild(el("div", "bxk", key));
-  if (value != null) b.appendChild(el("div", "bxv" + ((opts && opts.sm) ? " sm" : ""), String(value)));
-  if (caption) b.appendChild(el("div", "bxc", caption));
-  return b;
-}
 function wtile(key, value, caption, small) {
   var t = el("div", "wtile");
   t.appendChild(el("div", "wk", key));
@@ -1284,203 +1732,146 @@ function wtile(key, value, caption, small) {
   return t;
 }
 function rupee(v) { return "₹" + (Number(v) || 0).toFixed(2); }
-function plural(n, one, many) { return n === 1 ? one : many; }
-
-/* Proportion as width. No axis, no gridlines — the comparison IS the bar. */
-function barList(host, rows, total) {
-  var max = 0, i;
-  for (i = 0; i < rows.length; i++) max = Math.max(max, rows[i][1]);
-  if (!max) max = 1;
-  rows.forEach(function (r) {
-    var row = el("div", "barrow");
-    row.appendChild(el("div", "bn", r[0]));
-    var track = el("div", "bartrack");
-    var fill = el("div", "barfill");
-    fill.style.width = Math.max(3, Math.round((r[1] / max) * 100)) + "%";
-    track.appendChild(fill);
-    row.appendChild(track);
-    row.appendChild(el("div", "bv", String(r[1])));
-    host.appendChild(row);
-  });
-}
-
-function sparkline(series) {
-  var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("class", "spark");
-  svg.setAttribute("preserveAspectRatio", "none");
-  var n = series.length;
-  if (n < 2) return svg;
-  var max = Math.max.apply(null, series) || 1;
-  svg.setAttribute("viewBox", "0 0 100 40");
-  var d = "";
-  series.forEach(function (v, i) {
-    var x = (i / (n - 1)) * 100;
-    var y = 38 - (v / max) * 34;
-    d += (i ? " L" : "M") + x.toFixed(1) + " " + y.toFixed(1);
-  });
-  var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  path.setAttribute("d", d);
-  svg.appendChild(path);
-  return svg;
-}
 
 function renderDashboard(app, d) {
-  var w = d.widgets || null;
   var wrap = el("div", "dash");
+  var w = d.widgets || {};
+  var an = d.analytics || null;
 
-  if (!w || !Object.keys(w).length) {
+  /* ---------- the glance strip: the eight home-screen widgets ---------- */
+  if (Object.keys(w).length) {
+    var strip = el("div", "wstrip");
+    var ready = w.readyCount || 0;
+    var trendTop = arr(w.trendTop);
+    var names = function (list) {
+      return arr(list).slice(0, 2).map(function (r) { return r.n; }).join(", ");
+    };
+    strip.appendChild(wtile("Ready to publish", ready,
+      ready ? (w.readyOldestDays ? "Oldest waiting " + w.readyOldestDays + "d"
+                                 : "Verified, not yet in a report")
+            : "Nothing waiting"));
+    strip.appendChild(wtile("Coverage", w.monthTotal || 0,
+      (w.monthLabel || "This month") + " · stories"));
+    strip.appendChild(wtile("Monthly spend", rupee(w.monthRupees), w.sourceMode || ""));
+    strip.appendChild(wtile("Industry trends", trendTop.length ? trendTop[0].n : "—",
+      (w.trendTotal || 0) + " stories · " + (w.trendWindowDays || 30) + "d", true));
+    strip.appendChild(wtile("Heating up", w.risingTrend || "—",
+      names(w.risingRunners) ? "then " + names(w.risingRunners) : "", true));
+    strip.appendChild(wtile("Cooling down", w.coolingTrend || "—",
+      names(w.coolingRunners) ? "then " + names(w.coolingRunners) : "", true));
+    strip.appendChild(wtile("Top mover", w.moverName || "—",
+      (w.moverDelta > 0 ? "+" : "") + (w.moverDelta || 0) + " · " + (w.moverSharePct || 0) + "% share", true));
+    strip.appendChild(wtile("Unverified", w.alertsUnverified || 0,
+      "of " + (w.alertsTotal || 0) + " in Alerts"));
+    wrap.appendChild(strip);
+  }
+
+  /* If the phone has not shipped its analytics yet, say so plainly rather than compute a
+     lookalike here — a lookalike is exactly how the two screens would start disagreeing. */
+  if (!an || !an[AN_WIN]) {
     wrap.appendChild(el("div", "dempty",
-      "Your phone has not sent its dashboard figures yet. Open Settings → Storage on the phone " +
-      "and press Back up — these numbers are computed there, so this page waits for them rather " +
-      "than working them out a second way."));
+      "Your phone has not sent its analytics yet. Open Settings → Storage on the phone and press " +
+      "Back up — these figures are computed there, so this page waits for them rather than " +
+      "working them out a second way."));
     app.appendChild(wrap);
     return;
   }
 
-  /* ---------- the glance strip: the eight home-screen widgets ---------- */
-  var strip = el("div", "wstrip");
-  var ready = w.readyCount || 0;
-  strip.appendChild(wtile("Ready to publish", ready,
-    ready ? (w.readyOldestDays ? "Oldest waiting " + w.readyOldestDays + "d" : "Verified, not yet in a report")
-          : "Nothing waiting"));
-  strip.appendChild(wtile("Coverage", w.monthTotal || 0,
-    (w.monthLabel || "This month") + " · stories"));
-  strip.appendChild(wtile("Monthly spend", rupee(w.monthRupees),
-    w.sourceMode ? String(w.sourceMode) : ""));
-  var trendTop = arr(w.trendTop);
-  strip.appendChild(wtile("Industry trends", trendTop.length ? trendTop[0].n : "—",
-    (w.trendTotal || 0) + " stories · " + (w.trendWindowDays || 30) + "d", true));
-  strip.appendChild(wtile("Heating up", w.risingTrend || "—",
-    arr(w.risingRunners).length ? "then " + arr(w.risingRunners).map(function (r) { return r.n; }).slice(0, 2).join(", ") : "", true));
-  strip.appendChild(wtile("Cooling down", w.coolingTrend || "—",
-    arr(w.coolingRunners).length ? "then " + arr(w.coolingRunners).map(function (r) { return r.n; }).slice(0, 2).join(", ") : "", true));
-  strip.appendChild(wtile("Top mover", w.moverName || "—",
-    (w.moverDelta > 0 ? "+" : "") + (w.moverDelta || 0) + " · " + (w.moverSharePct || 0) + "% share", true));
-  strip.appendChild(wtile("Unverified", w.alertsUnverified || 0,
-    "of " + (w.alertsTotal || 0) + " in Alerts"));
-  wrap.appendChild(strip);
+  var a = an[AN_WIN];
+  var cv = a.conversion || {};
+  var sov = arr(a.sov);
+  var sovNames = sov.map(function (r) { return r.n; });
 
-  /* ---------- the bento ---------- */
-  var g = el("div", "bento");
+  /* ---------- section header with the phone's 1M / 3M / 6M selector ---------- */
+  var head = el("div", "anhead");
+  var left = el("div");
+  left.appendChild(el("h2", null, "Analytics"));
+  left.appendChild(el("div", "sub", (a.totalCount || 0) + " stories · " + anPhrase(AN_WIN)));
+  head.appendChild(left);
+  var seg = el("div", "anseg");
+  ["1M", "3M", "6M"].forEach(function (k) {
+    if (!an[k]) return;
+    var b = el("button", AN_WIN === k ? "on" : null, k);
+    b.onclick = function () { AN_WIN = k; render(); };
+    seg.appendChild(b);
+  });
+  head.appendChild(seg);
+  wrap.appendChild(head);
 
-  /* Coverage owns two columns: a month of days needs the width to stay square. */
-  var cov = el("div", "bx w2");
-  cov.appendChild(el("div", "bxk", "Coverage · " + (w.monthLabel || "")));
-  cov.appendChild(el("div", "bxv", String(w.monthTotal || 0)));
-  cov.appendChild(el("div", "bxc", "stories this month"));
-  var grid = arr(w.monthGrid), mx = w.monthMax || 1;
-  if (grid.length) {
-    var cal = el("div", "cal");
-    ["S", "M", "T", "W", "T", "F", "S"].forEach(function (n) { cal.appendChild(el("div", "calw", n)); });
-    var lead = (w.monthWeekdays && w.monthWeekdays.length) ? 0 : 0;
-    for (var i = 0; i < lead; i++) cal.appendChild(el("div"));
-    grid.forEach(function (c) {
-      var cell = el("div", "cald");
-      if (c > 0) {
-        // Opacity carries volume: a busy day is solid, a quiet one barely there. One hue,
-        // so the eye reads density rather than trying to decode a colour scale.
-        cell.style.background = "var(--accent)";
-        cell.style.opacity = String(0.22 + 0.78 * Math.min(1, c / mx));
-      }
-      cell.title = c + " " + plural(c, "story", "stories");
-      cal.appendChild(cell);
-    });
-    cov.appendChild(cal);
+  if (!a.totalCount) {
+    wrap.appendChild(el("div", "dempty",
+      "No news in this window. Try a longer range, or refresh on the phone."));
+    app.appendChild(wrap);
+    return;
   }
-  g.appendChild(cov);
 
-  /* Industry trends: the mix, as bars. */
-  var tr = el("div", "bx w2");
-  tr.appendChild(el("div", "bxk", "Industry trends · " + (w.trendWindowDays || 30) + " days"));
-  if (trendTop.length) {
-    var rows = trendTop.map(function (t) { return [t.n, t.c]; });
-    if (w.trendOthers) rows.push(["Everything else", w.trendOthers]);
-    var holder = el("div"); holder.style.marginTop = "10px";
-    barList(holder, rows, w.trendTotal);
-    tr.appendChild(holder);
-    tr.appendChild(el("div", "bxfoot", (w.trendTotal || 0) + " stories in the window"));
-  } else tr.appendChild(el("div", "bxc", "Not enough stories yet to show a mix."));
-  g.appendChild(tr);
+  var g = el("div", "bento");
+  var c;
 
-  /* Top mover, with its series. */
-  var mv = el("div", "bx w2");
-  mv.appendChild(el("div", "bxk", "Top mover"));
-  mv.appendChild(el("div", "bxv sm", w.moverName || "—"));
-  mv.appendChild(el("div", "bxc",
-    (w.moverDelta > 0 ? "+" : "") + (w.moverDelta || 0) + " stories · " +
-    (w.moverSharePct || 0) + "% of coverage"));
-  var series = arr(w.moverSeries);
-  if (series.length > 1) mv.appendChild(sparkline(series));
-  g.appendChild(mv);
+  /* API cost, and the metal prices beside it — the two "what is this costing / what is it
+     worth" figures, together at the top where the phone puts cost. */
+  c = anCard("w2", "API cost (estimate)", "What this app is spending on your key");
+  anCost(c.body, d.settings || {});
+  g.appendChild(c);
 
-  /* Heating / cooling share a tile: they are the same measure in two directions. */
-  var hc = el("div", "bx w2");
-  hc.appendChild(el("div", "bxk", "Heating up · cooling down"));
-  var hcb = el("div"); hcb.style.marginTop = "8px";
-  var hot = el("div", "bxrow");
-  hot.appendChild(el("span", "n", w.risingTrend || "—"));
-  hot.appendChild(el("span", "v", "rising"));
-  hcb.appendChild(hot);
-  arr(w.risingRunners).slice(0, 2).forEach(function (r) {
-    var row = el("div", "bxrow");
-    row.appendChild(el("span", "n", r.n)); row.appendChild(el("span", "v", String(r.c)));
-    hcb.appendChild(row);
-  });
-  var cold = el("div", "bxrow");
-  cold.appendChild(el("span", "n", w.coolingTrend || "—"));
-  cold.appendChild(el("span", "v", "cooling"));
-  hcb.appendChild(cold);
-  arr(w.coolingRunners).slice(0, 2).forEach(function (r) {
-    var row = el("div", "bxrow");
-    row.appendChild(el("span", "n", r.n)); row.appendChild(el("span", "v", String(r.c)));
-    hcb.appendChild(row);
-  });
-  hc.appendChild(hcb);
-  g.appendChild(hc);
-
-  /* Single figures. */
-  g.appendChild(bx("", "Ready to publish", ready,
-    ready ? "verified, waiting for a report" : "nothing waiting"));
-  g.appendChild(bx("", "Unverified", w.alertsUnverified || 0,
-    "of " + (w.alertsTotal || 0) + " in Alerts"));
-  g.appendChild(bx("", "Spend · " + (w.monthLabel || "month"), rupee(w.monthRupees),
-    w.sourceMode ? String(w.sourceMode) : ""));
-  g.appendChild(bx("", "Tracked", w.trackedCount || 0,
-    (w.silentCount || 0) + " quiet for " + (w.quietDays || 0) + "d"));
-
-  /* NALCO prices — already in the payload, and the phone's own figures. */
   var np = arr(d.nalcoPrices);
   if (np.length) {
-    var latest = np[0];
-    var pr = el("div", "bx w2");
-    pr.appendChild(el("div", "bxk", "Metal · NALCO circular"));
-    var prow = el("div"); prow.style.marginTop = "8px";
-    [["Ingot · IE07", latest.ingot], ["Billet · CH10 178–254", latest.billet]].forEach(function (r) {
-      var row = el("div", "bxrow");
-      row.appendChild(el("span", "n", r[0]));
-      row.appendChild(el("span", "v", r[1] ? "₹" + Number(r[1]).toLocaleString("en-IN") + "/MT" : "—"));
-      prow.appendChild(row);
-    });
-    pr.appendChild(prow);
-    pr.appendChild(el("div", "bxfoot", "Effective " + (latest.effective || "—")));
-    g.appendChild(pr);
+    c = anCard("w2", "Metal · NALCO circular", "Ingot and billet, ex-works");
+    anMetal(c.body, np);
+    g.appendChild(c);
   }
 
-  /* Quiet competitors: a list of names is more use than a count of them. */
-  var quiet = arr(w.quietNames);
-  if (quiet.length) {
-    var q = el("div", "bx w2");
-    q.appendChild(el("div", "bxk", "Quiet · no news in " + (w.quietDays || 0) + " days"));
-    var qb = el("div"); qb.style.marginTop = "8px";
-    quiet.slice(0, 6).forEach(function (n) {
-      var row = el("div", "bxrow");
-      row.appendChild(el("span", "n", n));
-      qb.appendChild(row);
-    });
-    q.appendChild(qb);
-    if (quiet.length > 6) q.appendChild(el("div", "bxfoot", "and " + (quiet.length - 6) + " more"));
-    g.appendChild(q);
+  /* The phone's two headline stat cards. */
+  function statCard(k, v, caption, colour) {
+    var s = el("div", "anstat w2");
+    s.appendChild(el("div", "k", k));
+    s.appendChild(el("div", "v", v || "—"));
+    var rule = el("div", "rule");
+    rule.style.background = colour;
+    s.appendChild(rule);
+    s.appendChild(el("div", "c", caption));
+    return s;
   }
+  g.appendChild(statCard("Top mover", a.topMover,
+    "Biggest " + anDelta(AN_WIN) + " gain in share of voice", AN_PALETTE[0]));
+  g.appendChild(statCard("Emerging topic", a.emergingTopic,
+    "Channel rising fastest this " + anPeriod(AN_WIN), AN_PALETTE[2]));
+
+  c = anCard("w4", "News volume", "Stories by channel over time");
+  anVolume(c.body, a);
+  g.appendChild(c);
+
+  c = anCard("w2", "News overview", "Of news received in " + AN_WIN + ", what you did with it");
+  anOverview(c.body, cv, arr(d.alerts).length);
+  g.appendChild(c);
+
+  c = anCard("w2", "Conversion flow", "In feed / not → saved / not → outcome");
+  anFlow(c.body, a.sankey);
+  g.appendChild(c);
+
+  c = anCard("w2", "Share of voice", "By competitor · " + anPhrase(AN_WIN));
+  anSov(c.body, sov);
+  g.appendChild(c);
+
+  c = anCard("w2", "Momentum", anUnit(AN_WIN) + " coverage trend by competitor");
+  anMomentum(c.body, arr(a.momentum));
+  g.appendChild(c);
+
+  c = anCard("w2", "Narrative ownership", "Who owns each topic's coverage");
+  anNarrative(c.body, arr(a.narrative), sovNames);
+  g.appendChild(c);
+
+  c = anCard("w2", "Source diversity", "Where your intel comes from");
+  anSources(c.body, a);
+  g.appendChild(c);
+
+  c = anCard("w2", "Activity heatmap", "Competitor × category");
+  anHeat(c.body, a);
+  g.appendChild(c);
+
+  c = anCard("w2", "Industry trends", "Which tracked fenestration trends are heating up");
+  anTrends(c.body, a);
+  g.appendChild(c);
 
   wrap.appendChild(g);
   if (w.nextBriefing) wrap.appendChild(el("p", "dsub", "Next briefing " + w.nextBriefing));
@@ -1489,6 +1880,7 @@ function renderDashboard(app, d) {
 
 function render() {
   renderDrawerNav(); renderSyncRow(); renderDrawerSettings(); renderTitle();
+  $("#shell").classList.toggle("wide", S.tab === "dashboard");
   var app = $("#app"); app.innerHTML = "";
   var d = S.data, i;
 
