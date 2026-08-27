@@ -71,22 +71,40 @@
      sets font-weight:300 and only figures and labels climb above that. */
   --fs:'Arial Nova Light','Arial Nova','Segoe UI Light','Segoe UI',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;
   --apph:100dvh;
+  /* One easing curve for the whole interface, and the three durations that use it. */
+  --ease:cubic-bezier(.2,.7,.3,1);
+  --t-hover:200ms;
+  --t-sheet:280ms;
+  --t-reveal:420ms;
   /* Activity-heatmap ramp, light. Five steps, matching the phone's Heatmap(). */
   --heat-0:#EBEDF0; --heat-1:#9BE9A8; --heat-2:#40C463; --heat-3:#30A14E; --heat-4:#216E39;
 }
-/* System dark, unless the viewer has explicitly chosen light. */
+/* THE DARK PALETTE, AND THE ONE RULE ABOUT IT.
+   Dark has to be declared twice -- once for viewers whose system is dark and who have chosen
+   nothing, once for viewers who picked dark explicitly -- because a media query and an attribute
+   selector cannot be merged into one rule. THE TWO LISTS MUST STAY IDENTICAL, token for token.
+
+   They were not, and it showed: --line-2 and --sh-1 were only in the explicit block. On a first
+   visit with a dark system and no saved choice, every card fell back to the LIGHT border
+   (#EFEFF1) and drew a thick white outline. Toggling to light and back set data-theme="dark",
+   the second block took over, and the outline vanished -- which made it look like a rendering
+   glitch rather than a missing token.
+
+   So: never add a token to one of these blocks without adding it to the other. */
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
     --paper:#0E0E0E; --surface:#161618; --surface-2:#1F1F22;
     --track:#232329; --track-on:#43434E;
     --ink:#F5F5F7; --ink-2:#C9CAD3; --ink-3:#9A9CAB;
     --line:#2A2A2F;
+    --line-2:#242427;
     --accent-soft:rgba(31,87,245,.20);
+    --sh-1:0 1px 2px rgba(0,0,0,.5),0 6px 20px rgba(0,0,0,.4);
     --sh-2:0 2px 6px rgba(0,0,0,.55),0 14px 34px rgba(0,0,0,.5);
     --heat-0:#20222A; --heat-1:#0E4429; --heat-2:#006D32; --heat-3:#26A641; --heat-4:#39D353;
   }
 }
-/* An explicit choice wins over the system, in both directions. */
+/* An explicit choice wins over the system, in both directions. Same list as above. */
 :root[data-theme="dark"]{
   --paper:#0E0E0E; --surface:#161618; --surface-2:#1F1F22;
   --track:#232329; --track-on:#43434E;
@@ -166,7 +184,7 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
    not reflow while you navigate. The scrim is a sibling, never a parent, so closing
    it can never leave an invisible layer over the app. */
 #scrim{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.45);opacity:0;
-  transition:opacity .22s ease;
+  transition:opacity var(--t-hover) var(--ease);
   /* pointer-events, not just opacity. A transparent element still absorbs clicks, so
      while the scrim fades out it would block the app for the length of the animation —
      and if the tidy-up timer were ever missed, forever. This makes that impossible. */
@@ -175,7 +193,7 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
 #drawer{position:fixed;top:0;left:0;bottom:0;z-index:50;width:min(310px,84vw);
   background:var(--surface);border-right:1px solid var(--line);
   display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;
-  transform:translateX(-100%);transition:transform .24s cubic-bezier(.32,.72,0,1);
+  transform:translateX(-100%);transition:transform var(--t-sheet) var(--ease);
   padding:max(18px,env(safe-area-inset-top)) 0 max(18px,env(safe-area-inset-bottom))}
 #drawer.on{transform:translateX(0)}
 
@@ -208,13 +226,16 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
 .syncdot.ok{background:var(--free)}
 .syncdot.behind{background:var(--paid)}
 @media (prefers-reduced-motion:reduce){
+  /* All of it, not just the drawer: a viewer who asked for less motion meant the whole page. */
+  *,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;scroll-behavior:auto !important}
   #drawer,#scrim{transition:none}
 }
 .dhead{display:flex;align-items:center;gap:11px;padding:0 18px 18px}
 .dhead .mark{width:24px;height:24px;flex:0 0 24px}
 .dhead .nm{font-size:16px;font-weight:600;letter-spacing:-.2px;flex:1}
-.dsec{font-size:11px;font-weight:600;letter-spacing:.8px;color:var(--ink-3);
-  text-transform:uppercase;padding:16px 18px 7px}
+.dsec{font-size:12px;font-weight:600;letter-spacing:0;color:var(--ink-3);
+  padding:16px 18px 7px}
 .drow{display:flex;align-items:center;gap:11px;width:100%;text-align:left;
   padding:10px 18px;font-size:14.5px;color:var(--ink-2);border-left:2.5px solid transparent}
 .drow:hover{background:var(--surface-2);color:var(--ink)}
@@ -259,14 +280,13 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
 }
 
 /* ---------- section label ---------- */
-.lbl{font-size:11px;font-weight:600;letter-spacing:.8px;color:var(--ink-3);
-  text-transform:uppercase;margin:22px 0 10px}
+.lbl{font-size:13px;font-weight:600;letter-spacing:0;color:var(--ink-3);margin:22px 0 10px}
 
 /* ---------- cards ---------- */
 .list{padding-top:12px}
 .card{background:var(--surface);border-radius:var(--r-card);padding:16px;margin-bottom:10px}
 .crow{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.cat{font-size:11px;font-weight:600;letter-spacing:.5px;color:var(--accent);text-transform:uppercase}
+.cat{font-size:12.5px;font-weight:600;letter-spacing:0;color:var(--accent)}
 .meta{font-size:12px;color:var(--ink-3)}
 .ttl{font-size:15.5px;font-weight:600;line-height:1.4;margin:8px 0 0}
 .sum{font-size:13.5px;color:var(--ink-2);line-height:1.6;margin:8px 0 0}
@@ -348,8 +368,7 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
   border:1px solid var(--line-2);border-radius:var(--r-card);box-shadow:var(--sh-1);
   padding:13px 14px;min-height:104px;display:flex;flex-direction:column;gap:2px;
 }
-.wtile .wk{font-size:10px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;
-  color:var(--ink-3)}
+.wtile .wk{font-size:12.5px;font-weight:600;letter-spacing:0;color:var(--ink-3)}
 .wtile .wv{font-size:25px;font-weight:300;letter-spacing:-1px;line-height:1.15;margin-top:5px}
 .wtile .wc{font-size:11.5px;color:var(--ink-3);margin-top:auto;line-height:1.4}
 .wtile .wv.sm{font-size:17px;letter-spacing:-.3px;font-weight:400}
@@ -395,7 +414,9 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
 /* Window selector: the phone's 1M / 3M / 6M segmented control. */
 .anseg{display:inline-flex;background:var(--surface-2);border-radius:999px;padding:3px;gap:2px}
 .anseg button{border:0;background:transparent;color:var(--ink-3);font:inherit;font-size:12.5px;
-  padding:6px 15px;border-radius:999px;cursor:pointer;transition:background .16s,color .16s}
+  padding:6px 15px;border-radius:999px;cursor:pointer;
+  transition:background var(--t-hover) var(--ease),color var(--t-hover) var(--ease)}
+.anseg button:active{transform:scale(.97)}
 .anseg button.on{background:var(--surface);color:var(--ink);box-shadow:var(--sh-1);font-weight:500}
 
 .ancard{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-card);
@@ -411,7 +432,7 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
 /* Stat pair: the phone's two headline cards, Top mover and Emerging topic. */
 .anstat{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-card);
   box-shadow:var(--sh-1);padding:16px 18px;display:flex;flex-direction:column;min-height:118px}
-.anstat .k{font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink-3)}
+.anstat .k{font-size:12.5px;font-weight:600;letter-spacing:0;color:var(--ink-3)}
 .anstat .v{font-size:20px;font-weight:400;letter-spacing:-.3px;margin-top:9px;line-height:1.25}
 .anstat .c{font-size:12px;color:var(--ink-3);margin-top:auto;padding-top:8px;line-height:1.45}
 
@@ -489,8 +510,7 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
 .heatsw{width:13px;height:13px;border-radius:4px;flex:0 0 auto}
 
 /* Section labels inside Industry trends: By category, Rising, Cooling. */
-.rck{font-size:11px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;
-  color:var(--ink-3);margin-bottom:2px}
+.rck{font-size:12.5px;font-weight:600;letter-spacing:0;color:var(--ink-3);margin-bottom:2px}
 
 /* Cost card: three figures across, the phone's Today / This month / Daily cap. */
 .costrow{display:flex;gap:18px;flex-wrap:wrap}
@@ -533,7 +553,7 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
 #toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);z-index:70;
   background:var(--ink);color:var(--paper);padding:11px 18px;border-radius:var(--r-pill);
   font-size:13.5px;font-weight:500;box-shadow:var(--sh-2);opacity:0;pointer-events:none;
-  transition:opacity .2s,transform .2s;max-width:80vw;text-align:center}
+  transition:opacity var(--t-hover) var(--ease),transform var(--t-hover) var(--ease);max-width:80vw;text-align:center}
 #toast.on{opacity:1;transform:translate(-50%,0)}
 
 /* ---------- update bar ---------- */
@@ -609,13 +629,13 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
 .chctx button:hover{text-decoration:underline}
 .chbox{display:flex;align-items:center;gap:8px;background:var(--surface);
   border:1px solid var(--line);border-radius:var(--r-pill);padding:5px 5px 5px 18px;
-  transition:border-color .15s ease,box-shadow .15s ease}
+  transition:border-color var(--t-hover) var(--ease),box-shadow var(--t-hover) var(--ease)}
 .chbox:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .chin{flex:1;min-width:0;height:40px;border:0;background:transparent;outline:none;
   color:var(--ink);font-size:15px;font-weight:300}
 .chgo{flex:none;width:36px;height:36px;border-radius:50%;border:0;cursor:pointer;
   display:grid;place-items:center;background:var(--surface-2);color:var(--ink-3);
-  transition:background .15s ease,color .15s ease}
+  transition:background var(--t-hover) var(--ease),color var(--t-hover) var(--ease)}
 /* Lit only when there is something to send — the accent means "this will do something". */
 .chgo.on{background:var(--accent);color:#fff}
 
@@ -627,7 +647,7 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
 .chintro b{font-weight:500;color:var(--ink)}
 .chsug{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .chsg{text-align:left;background:var(--surface);border:1px solid var(--line);
-  border-radius:14px;padding:14px 16px;cursor:pointer;transition:border-color .15s ease}
+  border-radius:14px;padding:14px 16px;cursor:pointer;transition:border-color var(--t-hover) var(--ease)}
 .chsg:hover{border-color:var(--accent)}
 .chsg .k{display:block;margin-bottom:5px;font-size:12.5px;color:var(--accent)}
 .chsg .t{display:block;font-size:14.5px;line-height:1.45;color:var(--ink)}
@@ -640,7 +660,7 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
 .chbot{background:var(--surface);border:1px solid var(--line);
   border-radius:var(--r-card);padding:16px 18px;box-shadow:var(--sh-1)}
 .chwho{display:flex;align-items:center;gap:7px;margin-bottom:10px;
-  font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
+  font-size:12.5px;letter-spacing:0;color:var(--ink-3)}
 .chwho .m{display:block;width:13px;height:13px;color:var(--accent)}
 .chlead{margin:0;font-size:15.5px;line-height:1.55;color:var(--ink)}
 .chlead b{font-weight:500}
@@ -1355,7 +1375,7 @@ function renderDrawerSettings() {
   n.appendChild(el("div", "dsec", "On your phone"));
   if (!g) {
     n.appendChild(el("div", "dnote",
-      "Your phone has not sent its settings yet. Open Settings → Storage on the phone and press Back up."));
+      "Your phone has not sent its settings yet. Open Settings, then Storage, and press Back up."));
     return;
   }
 
@@ -1616,7 +1636,7 @@ function anCost(host, st) {
   });
   host.appendChild(row);
   host.appendChild(el("div", "anfoot",
-    "Estimate only — it assumes every search is billed, so the real bill is usually a little lower."));
+    "Estimate only. It assumes every search is billed, so the real bill is usually a little lower."));
 }
 
 /* ---- News volume: one narrow column per week, channels as separated blocks. ---- */
@@ -1928,7 +1948,7 @@ function anTrends(host, a) {
                  .sort(function (x, y) { return y.d - x.d; }).slice(0, 4);
   var cooling = kw.filter(function (k) { return k.d < 0; })
                   .sort(function (x, y) { return x.d - y.d; }).slice(0, 4);
-  [["↑ Rising", rising, "#10B981"], ["↓ Cooling", cooling, "#EF4444"]].forEach(function (side) {
+  [["Heating up", rising, "#10B981"], ["Cooling down", cooling, "#EF4444"]].forEach(function (side) {
     if (!side[1].length) return;
     var h = el("div", "rck", side[0]);
     h.style.color = side[2];
@@ -2026,9 +2046,9 @@ function renderDashboard(app, d) {
      lookalike here — a lookalike is exactly how the two screens would start disagreeing. */
   if (!an || !an[AN_WIN]) {
     wrap.appendChild(el("div", "dempty",
-      "Your phone has not sent its analytics yet. Open Settings → Storage on the phone and press " +
-      "Back up — these figures are computed there, so this page waits for them rather than " +
-      "working them out a second way."));
+      "Your phone has not sent its analytics yet. Open Settings, then Storage, and press Back " +
+      "up. These figures are computed there, so this page waits for them rather than working " +
+      "them out a second way."));
     app.appendChild(wrap);
     return;
   }
@@ -2105,7 +2125,7 @@ function renderDashboard(app, d) {
   anOverview(c.body, cv, arr(d.alerts).length);
   g.appendChild(c);
 
-  c = anCard("w2", "Conversion flow", "In feed / not → saved / not → outcome");
+  c = anCard("w2", "Conversion flow", "Where every story ended up, from the feed to a decision");
   anFlow(c.body, a.sankey);
   g.appendChild(c);
 
@@ -2508,7 +2528,7 @@ function chAnsMetric(q, d, ix) {
               ? "Your phone is on the free RSS feed, so most of this month is history rather than new spend."
               : "Your phone is on " + (st.newsSource === "hybrid" ? "hybrid" : "grounded") + " fetching.");
     return { q: q, kind: "metric", lead: lead, stats: stats, items: [], why: "",
-             note: "Estimate only — it assumes every search is billed, so the real bill is usually a " +
+             note: "Estimate only. It assumes every search is billed, so the real bill is usually a " +
                    "little lower. Same figures as Analytics on the phone; I do not recompute them." };
   }
 
@@ -2533,8 +2553,8 @@ function chAnsTrend(q, d) {
     return { q: q, kind: "trend",
       lead: "Your phone has not sent its analytics yet.",
       stats: [], items: [], why: "",
-      note: "Open Settings → Storage on the phone and press Back up. These figures are computed " +
-            "there, and I wait for them rather than working them out a second way." };
+      note: "Open Settings, then Storage, on the phone and press Back up. These figures are " +
+            "computed there, and I wait for them rather than working them out a second way." };
   }
   var kw = arr(a.keywords);
   var rising = kw.filter(function (k) { return k.d > 0; }).sort(function (x, y) { return y.d - x.d; }).slice(0, 3);
@@ -3115,7 +3135,7 @@ async function loadEverything() {
 
   if (!data) {
     S.data = { alerts: [] };
-    setStatus("Nothing in Drive yet. On your phone open Settings → Storage and press Back up.", true);
+    setStatus("Nothing in Drive yet. On your phone open Settings, then Storage, and press Back up.", true);
     render(); return;
   }
   S.data = data;
