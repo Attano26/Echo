@@ -3108,7 +3108,17 @@ function renderDashboard(app, d) {
   var head = el("div", "anhead");
   var left = el("div");
   left.appendChild(el("h2", null, "Analytics"));
-  left.appendChild(el("div", "sub", (a.totalCount || 0) + " stories · " + anPhrase(AN_WIN)));
+  /* COUNT WHAT THE CARDS BELOW ACTUALLY PLOT.
+     totalCount is `news.size` on the phone — the WHOLE feed, never filtered by the window — so
+     labelling it "· last month" was wrong, and it read the same at 1M, 3M and 6M because it
+     never varied. volPerWeek is the windowed volume the bars are drawn from, so its sum is the
+     number this heading is claiming. */
+  var inWindow = arr(a.volPerWeek).reduce(function (t, wk) {
+    return t + arr(wk).reduce(function (x, y) { return x + y; }, 0);
+  }, 0);
+  left.appendChild(el("div", "sub",
+    inWindow + (inWindow === 1 ? " story · " : " stories · ") + anPhrase(AN_WIN) +
+    "   ·   " + (a.totalCount || 0) + " in the feed"));
   head.appendChild(left);
   var seg = el("div", "anseg");
   ["1M", "3M", "6M"].forEach(function (k) {
