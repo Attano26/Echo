@@ -1090,7 +1090,25 @@ function load() {
 }
 
 /* ---------- derived views ---------- */
-function verifiedSet() { return new Set(S.actions.verifiedTitles.map(key)); }
+/* Verified on EITHER side counts as verified.
+   The phone ships what it has verified in the data file; this page keeps its own verifications
+   in the actions file, and the two are unioned for display. publishedSet has always done this;
+   verifiedSet did not, so a story you verified on the phone read "Not verified" here. That was
+   survivable when the state was a checkbox at the end of a row. With the state fixed in the
+   corner of every card it is the first thing you see, and it was wrong.
+   This is a READ of the phone's file. The one-writer rule is untouched: this page still only
+   ever writes echo-web-actions.json. */
+function verifiedSet() {
+  var s = new Set(S.actions.verifiedTitles.map(key));
+  arr(S.data && S.data.verifiedTitles).forEach(function (t) { s.add(key(t)); });
+  return s;
+}
+/* Verified BY THE PHONE, which this page can read but must never rewrite. Undoing one here
+   would only add it to the web's own list, leaving it verified twice and un-undoable, so the
+   card shows it as settled rather than offering an action that cannot work. */
+function verifiedOnPhone(title) {
+  return arr(S.data && S.data.verifiedTitles).map(key).indexOf(key(title)) >= 0;
+}
 function publishedSet() {
   var s = new Set(S.actions.publishedTitles.map(key));
   arr(S.data && S.data.publishedTitles).forEach(function (t) { s.add(key(t)); });
@@ -1732,12 +1750,18 @@ function articleCard(a, opts) {
     foot.appendChild(pub);
   } else if (opts.verifiable) {
     var on = verifiedSet().has(key(a.title));
-    if (on) {
-      // Still a button, so a mis-click is reversible from exactly where it happened.
+    if (on && verifiedOnPhone(a.title)) {
+      var fixed = el("span", "nstate on");
+      fixed.innerHTML = ICON_TICK;
+      fixed.appendChild(el("span", null, "Verified"));
+      fixed.title = "Verified on the phone. Change it there.";
+      foot.appendChild(fixed);
+    } else if (on) {
+      // Verified here, so it is ours to undo, from exactly where the mis-click happened.
       var undo = el("button", "nstate on");
       undo.innerHTML = ICON_TICK;
       undo.appendChild(el("span", null, "Verified"));
-      undo.title = "Verified. Click to undo.";
+      undo.title = "Verified here. Click to undo.";
       undo.onclick = function () { toggleVerify(a.title); };
       foot.appendChild(undo);
     } else {
