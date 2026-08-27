@@ -404,7 +404,7 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
   flex:0 0 auto;scroll-snap-align:start;
   width:calc(155 * var(--u));
   height:calc(155 * var(--u));
-  border-radius:calc(28 * var(--u));
+  border-radius:calc(22 * var(--u));
   background:var(--surface);
   box-shadow:var(--widget-shadow);
   padding:calc(14 * var(--u));
@@ -413,14 +413,24 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
   overflow:hidden;position:relative;
 }
 .widget p{margin:0}
-.w-top{display:flex;align-items:center;gap:calc(5 * var(--u));margin-bottom:calc(9 * var(--u))}
-.w-mark{width:calc(11 * var(--u));height:calc(11 * var(--u));color:var(--accent);flex:none;display:block}
+/* FOUR FIXED BANDS. Content no longer decides where anything sits, which is what makes the
+   divider land at the same height in all eight widgets. */
+.w-top{display:flex;align-items:center;gap:calc(5 * var(--u));
+  height:calc(12 * var(--u));flex:0 0 auto;margin-bottom:calc(8 * var(--u))}
+/* The mark takes --ink: white on the dark ground, near-black on the light one. A literal white
+   would be invisible in light mode, and the point is that it reads as the page's own ink. */
+.w-mark{width:calc(10.5 * var(--u));height:calc(10.5 * var(--u));color:var(--ink);
+  flex:none;display:block}
+/* line-height 1 on an all-caps label makes its box hug the caps, so centring the mark against
+   it aligns to the letters rather than to the empty descender space under them. */
 .w-label{font-family:var(--fs-title);font-size:calc(9 * var(--u));font-weight:600;
-  letter-spacing:.055em;text-transform:uppercase;color:var(--ink-3);
+  line-height:1;letter-spacing:.055em;text-transform:uppercase;color:var(--ink-3);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .w-stamp{margin-left:auto;font-size:calc(9 * var(--u));font-weight:500;color:var(--ink-3);
   font-variant-numeric:tabular-nums;flex:none}
-.w-hero{display:flex;align-items:center;gap:calc(5 * var(--u));margin-bottom:calc(3 * var(--u))}
+/* The headline band: two lines' worth, whether it holds a figure or a word. */
+.w-head{height:calc(40 * var(--u));flex:0 0 auto;display:flex;align-items:center}
+.w-hero{display:flex;align-items:center;gap:calc(6 * var(--u))}
 /* Every hero figure in Arial Nova Light: one numeric voice across all eight. A light face at
    display size needs looser tracking than a bold one would. */
 .w-num{font-family:var(--fs);font-size:calc(34 * var(--u));font-weight:300;
@@ -430,12 +440,18 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
 .w-line{font-size:calc(11.5 * var(--u));line-height:1.28;font-weight:500;color:var(--ink);
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
   max-height:calc(29.5 * var(--u))}
+/* The descriptive line, under the headline. Takes the slack so the footer stays put. */
+.w-say{flex:1 1 auto;min-height:0;overflow:hidden;font-size:calc(10 * var(--u));
+  color:var(--ink-2);line-height:1.35;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .w-sub{font-size:calc(10 * var(--u));color:var(--ink-2);line-height:1.35}
-.w-foot{margin-top:auto;padding-top:calc(8 * var(--u))}
+/* Fixed height, so the rule is at the same y in every widget in the row. */
+.w-foot{flex:0 0 auto;height:calc(40 * var(--u));padding-top:calc(9 * var(--u));
+  display:flex;flex-direction:column;justify-content:center}
 .w-foot.ruled{border-top:1px solid var(--line-2)}
 /* The one hero WORD, set in the same light face as the hero figures. */
 .w-topic{font-family:var(--fs);font-weight:300;font-size:calc(19 * var(--u));
-  letter-spacing:-.012em;line-height:1.08;color:var(--ink);
+  letter-spacing:-.012em;line-height:1.12;color:var(--ink);
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 
 /* Status pill: state encoded as form, not only as colour. */
@@ -471,7 +487,96 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
 
 /* The widget sparkline is its own thing: a fixed 100x34 box that never stretches, because the
    widget is a fixed square. No non-scaling tricks needed here. */
-.wspark{width:100%;height:calc(24 * var(--u));display:block}
+/* Edge to edge inside the widget's own padding, and as tall as the footer allows. */
+.wspark{width:100%;height:calc(31 * var(--u));display:block;margin-bottom:calc(-4 * var(--u))}
+
+/* ============================================================
+   NEWS WALL — the column wall, with search and filters above it
+   ------------------------------------------------------------
+   auto-fill with a minmax track: the browser counts the columns itself, so this works at 900px
+   and at 3400px with no breakpoint to maintain. min(330px,100%) so a narrow phone gets one
+   column instead of overflowing.
+
+   Every card is the same four corners: channel top left, date top right, source bottom left,
+   state bottom right. Once that is fixed, you stop reading each card and start reading the
+   wall -- the eye goes to one corner for the thing it wants.
+   ============================================================ */
+.wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(330px,100%),1fr));
+  gap:14px;align-content:start}
+
+.ncard{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-card);
+  box-shadow:var(--sh-1);padding:15px 17px 13px;display:flex;flex-direction:column;
+  transition:border-color var(--t-hover) var(--ease),box-shadow var(--t-hover) var(--ease)}
+.ncard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
+/* Both corner rows share one grid so the left and right items sit on the same baseline
+   however long the channel name is. */
+.ncorners{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.ncorners.foot{margin-top:auto;padding-top:13px}
+.nchan{font-family:var(--fs-title);font-size:12px;font-weight:600;color:var(--accent);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ndate{font-size:12px;color:var(--ink-3);white-space:nowrap;flex:0 0 auto;
+  font-variant-numeric:tabular-nums}
+.nttl{font-family:var(--fs-title);font-size:15px;font-weight:600;line-height:1.42;margin:9px 0 0}
+.nsum{font-size:13.5px;color:var(--ink-2);line-height:1.62;margin:8px 0 0}
+.nadv{font-size:13px;color:var(--ink-2);line-height:1.6;margin:11px 0 0;
+  padding-left:12px;border-left:2px solid var(--accent)}
+
+/* The source is a link when we have a URL for it, and looks like plain text until you are
+   about to use it. Underline on hover, not a permanent blue: a wall of twenty cards with
+   twenty blue lines along the bottom reads as navigation, which it is not. */
+.nsrc{font-size:12px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;background:none;border:0;padding:0;text-align:left;
+  transition:color var(--t-hover) var(--ease)}
+a.nsrc{text-decoration:none}
+a.nsrc:hover,a.nsrc:focus-visible{color:var(--accent);text-decoration:underline;
+  text-underline-offset:2px}
+.nsrc .ext{opacity:.7;margin-left:3px}
+
+/* State, bottom right. Unverified is a control, not a badge: hovering warms it and clicking
+   verifies, so the commonest action on this page costs one click from where the eye already is. */
+.nstate{display:inline-flex;align-items:center;gap:5px;font-size:12px;flex:0 0 auto;
+  border-radius:var(--r-pill);padding:4px 10px;white-space:nowrap;
+  transition:background var(--t-hover) var(--ease),color var(--t-hover) var(--ease)}
+.nstate svg{width:13px;height:13px;flex:none}
+.nstate.on{color:var(--good);background:color-mix(in srgb,var(--good) 13%,transparent)}
+button.nstate{color:var(--ink-3);background:var(--surface-2);cursor:pointer}
+button.nstate:hover,button.nstate:focus-visible{color:var(--good);
+  background:color-mix(in srgb,var(--good) 15%,transparent)}
+button.nstate:active{transform:scale(.97)}
+.nstate.pub{color:var(--accent);background:var(--accent-soft)}
+
+/* ---------- search, with the filter living inside it ---------- */
+.nsearch{display:flex;flex-direction:column;gap:12px;margin-bottom:16px}
+.nfield{display:flex;align-items:center;gap:10px;background:var(--surface);
+  border:1px solid var(--line-2);border-radius:var(--r-pill);padding:0 6px 0 15px;
+  box-shadow:var(--sh-1);transition:border-color var(--t-hover) var(--ease)}
+.nfield:focus-within{border-color:var(--accent)}
+.nfield svg{width:17px;height:17px;color:var(--ink-3);flex:none}
+.nfield input{flex:1;min-width:0;border:0;background:none;color:var(--ink);font:inherit;
+  font-size:14.5px;padding:12px 0;outline:none}
+.nfield input::placeholder{color:var(--ink-3)}
+.nfbtn{width:34px;height:34px;flex:none;border-radius:var(--r-pill);display:grid;
+  place-items:center;color:var(--ink-3);position:relative;
+  transition:background var(--t-hover) var(--ease),color var(--t-hover) var(--ease)}
+.nfbtn:hover{background:var(--surface-2);color:var(--ink)}
+.nfbtn.on{color:var(--accent);background:var(--accent-soft)}
+.nfbtn .badge{position:absolute;top:1px;right:1px;min-width:15px;height:15px;
+  border-radius:var(--r-pill);background:var(--accent);color:#fff;font-size:10px;
+  font-family:var(--fs-title);font-weight:600;display:grid;place-items:center;padding:0 3px}
+
+.nfilters{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-card);
+  padding:15px 17px;display:flex;flex-direction:column;gap:15px;box-shadow:var(--sh-1)}
+.nfgroup{display:flex;flex-direction:column;gap:9px}
+.nfgroup h4{font-family:var(--fs-title);font-size:12px;font-weight:600;color:var(--ink-3);margin:0}
+.nchips{display:flex;flex-wrap:wrap;gap:7px}
+.nchip{font-size:12.5px;border:1px solid var(--line-2);background:var(--surface-2);
+  border-radius:var(--r-box);padding:6px 12px;color:var(--ink-2);
+  transition:background var(--t-hover) var(--ease),color var(--t-hover) var(--ease),
+             border-color var(--t-hover) var(--ease)}
+.nchip:hover{border-color:var(--line)}
+.nchip.on{background:var(--accent-soft);border-color:transparent;color:var(--accent);
+  font-family:var(--fs-title);font-weight:600}
+.ncount{font-size:13px;color:var(--ink-3)}
 
 /* ---- the bento ---- */
 /* Columns, filled shortest-first by layoutBento(). One --bento-gap in both directions is the
@@ -1548,38 +1653,251 @@ function renderTitle() {
   chip.appendChild(el("span", "cv", "on phone"));
 }
 
+/* ============================================================
+   THE NEWS WALL
+   ------------------------------------------------------------
+   Every page that lists stories -- alerts, saved, published, liked, disliked -- renders through
+   this. One card, one search field, one filter panel, so a habit learned on Alerts works
+   everywhere else.
+
+   The card is four corners: channel top left, date top right, source bottom left, state bottom
+   right. Fixing the positions is the whole idea. Once they never move, you stop reading each
+   card and start reading the wall, going to one corner for the thing you want.
+
+   Search and filters mirror the phone: one field, the filter tucked inside it with a count
+   badge, and three chip groups (competitor, market, channel) where "All" is the reset.
+   ============================================================ */
+
+var ICON_SEARCH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+  'stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>';
+var ICON_SLIDERS = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" ' +
+  'stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/>' +
+  '<circle cx="9" cy="6" r="2.1" fill="currentColor" stroke="none"/>' +
+  '<circle cx="15" cy="12" r="2.1" fill="currentColor" stroke="none"/>' +
+  '<circle cx="8" cy="18" r="2.1" fill="currentColor" stroke="none"/></svg>';
+var ICON_X = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" ' +
+  'stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+var ICON_TICK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" ' +
+  'stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+
+/* Search and filter state lives per tab, so switching to Saved and back does not lose the
+   query you were part way through typing on Alerts. */
+var WALL = {};
+function wallState() {
+  if (!WALL[S.tab]) WALL[S.tab] = { q: "", open: false, comp: [], land: [], chan: [] };
+  return WALL[S.tab];
+}
+function toggleIn(list, v) {
+  var i = list.indexOf(v);
+  if (i >= 0) list.splice(i, 1); else list.push(v);
+}
+
+/* One story. The four corners never move. */
 function articleCard(a, opts) {
   opts = opts || {};
-  var card = el("div", "card");
-  var top = el("div", "crow");
-  top.appendChild(el("span", "cat", a.category || "News"));
-  top.appendChild(el("span", "meta", a.date || ""));
-  card.appendChild(top);
-  card.appendChild(el("p", "ttl", a.title));
-  if (a.summary) card.appendChild(el("p", "sum", a.summary));
-  if (a.pmAdvisory) card.appendChild(el("p", "adv", a.pmAdvisory));
+  var card = el("div", "ncard");
 
-  var acts = el("div", "acts");
+  var top = el("div", "ncorners");
+  top.appendChild(el("span", "nchan", a.category || "News"));
+  top.appendChild(el("span", "ndate", a.date || ""));
+  card.appendChild(top);
+
+  card.appendChild(el("p", "nttl", a.title));
+  if (a.summary) card.appendChild(el("p", "nsum", a.summary));
+  if (a.pmAdvisory) card.appendChild(el("p", "nadv", a.pmAdvisory));
+
+  var foot = el("div", "ncorners foot");
+
+  /* Bottom left: the source. A link when we have a URL, plain text when we do not, so it never
+     promises a destination it cannot reach. */
   if (a.sourceUrl) {
-    var link = el("a", "link", (a.source || "Source") + " ↗");
-    link.href = a.sourceUrl; link.target = "_blank"; link.rel = "noopener noreferrer";
-    acts.appendChild(link);
-  } else if (a.source) {
-    acts.appendChild(el("span", "meta", a.source));
+    var link = el("a", "nsrc");
+    link.href = a.sourceUrl;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.title = "Open " + (a.source || "the source") + " in a new tab";
+    link.appendChild(document.createTextNode(a.source || "Source"));
+    var ext = el("span", "ext", "↗");
+    link.appendChild(ext);
+    foot.appendChild(link);
+  } else {
+    foot.appendChild(el("span", "nsrc", a.source || ""));
   }
-  if (opts.verifiable) {
+
+  /* Bottom right: the state. On a verifiable page an unverified story is a BUTTON, so the
+     commonest action costs one click from where the eye already is. */
+  if (opts.publishedPill) {
+    var pub = el("span", "nstate pub");
+    pub.appendChild(el("span", null, "Published"));
+    foot.appendChild(pub);
+  } else if (opts.verifiable) {
     var on = verifiedSet().has(key(a.title));
-    var lab = el("label", "vf" + (on ? " on" : ""));
-    var cb = el("input"); cb.type = "checkbox"; cb.checked = on;
-    cb.onchange = function () { toggleVerify(a.title); };
-    lab.appendChild(cb);
-    lab.appendChild(document.createTextNode(on ? "Verified" : "Mark verified"));
-    acts.appendChild(lab);
+    if (on) {
+      // Still a button, so a mis-click is reversible from exactly where it happened.
+      var undo = el("button", "nstate on");
+      undo.innerHTML = ICON_TICK;
+      undo.appendChild(el("span", null, "Verified"));
+      undo.title = "Verified. Click to undo.";
+      undo.onclick = function () { toggleVerify(a.title); };
+      foot.appendChild(undo);
+    } else {
+      var b = el("button", "nstate");
+      b.appendChild(el("span", null, "Not verified"));
+      b.title = "Click to mark this verified";
+      b.onclick = function () { toggleVerify(a.title); };
+      foot.appendChild(b);
+    }
   }
-  if (opts.publishedPill) acts.appendChild(el("span", "pill ok", "Published"));
-  card.appendChild(acts);
+  card.appendChild(foot);
   return card;
 }
+
+/* Everything a story can be matched on, lowercased once. */
+function articleHaystack(a) {
+  return [a.title, a.summary, a.pmAdvisory, a.source, a.category]
+    .filter(Boolean).join(" ").toLowerCase();
+}
+
+/* The wall: search, filters, then the cards that survive both. */
+function newsWall(app, list, opts) {
+  opts = opts || {};
+  var st = wallState();
+  var d = S.data || {};
+
+  /* Filter vocabularies come from what is actually in this list, not from the whole database.
+     A chip that filters to nothing is a dead control, and offering ten of them is worse than
+     offering the four that can do something. */
+  var chanSet = {}, compSet = {}, landSet = {};
+  var compNames = arr(d.competitors).map(function (c) { return c && c.name; }).filter(Boolean);
+  var landNames = arr(d.countries).map(function (c) { return c && c.name; }).filter(Boolean);
+  list.forEach(function (a) {
+    if (a.category) chanSet[a.category] = 1;
+    var hay = articleHaystack(a);
+    compNames.forEach(function (n) { if (hay.indexOf(n.toLowerCase()) >= 0) compSet[n] = 1; });
+    landNames.forEach(function (n) { if (hay.indexOf(n.toLowerCase()) >= 0) landSet[n] = 1; });
+  });
+  var chans = Object.keys(chanSet).sort();
+  var comps = Object.keys(compSet).sort();
+  var lands = Object.keys(landSet).sort();
+
+  var q = st.q.trim().toLowerCase();
+  var byChips = list.filter(function (a) {
+    var hay = articleHaystack(a);
+    if (st.chan.length && st.chan.indexOf(a.category) < 0) return false;
+    if (st.comp.length && !st.comp.some(function (n) { return hay.indexOf(n.toLowerCase()) >= 0; })) return false;
+    if (st.land.length && !st.land.some(function (n) { return hay.indexOf(n.toLowerCase()) >= 0; })) return false;
+    return true;
+  });
+  var shown = q
+    ? byChips.filter(function (a) { return articleHaystack(a).indexOf(q) >= 0; })
+    : byChips;
+
+  var active = st.comp.length + st.land.length + st.chan.length;
+
+  var box = el("div", "nsearch");
+
+  var field = el("div", "nfield");
+  var mag = el("span");
+  mag.innerHTML = ICON_SEARCH;
+  field.appendChild(mag.firstChild);
+
+  var input = el("input");
+  input.type = "search";
+  input.value = st.q;
+  input.placeholder = opts.placeholder || "Search these stories";
+  input.setAttribute("aria-label", "Search stories");
+  /* Filter as you type, without re-rendering the whole page on every keystroke: only the wall
+     is rebuilt, and the field keeps focus and caret because it is never replaced. */
+  input.oninput = function () { st.q = input.value; repaintWall(); };
+  field.appendChild(input);
+
+  if (st.q) {
+    var clear = el("button", "nfbtn");
+    clear.innerHTML = ICON_X;
+    clear.title = "Clear search";
+    clear.setAttribute("aria-label", "Clear search");
+    clear.onclick = function () { st.q = ""; render(); };
+    field.appendChild(clear);
+  }
+
+  var fbtn = el("button", "nfbtn" + (st.open ? " on" : ""));
+  fbtn.innerHTML = ICON_SLIDERS;
+  fbtn.title = st.open ? "Hide filters" : "Show filters";
+  fbtn.setAttribute("aria-expanded", st.open ? "true" : "false");
+  if (active) fbtn.appendChild(el("span", "badge", String(active)));
+  fbtn.onclick = function () { st.open = !st.open; render(); };
+  field.appendChild(fbtn);
+  box.appendChild(field);
+
+  if (st.open) {
+    var panel = el("div", "nfilters");
+    [["By channel", chans, st.chan],
+     ["By competitor", comps, st.comp],
+     ["By market", lands, st.land]
+    ].forEach(function (grp) {
+      if (!grp[1].length) return;
+      var g = el("div", "nfgroup");
+      g.appendChild(el("h4", null, grp[0]));
+      var chips = el("div", "nchips");
+      var all = el("button", "nchip" + (grp[2].length ? "" : " on"), "All");
+      all.onclick = function () { grp[2].length = 0; render(); };
+      chips.appendChild(all);
+      grp[1].forEach(function (name) {
+        var c = el("button", "nchip" + (grp[2].indexOf(name) >= 0 ? " on" : ""), name);
+        c.onclick = function () { toggleIn(grp[2], name); render(); };
+        chips.appendChild(c);
+      });
+      g.appendChild(chips);
+      panel.appendChild(g);
+    });
+    if (panel.children.length) box.appendChild(panel);
+  }
+
+  if (q || active) {
+    box.appendChild(el("div", "ncount",
+      shown.length + " of " + list.length + (list.length === 1 ? " story" : " stories")));
+  }
+  app.appendChild(box);
+
+  var wall = el("div", "wall");
+  wall.id = "wall";
+  /* Everything the CHIPS allow, before the query narrows it. repaintWall re-filters this by
+     query alone, which is why typing can never resurrect a card a chip has excluded. */
+  wall._pool = byChips;
+  wall._opts = opts;
+  app.appendChild(wall);
+  fillWall(wall, shown, opts);
+  if (!shown.length) app.appendChild(wallEmpty(q || active, opts));
+}
+
+function wallEmpty(filtering, opts) {
+  return emptyState(filtering
+    ? "Nothing matches that. Try a shorter search, or clear a filter."
+    : (opts.empty || "Nothing here yet."));
+}
+function fillWall(wall, items, opts) {
+  wall.innerHTML = "";
+  items.forEach(function (a) { wall.appendChild(articleCard(a, opts)); });
+}
+
+/* Rebuild only the cards and the count, so typing never costs the field its focus or caret.
+   Re-filters from the pooled data with the same predicate the full render uses. */
+function repaintWall() {
+  var wall = document.getElementById("wall");
+  if (!wall || !wall._pool) { render(); return; }
+  var st = wallState();
+  var q = st.q.trim().toLowerCase();
+  var shown = q
+    ? wall._pool.filter(function (a) { return articleHaystack(a).indexOf(q) >= 0; })
+    : wall._pool.slice();
+  fillWall(wall, shown, wall._opts);
+  var count = document.querySelector(".ncount");
+  if (count) {
+    count.textContent = shown.length + " of " + wall._pool.length +
+      (wall._pool.length === 1 ? " story" : " stories");
+  }
+}
+
 function emptyState(msg) { return el("div", "empty", msg); }
 function kv(k, v) {
   var r = el("div", "kv");
@@ -2249,6 +2567,15 @@ function wTop(label, stamp) {
   if (stamp) top.appendChild(el("span", "w-stamp", stamp));
   return top;
 }
+/* Wrap whatever the headline is in the fixed two-line band, so a figure and a word occupy
+   the same vertical space and everything below them lines up across the strip. */
+function wHead(node) {
+  var band = el("div", "w-head");
+  band.appendChild(node);
+  return band;
+}
+function wSay(text) { return el("p", "w-say", text); }
+
 function wHero(value, unitHtml, colour, small) {
   var hero = el("div", "w-hero");
   var n = el("span", "w-num" + (small ? " sm" : ""), String(value));
@@ -2272,20 +2599,29 @@ function wFoot(ruled) { return el("div", "w-foot" + (ruled ? " ruled" : "")); }
 /* A widget-sized sparkline. The widget is a fixed square, so this one can keep its aspect
    ratio and needs none of the non-scaling treatment the dashboard's stretched rows do. */
 function wSpark(series, colour, wash) {
-  var svg = svgNode("svg", { "class": "wspark", viewBox: "0 0 100 34" });
+  var svg = svgNode("svg", { "class": "wspark", viewBox: "0 0 100 34",
+                             preserveAspectRatio: "none" });
   if (series.length < 2) return svg;
   var mx = Math.max.apply(null, series) || 1, pts = [];
+  // Edge to edge: the widget's own padding is the only inset this needs.
   series.forEach(function (v, i) {
-    pts.push([2 + (i / (series.length - 1)) * 94, 30 - (v / mx) * 24]);
+    pts.push([(i / (series.length - 1)) * 100, 31 - (v / mx) * 26]);
   });
-  var line = pts.map(function (p, i) {
-    return (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1);
-  }).join(" ");
-  var area = svgNode("path", { d: line + " L96 34 L2 34 Z" });
+  // Smooth, not a polyline. Control points on the vertical midline between each pair keeps the
+  // curve from overshooting the way a Catmull-Rom spline does on a spiky series.
+  var line = "M" + pts[0][0].toFixed(1) + " " + pts[0][1].toFixed(1);
+  for (var i = 0; i < pts.length - 1; i++) {
+    var a = pts[i], b = pts[i + 1], cx = (a[0] + b[0]) / 2;
+    line += " C" + cx.toFixed(1) + " " + a[1].toFixed(1) +
+            " " + cx.toFixed(1) + " " + b[1].toFixed(1) +
+            " " + b[0].toFixed(1) + " " + b[1].toFixed(1);
+  }
+  var area = svgNode("path", { d: line + " L100 34 L0 34 Z" });
   area.style.fill = wash;
   svg.appendChild(area);
   var stroke = svgNode("path", { d: line, fill: "none", "stroke-width": "2",
-                                 "stroke-linecap": "round", "stroke-linejoin": "round" });
+                                 "stroke-linecap": "round", "stroke-linejoin": "round",
+                                 "vector-effect": "non-scaling-stroke" });
   stroke.style.stroke = colour;
   svg.appendChild(stroke);
   return svg;
@@ -2303,10 +2639,10 @@ function renderWidgetStrip(w) {
     var g = el("div", "widget");
     var ready = w.readyCount || 0;
     g.appendChild(wTop("Ready to publish", ready ? (w.readyOldestDays || 0) + "d" : null));
-    g.appendChild(wHero(ready, "verified,<br>unsent", ready ? null : "var(--ink-3)"));
-    g.appendChild(el("p", "w-sub", ready
-      ? "Oldest has waited " + (w.readyOldestDays || 0) + " days."
-      : "Nothing waiting on you."));
+    g.appendChild(wHead(wHero(ready, "verified,<br>unsent", ready ? null : "var(--ink-3)")));
+    g.appendChild(wSay(ready
+      ? "Oldest has waited " + (w.readyOldestDays || 0) + " days for a report."
+      : "Nothing is waiting on you."));
     var f = wFoot(true);
     var ticks = el("div", "wticks");
     // Twelve slots: filled for what is waiting, faint for the headroom left in an edition.
@@ -2319,18 +2655,18 @@ function renderWidgetStrip(w) {
   /* 2. Coverage. A month of days, each day as tall as it was busy. */
   (function () {
     var g = el("div", "widget");
-    g.appendChild(wTop("Coverage", w.monthLabel || null));
-    g.appendChild(wHero(w.monthTotal || 0, "stories<br>this month"));
     var grid = arr(w.monthGrid), mx = w.monthMax || 1;
-    g.appendChild(el("p", "w-sub", grid.length
-      ? "Busiest day carried " + mx + "."
-      : "No days recorded yet."));
+    g.appendChild(wTop("Coverage", w.monthLabel || null));
+    g.appendChild(wHead(wHero(w.monthTotal || 0, "stories<br>this month")));
+    g.appendChild(wSay(grid.length
+      ? "Busiest day carried " + mx + ". The last two weeks are below."
+      : "No daily breakdown recorded yet."));
     var f = wFoot(true);
     if (grid.length) {
       var ticks = el("div", "wticks");
       grid.slice(-16).forEach(function (c) {
         var t = el("i");
-        t.style.height = Math.max(12, (c / mx) * 100) + "%";
+        t.style.height = Math.max(14, (c / mx) * 100) + "%";
         if (!c) t.style.background = "var(--track)";
         ticks.appendChild(t);
       });
@@ -2340,19 +2676,19 @@ function renderWidgetStrip(w) {
     add(g);
   })();
 
-  /* 3. Spend. Free RSS is a green state, anything that bills is amber. */
+  /* 3. Spend. Free RSS is a green state; anything that bills is amber. */
   (function () {
     var g = el("div", "widget");
     var mode = String(w.sourceMode || "");
     var free = /free/i.test(mode);
     g.appendChild(wTop("Spend", w.monthLabel || null));
-    g.appendChild(wHero("₹" + (Number(w.monthRupees) || 0).toFixed(2),
-                        "this<br>month", free ? "var(--good)" : null, true));
+    g.appendChild(wHead(wHero("\u20B9" + (Number(w.monthRupees) || 0).toFixed(2),
+                              "this<br>month", free ? "var(--good)" : null, true)));
+    g.appendChild(wSay(free
+      ? "The free feed costs nothing to run."
+      : "Grounded search is billed for every query."));
     var f = wFoot(true);
     f.appendChild(wPill(free ? "good" : "warn", mode || "unknown"));
-    g.appendChild(el("p", "w-sub", free
-      ? "The free feed costs nothing to run."
-      : "Grounded search is billed per query."));
     g.appendChild(f);
     add(g);
   })();
@@ -2362,10 +2698,12 @@ function renderWidgetStrip(w) {
     var g = el("div", "widget");
     var top = arr(w.trendTop);
     g.appendChild(wTop("Industry trends", (w.trendWindowDays || 30) + "d"));
-    g.appendChild(el("p", "w-topic", top.length ? top[0].n : "Nothing yet"));
-    var f = wFoot(false);
+    g.appendChild(wHead(el("p", "w-topic", top.length ? top[0].n : "Nothing yet")));
+    g.appendChild(wSay(top.length
+      ? "Leads " + (w.trendTotal || 0) + " stories in the window."
+      : "No tracked theme has been mentioned."));
+    var f = wFoot(true);
     if (top.length) {
-      var total = top.reduce(function (t, r) { return t + r.c; }, 0) + (w.trendOthers || 0);
       var split = el("div", "wsplit");
       var cols = ["var(--accent)", "var(--info)", "var(--warn)"];
       top.slice(0, 3).forEach(function (r, i) {
@@ -2391,7 +2729,6 @@ function renderWidgetStrip(w) {
         lg.appendChild(it);
       });
       f.appendChild(lg);
-      g.appendChild(el("p", "w-sub", total + " stories in the window"));
     }
     g.appendChild(f);
     add(g);
@@ -2403,48 +2740,48 @@ function renderWidgetStrip(w) {
   ].forEach(function (side) {
     var g = el("div", "widget");
     g.appendChild(wTop(side[0], (w.trendWindowDays || 30) + "d"));
-    g.appendChild(el("p", "w-topic", side[1] || "Nothing yet"));
+    g.appendChild(wHead(el("p", "w-topic", side[1] || "Nothing yet")));
     var runners = names(side[2]);
-    g.appendChild(el("p", "w-sub", runners ? "then " + runners : "No runners-up."));
+    g.appendChild(wSay(runners
+      ? "Then " + runners + "."
+      : "Nothing else is moving in this direction."));
     var f = wFoot(true);
     f.appendChild(wPill(side[3], side[4]));
     g.appendChild(f);
     add(g);
   });
 
-  /* 7. Top mover. Share of voice, with the week behind it. */
+  /* 7. Top mover. Share of voice, with the weeks behind it running the full width. */
   (function () {
     var g = el("div", "widget");
     var d = w.moverDelta || 0;
     var up = d >= 0;
     g.appendChild(wTop("Top mover", "7d"));
-    g.appendChild(wHero((up ? "+" : "") + d, "stories vs<br>last week",
-                        up ? "var(--good)" : "var(--crit)", true));
-    var line = el("p", "w-line", w.moverName || "No mover");
-    line.style.webkitLineClamp = "1";
-    g.appendChild(line);
-    var f = wFoot(false);
+    g.appendChild(wHead(el("p", "w-topic", w.moverName || "No mover")));
+    g.appendChild(wSay((up ? "Up " : "Down ") + Math.abs(d) + " stories week on week, " +
+                       (w.moverSharePct || 0) + "% of all coverage."));
+    var f = wFoot(true);
     var series = arr(w.moverSeries);
     if (series.length > 1) {
       f.appendChild(wSpark(series, up ? "var(--good)" : "var(--crit)",
                                    up ? "var(--good-wash)" : "var(--crit-wash)"));
-    } else {
-      f.appendChild(el("p", "w-sub", (w.moverSharePct || 0) + "% of coverage"));
     }
     g.appendChild(f);
     add(g);
   })();
 
-  /* 8. Unverified. What is sitting in Alerts with no decision on it. */
+  /* 8. Unverified. What is sitting in Alerts with no decision on it.
+     No rule under this one: the bars ARE the footer, and a line above them would read as a
+     divider between two things when there is only one. */
   (function () {
     var g = el("div", "widget");
     var un = w.alertsUnverified || 0, tot = w.alertsTotal || 0;
     var pct = tot ? Math.round((un / tot) * 100) : 0;
     g.appendChild(wTop("Unverified"));
-    g.appendChild(wHero(un, "of " + tot + "<br>in alerts",
-                        pct > 60 ? "var(--warn)" : null));
-    g.appendChild(el("p", "w-sub", pct + "% of the feed is still undecided."));
-    var f = wFoot(true);
+    g.appendChild(wHead(wHero(un, "of " + tot + "<br>in alerts",
+                              pct > 60 ? "var(--warn)" : null)));
+    g.appendChild(wSay(pct + "% of the feed is still undecided."));
+    var f = wFoot(false);
     var cmp = el("div", "wcmp");
     [["Checked", tot - un, "var(--good)"], ["Waiting", un, "var(--warn)"]].forEach(function (r) {
       cmp.appendChild(el("span", null, r[0]));
@@ -2454,8 +2791,7 @@ function renderWidgetStrip(w) {
       fill.style.background = r[2];
       bar.appendChild(fill);
       cmp.appendChild(bar);
-      var b = el("b", null, String(r[1]));
-      cmp.appendChild(b);
+      cmp.appendChild(el("b", null, String(r[1])));
     });
     f.appendChild(cmp);
     g.appendChild(f);
@@ -3303,9 +3639,15 @@ function renderAsk(app) {
   }
 }
 
+var WIDE_TABS = ["dashboard", "alerts", "saved", "published", "liked", "disliked",
+                 "database", "restorepoints"];
+
 function render() {
   renderDrawerNav(); renderSyncRow(); renderDrawerSettings(); renderTitle();
-  $("#shell").classList.toggle("wide", S.tab === "dashboard");
+  /* Wide is for pages whose content is a grid and genuinely gets better with room. Reports
+     and the assistant are prose, and prose has a measure past which it stops being readable,
+     so they keep the narrow wrap no matter how large the screen is. */
+  $("#shell").classList.toggle("wide", WIDE_TABS.indexOf(S.tab) >= 0);
   /* Turns the scroll column into a flex column so the composer can dock at the
      bottom of the viewport instead of trailing the last message. */
   $("#shell").classList.toggle("chat", S.tab === "ask");
@@ -3325,19 +3667,16 @@ function render() {
     renderAsk(app);
   }
   else if (S.tab === "alerts") {
-    var list = alerts();
-    if (!list.length) app.appendChild(emptyState("No alerts. Everything here has been published, or your phone has not backed up yet."));
-    else list.forEach(function (a) { app.appendChild(articleCard(a, { verifiable: true })); });
+    newsWall(app, alerts(), { verifiable: true, placeholder: "Search alerts",
+      empty: "No alerts. Everything here has been published, or your phone has not backed up yet." });
   }
   else if (S.tab === "saved") {
-    var sv = arr(d.savedNews);
-    if (!sv.length) app.appendChild(emptyState("Nothing saved."));
-    else sv.forEach(function (a) { app.appendChild(articleCard(a, {})); });
+    newsWall(app, arr(d.savedNews), { placeholder: "Search saved stories",
+      empty: "Nothing saved." });
   }
   else if (S.tab === "published") {
-    var pb = published();
-    if (!pb.length) app.appendChild(emptyState("Nothing published yet. Verify some alerts, then generate a report."));
-    else pb.forEach(function (a) { app.appendChild(articleCard(a, { publishedPill: true })); });
+    newsWall(app, published(), { publishedPill: true, placeholder: "Search published stories",
+      empty: "Nothing published yet. Verify some alerts, then generate a report." });
   }
   else if (S.tab === "reports") {
     var eds = editions();
@@ -3371,8 +3710,9 @@ function render() {
       var hit = pool.filter(function (a) { return key(a.title) === t; })[0];
       out.push(hit || { title: t, category: "", summary: "", source: "" });
     });
-    if (!out.length) app.appendChild(emptyState(S.tab === "liked" ? "Nothing liked yet." : "Nothing disliked yet."));
-    else out.forEach(function (a) { app.appendChild(articleCard(a, {})); });
+    newsWall(app, out, {
+      placeholder: S.tab === "liked" ? "Search liked stories" : "Search disliked stories",
+      empty: S.tab === "liked" ? "Nothing liked yet." : "Nothing disliked yet." });
   }
   else if (S.tab === "restorepoints") {
     var rps = arr(d.restorePoints).slice().sort(function (a, b) { return (b.timestamp || 0) - (a.timestamp || 0); });
