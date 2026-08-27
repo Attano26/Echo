@@ -2842,10 +2842,12 @@ function renderWidgetStrip(w) {
     var g = el("div", "widget");
     var d = w.moverDelta || 0;
     var up = d >= 0;
-    g.appendChild(wTop("Top mover", "7d"));
+    /* The window is on the face. The phone computes this over the Analytics card's 3M view, so
+       saying "7d" here was simply a different claim from the one the number answers. */
+    g.appendChild(wTop("Top mover", "3M"));
     g.appendChild(wHead(el("p", "w-topic", w.moverName || "No mover")));
-    g.appendChild(wSay((up ? "Up " : "Down ") + Math.abs(d) + " stories week on week, " +
-                       (w.moverSharePct || 0) + "% of all coverage."));
+    g.appendChild(wSay((up ? "Up " : "Down ") + Math.abs(d) + " points of share against its " +
+                       "own average. Now " + (w.moverSharePct || 0) + "% of coverage."));
     var f = wFoot();
     var series = arr(w.moverSeries);
     if (series.length > 1) {
