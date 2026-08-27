@@ -92,20 +92,28 @@
   --bento-gap:14px;
   /* The widget set's status ramp, from the widget mockups. Deliberately NOT the accent:
      --accent means "interactive", and a widget is not. These four mean what they say. */
-  /* ONE PALETTE, TWO GROUNDS.
-     These four used to be different colours per theme, not the same colours adapted: warn was
-     hue 26 in light and hue 38 in dark, so the strip went from brown to amber when you flipped
-     the toggle. The dark set is the canonical one; each light value below is the SAME hue and
-     saturation, dropped in lightness until it reads on white. Nothing changes character, only
-     how dark it has to be to be legible. */
-  --good:#0C8D62; --good-wash:rgba(12,141,98,.12);
-  --warn:#B07107; --warn-wash:rgba(176,113,7,.12);
-  --crit:#C11F1F; --crit-wash:rgba(193,31,31,.12);
-  --info:#04849A; --info-wash:rgba(4,132,154,.12);
-  /* The Coverage calendar's five steps. A density ramp has to run the other way on a light
-     ground — more stories mean a DARKER dot on white and a BRIGHTER one on black — but the hue
-     is the dark ramp's amber (41) in both, where the old light ramp drifted to brown (26). */
-  --cal-0:#EAE6DF; --cal-1:#FCE7BB; --cal-2:#F9D076; --cal-3:#F5B323; --cal-4:#B07B08;
+  /* ONE PALETTE. THE FILLS DO NOT CHANGE BETWEEN THEMES.
+     A dot, a bar, a sparkline or a calendar cell can be the same bright colour on either
+     ground — nothing is read THROUGH them. Text cannot: bright amber on white fails contrast.
+     So the fill is fixed and only the ink adapts. Matching hue alone was not enough; --info at
+     43% lightness in dark and 31% in light is a light blue and a deep teal.
+     These are the same four the Analytics cards hard-code, so the strip and the cards are now
+     literally one palette. */
+  --good-rgb:16,185,129;  --warn-rgb:245,158,11;
+  --crit-rgb:239,68,68;   --info-rgb:6,182,212;
+  --good:rgb(var(--good-rgb)); --warn:rgb(var(--warn-rgb));
+  --crit:rgb(var(--crit-rgb)); --info:rgb(var(--info-rgb));
+  --good-wash:rgba(var(--good-rgb),.14); --warn-wash:rgba(var(--warn-rgb),.14);
+  --crit-wash:rgba(var(--crit-rgb),.14); --info-wash:rgba(var(--info-rgb),.14);
+  /* The same colours, darkened, ONLY where they carry text on a light ground. */
+  --good-ink:#0C8D62; --warn-ink:#96610A; --crit-ink:#C11F1F; --info-ink:#04849A;
+  /* The Coverage calendar: ONE amber at four alphas, not two hand-picked ramps. On white the
+     low steps land pale, on black they land dark, and the top step is the same pixel colour in
+     both — which is what makes it read as one design instead of two. */
+  --cal-rgb:245,176,27;
+  --cal-0:var(--track);
+  --cal-1:rgba(var(--cal-rgb),.26); --cal-2:rgba(var(--cal-rgb),.50);
+  --cal-3:rgba(var(--cal-rgb),.75); --cal-4:rgb(var(--cal-rgb));
   --track:rgba(60,60,67,.12);
   --widget-shadow:0 1px 2px rgba(20,20,28,.06), 0 12px 28px -8px rgba(20,20,28,.20);
   /* One easing curve for the whole interface, and the three durations that use it. */
@@ -139,12 +147,11 @@
     --sh-1:0 1px 2px rgba(0,0,0,.5),0 6px 20px rgba(0,0,0,.4);
     --sh-2:0 2px 6px rgba(0,0,0,.55),0 14px 34px rgba(0,0,0,.5);
     --heat-0:#20222A; --heat-1:#0E4429; --heat-2:#006D32; --heat-3:#26A641; --heat-4:#39D353;
-    --good:#10B981; --good-wash:rgba(16,185,129,.16);
-    --warn:#F59E0B; --warn-wash:rgba(245,158,11,.16);
-    --crit:#EF4444; --crit-wash:rgba(239,68,68,.16);
-    --info:#06B6D4; --info-wash:rgba(6,182,212,.16);
+    /* The fills are inherited unchanged — that is the point. Only the ink differs,
+       because on this ground the bright colour is already legible as text. */
+    --good-ink:rgb(var(--good-rgb)); --warn-ink:rgb(var(--warn-rgb));
+    --crit-ink:rgb(var(--crit-rgb)); --info-ink:rgb(var(--info-rgb));
     --track:rgba(235,235,245,.14);
-    --cal-0:#26262B; --cal-1:#4A3A12; --cal-2:#8A6A11; --cal-3:#C79212; --cal-4:#F5B01B;
     --widget-shadow:0 1px 2px rgba(0,0,0,.5), 0 14px 32px -10px rgba(0,0,0,.7);
   }
 }
@@ -159,12 +166,11 @@
   --sh-1:0 1px 2px rgba(0,0,0,.5),0 6px 20px rgba(0,0,0,.4);
   --sh-2:0 2px 6px rgba(0,0,0,.55),0 14px 34px rgba(0,0,0,.5);
   --heat-0:#20222A; --heat-1:#0E4429; --heat-2:#006D32; --heat-3:#26A641; --heat-4:#39D353;
-  --good:#10B981; --good-wash:rgba(16,185,129,.16);
-  --warn:#F59E0B; --warn-wash:rgba(245,158,11,.16);
-  --crit:#EF4444; --crit-wash:rgba(239,68,68,.16);
-  --info:#06B6D4; --info-wash:rgba(6,182,212,.16);
+  /* The fills are inherited unchanged — that is the point. Only the ink differs,
+     because on this ground the bright colour is already legible as text. */
+  --good-ink:rgb(var(--good-rgb)); --warn-ink:rgb(var(--warn-rgb));
+  --crit-ink:rgb(var(--crit-rgb)); --info-ink:rgb(var(--info-rgb));
   --track:rgba(235,235,245,.14);
-  --cal-0:#26262B; --cal-1:#4A3A12; --cal-2:#8A6A11; --cal-3:#C79212; --cal-4:#F5B01B;
   --widget-shadow:0 1px 2px rgba(0,0,0,.5), 0 14px 32px -10px rgba(0,0,0,.7);
 }
 
@@ -548,10 +554,10 @@ body.in .dhead .mark{ animation:railsweep 14s linear infinite }
 .wpill{display:inline-flex;align-items:center;gap:calc(4 * var(--u));
   font-family:var(--fs-title);font-size:calc(9.5 * var(--u));font-weight:600;letter-spacing:.05em;
   text-transform:uppercase;padding:calc(2.5 * var(--u)) calc(7 * var(--u));border-radius:999px}
-.wpill.crit{background:var(--crit-wash);color:var(--crit)}
-.wpill.warn{background:var(--warn-wash);color:var(--warn)}
-.wpill.good{background:var(--good-wash);color:var(--good)}
-.wpill.info{background:var(--info-wash);color:var(--info)}
+.wpill.crit{background:var(--crit-wash);color:var(--crit-ink)}
+.wpill.warn{background:var(--warn-wash);color:var(--warn-ink)}
+.wpill.good{background:var(--good-wash);color:var(--good-ink)}
+.wpill.info{background:var(--info-wash);color:var(--info-ink)}
 .wpill .d{width:calc(5 * var(--u));height:calc(5 * var(--u));border-radius:50%;
   background:currentColor;flex:none}
 
@@ -633,10 +639,10 @@ a.nsrc:hover,a.nsrc:focus-visible{color:var(--accent);text-decoration:underline;
   border-radius:var(--r-pill);padding:4px 10px;white-space:nowrap;
   transition:background var(--t-hover) var(--ease),color var(--t-hover) var(--ease)}
 .nstate svg{width:13px;height:13px;flex:none}
-.nstate.on{color:var(--good);background:color-mix(in srgb,var(--good) 13%,transparent)}
+.nstate.on{color:var(--good-ink);background:var(--good-wash)}
 button.nstate{color:var(--ink-3);background:var(--surface-2);cursor:pointer}
-button.nstate:hover,button.nstate:focus-visible{color:var(--good);
-  background:color-mix(in srgb,var(--good) 15%,transparent)}
+button.nstate:hover,button.nstate:focus-visible{color:var(--good-ink);
+  background:var(--good-wash)}
 button.nstate:active{transform:scale(.97)}
 .nstate.pub{color:var(--accent);background:var(--accent-soft)}
 
@@ -2936,7 +2942,7 @@ function renderWidgetStrip(w) {
     var free = /free/i.test(mode);
     g.appendChild(wTop("Spend", w.monthLabel || null));
     g.appendChild(wHead(wHero("\u20B9" + (Number(w.monthRupees) || 0).toFixed(2),
-                              "this<br>month", free ? "var(--good)" : null, true)));
+                              "this<br>month", free ? "var(--good-ink)" : null, true)));
     g.appendChild(wSay(free
       ? "The free feed costs nothing to run."
       : "Grounded search is billed for every query."));
@@ -2953,8 +2959,8 @@ function renderWidgetStrip(w) {
     g.appendChild(wTop("Industry trends", (w.trendWindowDays || 30) + "d"));
     g.appendChild(wHead(el("p", "w-topic", top.length ? top[0].n : "Nothing yet")));
     g.appendChild(wSay(top.length
-      ? top[0].c + " of " + (w.trendTotal || 0) + " stories in the window."
-      : "No tracked theme has been mentioned."));
+      ? top[0].c + " of the " + (w.trendTotal || 0) + " stories in this window are on this theme."
+      : "No tracked theme has been mentioned in this window."));
     var f = wFoot();
     if (top.length) {
       var split = el("div", "wsplit");
@@ -3045,7 +3051,7 @@ function renderWidgetStrip(w) {
     var pct = tot ? Math.round((un / tot) * 100) : 0;
     g.appendChild(wTop("Unverified"));
     g.appendChild(wHead(wHero(un, "of " + tot + "<br>in alerts",
-                              pct > 60 ? "var(--warn)" : null)));
+                              pct > 60 ? "var(--warn-ink)" : null)));
     g.appendChild(wSay(pct + "% of the feed is still undecided."));
     var f = wFoot();
     var cmp = el("div", "wcmp");
