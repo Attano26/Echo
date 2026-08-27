@@ -56,16 +56,20 @@
   --ink-2:#3F4048;
   --ink-3:#5D5E66;
   --line:#E3E3E6;
+  --line-2:#EFEFF1;     /* hairline INSIDE a card, softer than the card's own edge */
+  --sh-1:0 1px 2px rgba(0,0,0,.04),0 6px 20px rgba(0,0,0,.05);
   --accent:#1F57F5;     /* Signal Blue — the single accent, matched to the phone */
   --accent-soft:rgba(31,87,245,.13);
   --free:#34C759;       /* the free feed */
   --paid:#E5A33B;       /* anything that spends */
   --danger:#F0616D;
   --sh-2:0 2px 6px rgba(0,0,0,.06),0 14px 34px rgba(0,0,0,.09);
-  --r-card:14px;
+  --r-card:18px;       /* Sightline's radius — the softer corner is most of its calm */
   --r-box:10px;
   --r-pill:999px;
-  --fs:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  /* Arial Nova Light, the phone's brand face. Weight 300 is the point of it, so body text
+     sets font-weight:300 and only figures and labels climb above that. */
+  --fs:'Arial Nova Light','Arial Nova','Segoe UI Light','Segoe UI',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;
   --apph:100dvh;
 }
 /* System dark, unless the viewer has explicitly chosen light. */
@@ -85,7 +89,9 @@
   --track:#232329; --track-on:#43434E;
   --ink:#F5F5F7; --ink-2:#C9CAD3; --ink-3:#9A9CAB;
   --line:#2A2A2F;
+  --line-2:#242427;
   --accent-soft:rgba(31,87,245,.20);
+  --sh-1:0 1px 2px rgba(0,0,0,.5),0 6px 20px rgba(0,0,0,.4);
   --sh-2:0 2px 6px rgba(0,0,0,.55),0 14px 34px rgba(0,0,0,.5);
 }
 
@@ -98,7 +104,7 @@ html,body{height:100%}
 html,body{height:100dvh}
 body{
   margin:0;background:var(--paper);color:var(--ink);
-  font-family:var(--fs);font-size:15px;line-height:1.55;
+  font-family:var(--fs);font-size:15px;line-height:1.55;font-weight:300;
   -webkit-font-smoothing:antialiased;
   overflow:hidden;
   /* Kills the double-tap zoom on a mis-tapped control, and the 300ms delay
@@ -306,6 +312,85 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
 .empty{text-align:center;color:var(--ink-3);padding:56px 20px;font-size:14px;line-height:1.7}
 .status{font-size:13px;color:var(--ink-3);padding:10px 0}
 .status.err{color:var(--danger)}
+/* ============================================================
+   DASHBOARD — bento
+   ------------------------------------------------------------
+   Two zones, and the split is the whole idea: a horizontal strip of the eight
+   home-screen widgets for a glance, then a bento grid underneath for the detail.
+   The strip answers "anything I should look at?", the grid answers "what is it?".
+
+   The grid is 4 columns at desktop, 2 at tablet, 1 on a phone — so on mobile the
+   cards land one under another, matching the app. Tiles claim width by MEANING
+   (a calendar wants room; a single number does not), never by decoration.
+   ============================================================ */
+.dash{padding:2px 0 30px}
+.dsub{font-size:12.5px;color:var(--ink-3);margin:0 0 14px;font-weight:300}
+
+/* ---- the glance strip ---- */
+.wstrip{
+  display:flex;gap:10px;overflow-x:auto;padding:2px 0 12px;
+  scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.wstrip::-webkit-scrollbar{display:none}
+.wtile{
+  flex:0 0 148px;scroll-snap-align:start;background:var(--surface);
+  border:1px solid var(--line-2);border-radius:var(--r-card);box-shadow:var(--sh-1);
+  padding:13px 14px;min-height:104px;display:flex;flex-direction:column;gap:2px;
+}
+.wtile .wk{font-size:10px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;
+  color:var(--ink-3)}
+.wtile .wv{font-size:25px;font-weight:300;letter-spacing:-1px;line-height:1.15;margin-top:5px}
+.wtile .wc{font-size:11.5px;color:var(--ink-3);margin-top:auto;line-height:1.4}
+.wtile .wv.sm{font-size:17px;letter-spacing:-.3px;font-weight:400}
+
+/* ---- the bento ---- */
+.bento{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.bx{
+  background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-card);
+  box-shadow:var(--sh-1);padding:18px 20px;display:flex;flex-direction:column;min-height:132px;
+}
+.bx.w2{grid-column:span 2}
+.bx.w4{grid-column:span 4}
+.bxk{font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink-3)}
+.bxv{font-size:34px;font-weight:300;letter-spacing:-1.4px;line-height:1.1;margin-top:9px}
+.bxv.sm{font-size:22px;letter-spacing:-.5px}
+.bxc{font-size:12.5px;color:var(--ink-3);margin-top:6px;line-height:1.45}
+.bxfoot{margin-top:auto;padding-top:12px;font-size:12px;color:var(--ink-3)}
+.bxrow{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  padding:7px 0;border-bottom:1px solid var(--line-2);font-size:13.5px}
+.bxrow:last-child{border-bottom:0}
+.bxrow .n{color:var(--ink-2);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap}
+.bxrow .v{font-weight:500;color:var(--ink)}
+
+/* Bars: proportion shown as width, no axis, no gridlines. */
+.barrow{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:13px}
+.barrow .bn{flex:0 0 40%;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bartrack{flex:1;height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden}
+.barfill{height:100%;border-radius:3px;background:var(--accent)}
+.barrow .bv{flex:0 0 auto;color:var(--ink-3);font-size:12px;min-width:22px;text-align:right}
+
+/* Coverage calendar: one square per day, the app's own month grid. */
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:12px}
+.cald{aspect-ratio:1;border-radius:4px;background:var(--surface-2)}
+.calw{font-size:9.5px;color:var(--ink-3);text-align:center;font-weight:500}
+
+/* Sparkline for the top mover. */
+.spark{width:100%;height:44px;margin-top:10px;display:block;overflow:visible}
+.spark path{fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+.dempty{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-card);
+  padding:26px 22px;text-align:center;color:var(--ink-3);font-size:13.5px;line-height:1.6}
+
+@media (max-width:900px){ .bento{grid-template-columns:repeat(2,1fr)} .bx.w4{grid-column:span 2} }
+@media (max-width:620px){
+  /* One under another, the way the phone stacks them. */
+  .bento{grid-template-columns:1fr}
+  .bx.w2,.bx.w4{grid-column:span 1}
+  .wtile{flex-basis:136px}
+}
+
 .skel{background:var(--surface);border-radius:var(--r-card);height:104px;margin-bottom:10px;
   animation:pulse 1.4s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:.5}50%{opacity:.85}}
@@ -540,7 +625,9 @@ var S = {
     schema: 1, updatedAtMillis: 0,
     verifiedTitles: [], publishedTitles: [], publishedNews: [], reportEditions: []
   },
-  tab: "alerts", loading: false
+  // Dashboard is the landing page: the glance strip answers "anything to look at?" before
+  // the feed asks you to read anything.
+  tab: "dashboard", loading: false
 };
 
 function save() {
@@ -847,6 +934,7 @@ function askConfirm(opts) {
    RENDER
    ============================================================ */
 var TABS = [
+  ["dashboard", "Dashboard", function () { return ""; }],
   ["alerts",    "Alerts",    function () { return alerts().length; }],
   ["saved",     "Saved",     function () { return arr(S.data && S.data.savedNews).length; }],
   ["published", "Published", function () { return published().length; }],
@@ -857,6 +945,7 @@ var TABS = [
   ["restorepoints", "Restore points", function () { return arr(S.data && S.data.restorePoints).length; }]
 ];
 var TAB_TITLE = {
+  dashboard: ["Dashboard", "Everything the phone is tracking"],
   alerts:    ["News",      "Window market intelligence"],
   saved:     ["Saved",     "Bookmarked stories"],
   published: ["Published", "Stories already in a report"],
@@ -908,7 +997,7 @@ function drawerOpen() { return $("#drawer").classList.contains("on"); }
  * reader nothing. These four DO say something, which is the difference.
  */
 var NAV_GROUPS = [
-  ["Feed",      ["alerts", "saved"]],
+  ["Feed",      ["dashboard", "alerts", "saved"]],
   ["Reporting", ["published", "reports"]],
   ["Signals",   ["liked", "disliked"]],
   ["Data",      ["database", "restorepoints"]]
@@ -1057,7 +1146,6 @@ function renderDrawerSettings() {
     return;
   }
 
-  var rupee = function (v) { return "₹" + (Number(v) || 0).toFixed(2); };
   var srcName = { rss: "Free RSS", grounded: "Grounded", hybrid: "Hybrid" }[g.newsSource] || g.newsSource || "—";
   var rows = [
     ["News source", srcName, g.newsSource === "rss" ? "free" : "paid"],
@@ -1170,6 +1258,235 @@ function linkRow(href, text) {
   return acts;
 }
 
+/* ============================================================
+   DASHBOARD
+   ------------------------------------------------------------
+   Renders the PHONE'S OWN numbers. `data.widgets` is the WidgetSnapshot the phone
+   computes for its home-screen widgets and now ships in the backup, so a figure here
+   and the same figure on the phone's launcher cannot disagree — there is one
+   implementation of the maths and it lives on the phone. This file only draws.
+
+   If `widgets` is absent the phone is on an older build: say so plainly rather than
+   compute a lookalike, which would be the one way these two could drift apart.
+   ============================================================ */
+function bx(cls, key, value, caption, opts) {
+  var b = el("div", "bx" + (cls ? " " + cls : ""));
+  b.appendChild(el("div", "bxk", key));
+  if (value != null) b.appendChild(el("div", "bxv" + ((opts && opts.sm) ? " sm" : ""), String(value)));
+  if (caption) b.appendChild(el("div", "bxc", caption));
+  return b;
+}
+function wtile(key, value, caption, small) {
+  var t = el("div", "wtile");
+  t.appendChild(el("div", "wk", key));
+  t.appendChild(el("div", "wv" + (small ? " sm" : ""), String(value)));
+  if (caption) t.appendChild(el("div", "wc", caption));
+  return t;
+}
+function rupee(v) { return "₹" + (Number(v) || 0).toFixed(2); }
+function plural(n, one, many) { return n === 1 ? one : many; }
+
+/* Proportion as width. No axis, no gridlines — the comparison IS the bar. */
+function barList(host, rows, total) {
+  var max = 0, i;
+  for (i = 0; i < rows.length; i++) max = Math.max(max, rows[i][1]);
+  if (!max) max = 1;
+  rows.forEach(function (r) {
+    var row = el("div", "barrow");
+    row.appendChild(el("div", "bn", r[0]));
+    var track = el("div", "bartrack");
+    var fill = el("div", "barfill");
+    fill.style.width = Math.max(3, Math.round((r[1] / max) * 100)) + "%";
+    track.appendChild(fill);
+    row.appendChild(track);
+    row.appendChild(el("div", "bv", String(r[1])));
+    host.appendChild(row);
+  });
+}
+
+function sparkline(series) {
+  var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("class", "spark");
+  svg.setAttribute("preserveAspectRatio", "none");
+  var n = series.length;
+  if (n < 2) return svg;
+  var max = Math.max.apply(null, series) || 1;
+  svg.setAttribute("viewBox", "0 0 100 40");
+  var d = "";
+  series.forEach(function (v, i) {
+    var x = (i / (n - 1)) * 100;
+    var y = 38 - (v / max) * 34;
+    d += (i ? " L" : "M") + x.toFixed(1) + " " + y.toFixed(1);
+  });
+  var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", d);
+  svg.appendChild(path);
+  return svg;
+}
+
+function renderDashboard(app, d) {
+  var w = d.widgets || null;
+  var wrap = el("div", "dash");
+
+  if (!w || !Object.keys(w).length) {
+    wrap.appendChild(el("div", "dempty",
+      "Your phone has not sent its dashboard figures yet. Open Settings → Storage on the phone " +
+      "and press Back up — these numbers are computed there, so this page waits for them rather " +
+      "than working them out a second way."));
+    app.appendChild(wrap);
+    return;
+  }
+
+  /* ---------- the glance strip: the eight home-screen widgets ---------- */
+  var strip = el("div", "wstrip");
+  var ready = w.readyCount || 0;
+  strip.appendChild(wtile("Ready to publish", ready,
+    ready ? (w.readyOldestDays ? "Oldest waiting " + w.readyOldestDays + "d" : "Verified, not yet in a report")
+          : "Nothing waiting"));
+  strip.appendChild(wtile("Coverage", w.monthTotal || 0,
+    (w.monthLabel || "This month") + " · stories"));
+  strip.appendChild(wtile("Monthly spend", rupee(w.monthRupees),
+    w.sourceMode ? String(w.sourceMode) : ""));
+  var trendTop = arr(w.trendTop);
+  strip.appendChild(wtile("Industry trends", trendTop.length ? trendTop[0].n : "—",
+    (w.trendTotal || 0) + " stories · " + (w.trendWindowDays || 30) + "d", true));
+  strip.appendChild(wtile("Heating up", w.risingTrend || "—",
+    arr(w.risingRunners).length ? "then " + arr(w.risingRunners).map(function (r) { return r.n; }).slice(0, 2).join(", ") : "", true));
+  strip.appendChild(wtile("Cooling down", w.coolingTrend || "—",
+    arr(w.coolingRunners).length ? "then " + arr(w.coolingRunners).map(function (r) { return r.n; }).slice(0, 2).join(", ") : "", true));
+  strip.appendChild(wtile("Top mover", w.moverName || "—",
+    (w.moverDelta > 0 ? "+" : "") + (w.moverDelta || 0) + " · " + (w.moverSharePct || 0) + "% share", true));
+  strip.appendChild(wtile("Unverified", w.alertsUnverified || 0,
+    "of " + (w.alertsTotal || 0) + " in Alerts"));
+  wrap.appendChild(strip);
+
+  /* ---------- the bento ---------- */
+  var g = el("div", "bento");
+
+  /* Coverage owns two columns: a month of days needs the width to stay square. */
+  var cov = el("div", "bx w2");
+  cov.appendChild(el("div", "bxk", "Coverage · " + (w.monthLabel || "")));
+  cov.appendChild(el("div", "bxv", String(w.monthTotal || 0)));
+  cov.appendChild(el("div", "bxc", "stories this month"));
+  var grid = arr(w.monthGrid), mx = w.monthMax || 1;
+  if (grid.length) {
+    var cal = el("div", "cal");
+    ["S", "M", "T", "W", "T", "F", "S"].forEach(function (n) { cal.appendChild(el("div", "calw", n)); });
+    var lead = (w.monthWeekdays && w.monthWeekdays.length) ? 0 : 0;
+    for (var i = 0; i < lead; i++) cal.appendChild(el("div"));
+    grid.forEach(function (c) {
+      var cell = el("div", "cald");
+      if (c > 0) {
+        // Opacity carries volume: a busy day is solid, a quiet one barely there. One hue,
+        // so the eye reads density rather than trying to decode a colour scale.
+        cell.style.background = "var(--accent)";
+        cell.style.opacity = String(0.22 + 0.78 * Math.min(1, c / mx));
+      }
+      cell.title = c + " " + plural(c, "story", "stories");
+      cal.appendChild(cell);
+    });
+    cov.appendChild(cal);
+  }
+  g.appendChild(cov);
+
+  /* Industry trends: the mix, as bars. */
+  var tr = el("div", "bx w2");
+  tr.appendChild(el("div", "bxk", "Industry trends · " + (w.trendWindowDays || 30) + " days"));
+  if (trendTop.length) {
+    var rows = trendTop.map(function (t) { return [t.n, t.c]; });
+    if (w.trendOthers) rows.push(["Everything else", w.trendOthers]);
+    var holder = el("div"); holder.style.marginTop = "10px";
+    barList(holder, rows, w.trendTotal);
+    tr.appendChild(holder);
+    tr.appendChild(el("div", "bxfoot", (w.trendTotal || 0) + " stories in the window"));
+  } else tr.appendChild(el("div", "bxc", "Not enough stories yet to show a mix."));
+  g.appendChild(tr);
+
+  /* Top mover, with its series. */
+  var mv = el("div", "bx w2");
+  mv.appendChild(el("div", "bxk", "Top mover"));
+  mv.appendChild(el("div", "bxv sm", w.moverName || "—"));
+  mv.appendChild(el("div", "bxc",
+    (w.moverDelta > 0 ? "+" : "") + (w.moverDelta || 0) + " stories · " +
+    (w.moverSharePct || 0) + "% of coverage"));
+  var series = arr(w.moverSeries);
+  if (series.length > 1) mv.appendChild(sparkline(series));
+  g.appendChild(mv);
+
+  /* Heating / cooling share a tile: they are the same measure in two directions. */
+  var hc = el("div", "bx w2");
+  hc.appendChild(el("div", "bxk", "Heating up · cooling down"));
+  var hcb = el("div"); hcb.style.marginTop = "8px";
+  var hot = el("div", "bxrow");
+  hot.appendChild(el("span", "n", w.risingTrend || "—"));
+  hot.appendChild(el("span", "v", "rising"));
+  hcb.appendChild(hot);
+  arr(w.risingRunners).slice(0, 2).forEach(function (r) {
+    var row = el("div", "bxrow");
+    row.appendChild(el("span", "n", r.n)); row.appendChild(el("span", "v", String(r.c)));
+    hcb.appendChild(row);
+  });
+  var cold = el("div", "bxrow");
+  cold.appendChild(el("span", "n", w.coolingTrend || "—"));
+  cold.appendChild(el("span", "v", "cooling"));
+  hcb.appendChild(cold);
+  arr(w.coolingRunners).slice(0, 2).forEach(function (r) {
+    var row = el("div", "bxrow");
+    row.appendChild(el("span", "n", r.n)); row.appendChild(el("span", "v", String(r.c)));
+    hcb.appendChild(row);
+  });
+  hc.appendChild(hcb);
+  g.appendChild(hc);
+
+  /* Single figures. */
+  g.appendChild(bx("", "Ready to publish", ready,
+    ready ? "verified, waiting for a report" : "nothing waiting"));
+  g.appendChild(bx("", "Unverified", w.alertsUnverified || 0,
+    "of " + (w.alertsTotal || 0) + " in Alerts"));
+  g.appendChild(bx("", "Spend · " + (w.monthLabel || "month"), rupee(w.monthRupees),
+    w.sourceMode ? String(w.sourceMode) : ""));
+  g.appendChild(bx("", "Tracked", w.trackedCount || 0,
+    (w.silentCount || 0) + " quiet for " + (w.quietDays || 0) + "d"));
+
+  /* NALCO prices — already in the payload, and the phone's own figures. */
+  var np = arr(d.nalcoPrices);
+  if (np.length) {
+    var latest = np[0];
+    var pr = el("div", "bx w2");
+    pr.appendChild(el("div", "bxk", "Metal · NALCO circular"));
+    var prow = el("div"); prow.style.marginTop = "8px";
+    [["Ingot · IE07", latest.ingot], ["Billet · CH10 178–254", latest.billet]].forEach(function (r) {
+      var row = el("div", "bxrow");
+      row.appendChild(el("span", "n", r[0]));
+      row.appendChild(el("span", "v", r[1] ? "₹" + Number(r[1]).toLocaleString("en-IN") + "/MT" : "—"));
+      prow.appendChild(row);
+    });
+    pr.appendChild(prow);
+    pr.appendChild(el("div", "bxfoot", "Effective " + (latest.effective || "—")));
+    g.appendChild(pr);
+  }
+
+  /* Quiet competitors: a list of names is more use than a count of them. */
+  var quiet = arr(w.quietNames);
+  if (quiet.length) {
+    var q = el("div", "bx w2");
+    q.appendChild(el("div", "bxk", "Quiet · no news in " + (w.quietDays || 0) + " days"));
+    var qb = el("div"); qb.style.marginTop = "8px";
+    quiet.slice(0, 6).forEach(function (n) {
+      var row = el("div", "bxrow");
+      row.appendChild(el("span", "n", n));
+      qb.appendChild(row);
+    });
+    q.appendChild(qb);
+    if (quiet.length > 6) q.appendChild(el("div", "bxfoot", "and " + (quiet.length - 6) + " more"));
+    g.appendChild(q);
+  }
+
+  wrap.appendChild(g);
+  if (w.nextBriefing) wrap.appendChild(el("p", "dsub", "Next briefing " + w.nextBriefing));
+  app.appendChild(wrap);
+}
+
 function render() {
   renderDrawerNav(); renderSyncRow(); renderDrawerSettings(); renderTitle();
   var app = $("#app"); app.innerHTML = "";
@@ -1181,7 +1498,10 @@ function render() {
   }
   if (!d) { app.appendChild(emptyState("Nothing loaded yet.")); refreshReportBar(); return; }
 
-  if (S.tab === "alerts") {
+  if (S.tab === "dashboard") {
+    renderDashboard(app, d);
+  }
+  else if (S.tab === "alerts") {
     var list = alerts();
     if (!list.length) app.appendChild(emptyState("No alerts. Everything here has been published, or your phone has not backed up yet."));
     else list.forEach(function (a) { app.appendChild(articleCard(a, { verifiable: true })); });
