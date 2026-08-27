@@ -213,6 +213,34 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
 .srow .sv.dim{color:var(--ink-3);font-weight:400}
 .dnote{font-size:11.5px;color:var(--ink-3);line-height:1.6;padding:10px 18px 0}
 .dsep{height:1px;background:var(--line);margin:14px 18px 0}
+/* The rail is a column: nav scrolls, footer is pinned. */
+#drawer{display:flex;flex-direction:column}
+#drawerNav{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#drawerFoot{flex:0 0 auto;border-top:1px solid var(--line);padding:8px 10px;margin-top:8px}
+.profrow{display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:none;
+  border:0;cursor:pointer;padding:9px 8px;border-radius:10px;color:var(--ink-2);font:inherit}
+.profrow:hover{background:var(--surface-2);color:var(--ink)}
+.avatar{position:relative;width:26px;height:26px;flex:0 0 26px;border-radius:50%;
+  background:var(--surface-2);border:1px solid var(--line);display:flex;align-items:center;
+  justify-content:center;font-size:11px;font-weight:600;color:var(--ink-2)}
+/* The sync signal rides ON the avatar rather than taking a row of its own — it is a status,
+   not a menu item, and the footer is meant to be one line. */
+.avatar .syncdot{position:absolute;right:-1px;bottom:-1px;width:8px;height:8px;flex:0 0 8px;
+  border:1.5px solid var(--surface);box-sizing:content-box}
+.profname{flex:1;font-size:14px;font-weight:500}
+.profchev{color:var(--ink-3);font-size:17px;line-height:1}
+/* Settings panel */
+#settingsPanel{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.55);
+  display:flex;align-items:flex-end;justify-content:center}
+.spane{background:var(--surface);width:min(520px,100%);max-height:82vh;display:flex;
+  flex-direction:column;border-radius:18px 18px 0 0;border:1px solid var(--line);border-bottom:0}
+.shead{display:flex;align-items:center;gap:10px;padding:16px 18px 12px;border-bottom:1px solid var(--line)}
+.stitle{flex:1;font-size:16px;font-weight:600;letter-spacing:-.2px}
+.sbody{overflow-y:auto;padding:6px 0 22px}
+@media (min-width:1000px){
+  #settingsPanel{align-items:center}
+  .spane{border-radius:18px;border-bottom:1px solid var(--line);max-height:78vh}
+}
 
 /* ---------- section label ---------- */
 .lbl{font-size:11px;font-weight:600;letter-spacing:.8px;color:var(--ink-3);
@@ -401,17 +429,35 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
 </div>
 
 <div id="scrim" hidden></div>
-<nav id="drawer" aria-label="Sections and settings">
+<nav id="drawer" aria-label="Main navigation">
   <div class="dhead">
     <div class="mark" id="drawerMark"></div>
     <div class="nm">Echo</div>
     <button class="iconbtn" id="btnClose" title="Close" aria-label="Close menu"></button>
   </div>
   <div id="drawerNav"></div>
-  <div class="dsep"></div>
-  <div class="syncrow" id="syncRow"></div>
-  <div id="drawerSettings"></div>
+  <!-- Footer is pinned: the nav above it scrolls, this does not. A settings entry that drifts
+       with the list is a settings entry you have to go looking for. -->
+  <div id="drawerFoot">
+    <button class="profrow" id="btnProfile" aria-haspopup="dialog">
+      <span class="avatar" id="profAvatar"><span class="syncdot" id="profDot"></span></span>
+      <span class="profname">Settings</span>
+      <span class="profchev" aria-hidden="true">›</span>
+    </button>
+  </div>
 </nav>
+
+<!-- Settings lives behind the profile row now, not spread down the rail. Everything the phone
+     sends is READ-ONLY here, so this is a panel that states things rather than a form. -->
+<div id="settingsPanel" hidden>
+  <div class="spane">
+    <div class="shead">
+      <div class="stitle">Settings</div>
+      <button class="iconbtn" id="btnSettingsClose" title="Close" aria-label="Close settings"></button>
+    </div>
+    <div class="sbody" id="drawerSettings"></div>
+  </div>
+</div>
 
 <div id="ask" hidden></div>
 <div id="toast"></div>
@@ -846,20 +892,67 @@ function closeDrawer() {
 }
 function drawerOpen() { return $("#drawer").classList.contains("on"); }
 
+/* The rail, grouped by what each destination is FOR.
+ *
+ * It used to be eight equal rows under one "Sections" heading, which made finding anything a
+ * left-to-right read of all eight. Grouped, you land on the pair you want first and pick one of
+ * two. The pairs follow a story's actual life in the app:
+ *
+ *   Feed       what arrived, and what you kept
+ *   Reporting  what went into a report, and the reports themselves
+ *   Signals    what you told the app to prefer
+ *   Data       reference data, and the backups of it
+ *
+ * The generic "Sections" heading is gone — a heading naming the page's own furniture tells the
+ * reader nothing. These four DO say something, which is the difference.
+ */
+var NAV_GROUPS = [
+  ["Feed",      ["alerts", "saved"]],
+  ["Reporting", ["published", "reports"]],
+  ["Signals",   ["liked", "disliked"]],
+  ["Data",      ["database", "restorepoints"]]
+];
+
 function renderDrawerNav() {
   var n = $("#drawerNav"); n.innerHTML = "";
-  n.appendChild(el("div", "dsec", "Sections"));
-  TABS.forEach(function (t) {
-    var b = el("button", "drow" + (S.tab === t[0] ? " on" : ""));
-    b.appendChild(el("span", null, t[1]));
-    b.appendChild(el("span", "dn", String(t[2]())));
-    b.onclick = function () {
-      S.tab = t[0]; save(); render();
-      $("#scroll").scrollTop = 0;
-      closeDrawer();
-    };
-    n.appendChild(b);
+  var byId = {};
+  TABS.forEach(function (t) { byId[t[0]] = t; });
+
+  NAV_GROUPS.forEach(function (grp) {
+    n.appendChild(el("div", "dsec", grp[0]));
+    grp[1].forEach(function (id) {
+      var t = byId[id];
+      if (!t) return;              // a tab removed from TABS just drops out of its group
+      delete byId[id];
+      var b = el("button", "drow" + (S.tab === t[0] ? " on" : ""));
+      b.appendChild(el("span", null, t[1]));
+      b.appendChild(el("span", "dn", String(t[2]())));
+      b.onclick = function () {
+        S.tab = t[0]; save(); render();
+        $("#scroll").scrollTop = 0;
+        closeDrawer();
+      };
+      n.appendChild(b);
+    });
   });
+
+  // Anything added to TABS but not yet placed in a group still appears, rather than silently
+  // vanishing from the rail because someone forgot to categorise it.
+  var leftover = TABS.filter(function (t) { return byId[t[0]]; });
+  if (leftover.length) {
+    n.appendChild(el("div", "dsec", "More"));
+    leftover.forEach(function (t) {
+      var b = el("button", "drow" + (S.tab === t[0] ? " on" : ""));
+      b.appendChild(el("span", null, t[1]));
+      b.appendChild(el("span", "dn", String(t[2]())));
+      b.onclick = function () {
+        S.tab = t[0]; save(); render();
+        $("#scroll").scrollTop = 0;
+        closeDrawer();
+      };
+      n.appendChild(b);
+    });
+  }
 }
 
 /* Describe the RECURRENCE, not a single next firing — "9:00 AM on weekdays" tells you what
@@ -886,27 +979,48 @@ function alertScheduleText(g) {
 /* Sync status in the rail — Sightline puts this in the same place, and it is the right place:
    it is ambient information you want visible without asking, not a thing you go and look up. */
 function renderSyncRow() {
-  var n = $("#syncRow"); n.innerHTML = "";
+  // The rail footer is one line now, so the sync state rides on the avatar as a dot and the
+  // wording moves to the row's tooltip and into the Settings panel. Same signal, no extra row.
+  var dot = $("#profDot");
+  var av = $("#profAvatar");
+  var btn = $("#btnSettings");
+  if (av) {
+    var email = (S.data && S.data.settings && S.data.settings.account) || S.email || "";
+    av.firstChild && av.firstChild.nodeType === 3 && av.removeChild(av.firstChild);
+    var initial = email ? email.trim().charAt(0).toUpperCase() : "";
+    if (initial) av.insertBefore(document.createTextNode(initial), dot || null);
+  }
+  var d0 = S.data, label;
+  if (!d0) label = "Not loaded";
+  else if (!d0.updatedAtMillis) label = "Never backed up";
+  else {
+    var mins0 = Math.round((Date.now() - d0.updatedAtMillis) / 60000);
+    label = "Phone backed up " + (mins0 < 2 ? "just now"
+      : mins0 < 60 ? mins0 + " min ago"
+      : mins0 < 1440 ? Math.round(mins0 / 60) + " h ago"
+      : Math.round(mins0 / 1440) + " d ago");
+    if (dot) dot.className = "syncdot " + (mins0 > 1440 ? "behind" : "ok");
+  }
+  if (dot && (!d0 || !d0.updatedAtMillis)) dot.className = "syncdot";
+  if (btn) btn.title = label;
+  renderSyncDetail(label);
+}
+
+/* The full sentence, inside Settings where there is room for it. */
+function renderSyncDetail(label) {
+  var host = $("#syncDetail");
+  if (!host) return;
+  host.innerHTML = "";
   var d = S.data;
   var dot = el("span", "syncdot");
-  var text;
-  if (!d) { text = "Not loaded"; }
-  else if (!d.updatedAtMillis) { text = "Never backed up"; }
-  else {
-    var ms = Date.now() - d.updatedAtMillis;
-    var mins = Math.round(ms / 60000);
-    var when = mins < 2 ? "just now"
-      : mins < 60 ? mins + " min ago"
-      : mins < 1440 ? Math.round(mins / 60) + " h ago"
-      : Math.round(mins / 1440) + " d ago";
-    // Amber past a day: the phone is the only thing that fetches, so a stale backup means the
-    // web is quietly showing old news. Worth surfacing before it misleads.
-    dot.className = "syncdot " + (mins > 1440 ? "behind" : "ok");
-    text = "Phone backed up " + when;
+  if (d && d.updatedAtMillis) {
+    var m = Math.round((Date.now() - d.updatedAtMillis) / 60000);
+    dot.className = "syncdot " + (m > 1440 ? "behind" : "ok");
   }
-  n.appendChild(dot);
-  n.appendChild(el("span", null, text));
+  host.appendChild(dot);
+  host.appendChild(el("span", null, label));
 }
+
 
 /* The phone's settings list, mirrored READ-ONLY. The phone owns every value, so these
    are stated rather than offered — a control here would imply the web could change the
@@ -915,7 +1029,27 @@ function renderDrawerSettings() {
   var n = $("#drawerSettings"); n.innerHTML = "";
   var g = (S.data && S.data.settings) || null;
 
-  n.appendChild(el("div", "dsec", "Settings on your phone"));
+  // Sync state leads: it tells you how much to trust everything under it.
+  n.appendChild(el("div", "dsec", "Account"));
+  var acct = el("div", "srow");
+  acct.appendChild(el("span", "sk", "Signed in"));
+  acct.appendChild(el("span", "sv", S.email || "this account"));
+  n.appendChild(acct);
+  n.appendChild(el("div", "dnote",
+    "This page never fetches news - only your phone does. It reads your Drive backup and writes " +
+    "back only what you verify or publish here. Signing out forgets the connection in THIS " +
+    "browser only; nothing in your Drive is deleted."));
+  var soRow = el("div", "srow");
+  var so = el("button", "btn sm ghost", "Sign out");
+  so.onclick = function () { closeSettingsPanel(); signOut(); };
+  soRow.appendChild(so);
+  n.appendChild(soRow);
+
+  n.appendChild(el("div", "dsec", "Sync"));
+  var sd = el("div", "syncrow"); sd.id = "syncDetail";
+  n.appendChild(sd);
+
+  n.appendChild(el("div", "dsec", "On your phone"));
   if (!g) {
     n.appendChild(el("div", "dnote",
       "Your phone has not sent its settings yet. Open Settings → Storage on the phone and press Back up."));
@@ -1361,6 +1495,14 @@ async function openSettings() {
   if (out) signOut();
 }
 
+function openSettingsPanel() {
+  renderDrawerSettings();
+  renderSyncRow();
+  $("#settingsPanel").hidden = false;
+  $("#btnSettingsClose").focus();
+}
+function closeSettingsPanel() { $("#settingsPanel").hidden = true; }
+
 /* ============================================================
    WIRING
    ============================================================ */
@@ -1386,7 +1528,9 @@ $("#btnClose").onclick = closeDrawer;
 $("#scrim").onclick = closeDrawer;
 // Escape closes the drawer, matching the ask dialog.
 document.addEventListener("keydown", function (e) {
-  if (e.key === "Escape" && drawerOpen()) { e.preventDefault(); closeDrawer(); }
+  if (e.key !== "Escape") return;
+  if (!$("#settingsPanel").hidden) { e.preventDefault(); closeSettingsPanel(); return; }
+  if (drawerOpen()) { e.preventDefault(); closeDrawer(); }
 });
 
 $("#signin").onclick = async function () {
@@ -1395,7 +1539,13 @@ $("#signin").onclick = async function () {
   catch (e) { setGateStatus(e.message, true); }
 };
 document.querySelectorAll(".themebtn").forEach(function (b) { b.onclick = toggleTheme; });
-$("#btnSettings").onclick = openSettings;
+$("#btnSettings").onclick = openSettingsPanel;   // topbar gear (narrow screens)
+$("#btnProfile").onclick  = openSettingsPanel;   // rail footer (wide screens)
+$("#btnSettingsClose").onclick = closeSettingsPanel;
+$("#settingsPanel").onclick = function (e) {
+  // Backdrop only: a click that started inside the pane must not dismiss it.
+  if (e.target === this) closeSettingsPanel();
+};
 $("#genPdf").onclick  = function () { publishVerified("pdf"); };
 $("#genWord").onclick = function () { publishVerified("word"); };
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyTheme);

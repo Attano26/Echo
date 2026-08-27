@@ -16,7 +16,7 @@ const VERSION = "echo-2026-08-26-g";
 const ASSETS = [
   "./",
   "./index.html",
-  "./echo.html",
+  "./window.html",
   "./manifest.webmanifest",
   "./logo.svg",
   "./favicon.svg",
@@ -63,7 +63,7 @@ self.addEventListener("fetch", e => {
           caches.open(VERSION).then(c => c.put(req, copy)).catch(() => {});
           return res;
         })
-        .catch(() => caches.match(req).then(hit => hit || caches.match("./echo.html")))
+        .catch(() => caches.match(req).then(hit => hit || caches.match("./window.html")))
     );
     return;
   }

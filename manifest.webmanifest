@@ -2,7 +2,7 @@
   "name": "Echo",
   "short_name": "Echo",
   "description": "Read the market intelligence your phone gathered, verify what holds up, and publish it as a report.",
-  "start_url": "./echo.html",
+  "start_url": "./window.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
