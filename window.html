@@ -2850,7 +2850,7 @@ function renderWidgetStrip(w) {
     g.appendChild(wTop("Industry trends", (w.trendWindowDays || 30) + "d"));
     g.appendChild(wHead(el("p", "w-topic", top.length ? top[0].n : "Nothing yet")));
     g.appendChild(wSay(top.length
-      ? "Leads " + (w.trendTotal || 0) + " stories in the window."
+      ? top[0].c + " of " + (w.trendTotal || 0) + " stories in the window."
       : "No tracked theme has been mentioned."));
     var f = wFoot();
     if (top.length) {
@@ -2869,16 +2869,19 @@ function renderWidgetStrip(w) {
         split.appendChild(rest);
       }
       f.appendChild(split);
+      /* The runners-up, not the leader: the headline above already names the leader, and a
+         legend that repeats it spends the only two slots there are on something you have
+         just read. Colours match the segments in the bar. */
       var lg = el("div", "wlegend");
-      top.slice(0, 2).forEach(function (r, i) {
+      top.slice(1, 3).forEach(function (r, i) {
         var it = el("span");
         var d = el("i");
-        d.style.background = cols[i];
+        d.style.background = cols[i + 1];
         it.appendChild(d);
         it.appendChild(document.createTextNode(r.c + " " + r.n.toLowerCase().split(" ")[0]));
         lg.appendChild(it);
       });
-      f.appendChild(lg);
+      if (lg.children.length) f.appendChild(lg);
     }
     g.appendChild(f);
     add(g);
