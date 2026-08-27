@@ -2638,11 +2638,18 @@ function renderWidgetStrip(w) {
   (function () {
     var g = el("div", "widget");
     var ready = w.readyCount || 0;
-    g.appendChild(wTop("Ready to publish", ready ? (w.readyOldestDays || 0) + "d" : null));
+    /* readyOldestDays is -1 when the stored dates cannot give an age. That is a sentinel, not
+       a duration, and the phone's own widget guards on >= 1 before printing it. Do the same
+       here rather than rendering "waited -1 days", which is what an unguarded read produces. */
+    var oldest = w.readyOldestDays;
+    var haveAge = typeof oldest === "number" && oldest >= 1;
+    g.appendChild(wTop("Ready to publish", (ready && haveAge) ? oldest + "d" : null));
     g.appendChild(wHead(wHero(ready, "verified,<br>unsent", ready ? null : "var(--ink-3)")));
-    g.appendChild(wSay(ready
-      ? "Oldest has waited " + (w.readyOldestDays || 0) + " days for a report."
-      : "Nothing is waiting on you."));
+    g.appendChild(wSay(!ready
+      ? "Nothing is waiting on you."
+      : haveAge
+        ? "Oldest has waited " + oldest + (oldest === 1 ? " day" : " days") + " for a report."
+        : "Enough for an edition whenever you want one."));
     var f = wFoot(true);
     var ticks = el("div", "wticks");
     // Twelve slots: filled for what is waiting, faint for the headroom left in an edition.
