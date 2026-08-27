@@ -415,21 +415,30 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
 .widget p{margin:0}
 /* FOUR FIXED BANDS. Content no longer decides where anything sits, which is what makes the
    divider land at the same height in all eight widgets. */
-.w-top{display:flex;align-items:center;gap:calc(5 * var(--u));
+.w-top{display:flex;align-items:flex-start;gap:calc(5 * var(--u));
   height:calc(12 * var(--u));flex:0 0 auto;margin-bottom:calc(8 * var(--u))}
 /* The mark takes --ink: white on the dark ground, near-black on the light one. A literal white
    would be invisible in light mode, and the point is that it reads as the page's own ink.
    The glyph fills only the middle 78% of its own viewBox, so a box centred on the label still
    lands its INK below the caps. The negative margin lifts it onto the cap line. */
-.w-mark{width:calc(10 * var(--u));height:calc(10 * var(--u));color:var(--ink);
-  flex:none;display:block;margin-top:calc(-1.4 * var(--u))}
+/* THE SVG HAS TO BE display:block TOO.
+   An <svg> is inline by default, so inside this span it sat on a text baseline and rendered
+   ~0.7em BELOW the box that was supposed to contain it. Every nudge to the span moved the box
+   and left the glyph where it was, which is why the mark kept looking low no matter what the
+   margin said. Blocking the svg makes the box and the glyph the same thing again.
+
+   After that the only correction left is optical: the glyph fills the middle 78% of its own
+   viewBox, so it needs to start a little above the label's box for its ink to sit on the caps. */
+.w-mark{width:calc(9.5 * var(--u));height:calc(9.5 * var(--u));color:var(--ink);
+  flex:none;display:block;align-self:flex-start;margin-top:calc(-0.6 * var(--u))}
+.w-mark svg{display:block;width:100%;height:100%}
 /* line-height 1 on an all-caps label makes its box hug the caps, so centring the mark against
    it aligns to the letters rather than to the empty descender space under them. */
 .w-label{font-family:var(--fs-title);font-size:calc(9 * var(--u));font-weight:600;
   line-height:1;letter-spacing:.055em;text-transform:uppercase;color:var(--ink-3);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;align-self:flex-start}
 .w-stamp{margin-left:auto;font-size:calc(9 * var(--u));font-weight:500;color:var(--ink-3);
-  font-variant-numeric:tabular-nums;flex:none}
+  line-height:1;font-variant-numeric:tabular-nums;flex:none;align-self:flex-start}
 /* The headline band: two lines' worth, whether it holds a figure or a word. Top-aligned, so
    a one-line topic starts where a two-line one does instead of floating in the middle. */
 .w-head{height:calc(40 * var(--u));flex:0 0 auto;display:flex;align-items:flex-start}
@@ -644,7 +653,7 @@ button.nstate:active{transform:scale(.97)}
 .anstat{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-card);
   box-shadow:var(--sh-1);padding:16px 18px;display:flex;flex-direction:column}
 .anstat .k{font-family:var(--fs-title);font-size:12.5px;font-weight:600;color:var(--ink-3)}
-.anstat .v{font-family:var(--fs-title);font-size:21px;font-weight:500;letter-spacing:-.3px;
+.anstat .v{font-family:var(--fs);font-size:22px;font-weight:300;letter-spacing:-.4px;
   margin-top:9px;line-height:1.25}
 .anstat .c{font-size:12px;color:var(--ink-3);margin-top:auto;padding-top:8px;line-height:1.45}
 
