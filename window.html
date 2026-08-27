@@ -76,6 +76,10 @@
   --fs:'Arial Nova Light','Arial Nova','Segoe UI Light','Segoe UI',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;
   --fs-title:'Arial Nova','Arial Nova Light','Segoe UI',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;
   --apph:100dvh;
+  /* The Echo mark as a mask, so anything can wear its shape. Same path as MARK. */
+  --echo-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024'><path fill='%23000' d='M112 110 H912 V336 H112 Z M112 398 H338 A226 226 0 0 1 112 624 Z M400 398 H912 V624 H626 A226 226 0 0 1 400 398 Z M112 686 A226 226 0 0 1 338 912 H112 Z M400 912 A226 226 0 0 1 626 686 H912 V912 Z'/></svg>");
+  /* The phone's five-stop brand ramp, in order. */
+  --brand-ramp:#F5D7FF,#FBC79B,#FF7B81,#5067FF,#F5D7FF;
   --bento-gap:14px;
   /* The widget set's status ramp, from the widget mockups. Deliberately NOT the accent:
      --accent means "interactive", and a widget is not. These four mean what they say. */
@@ -258,7 +262,22 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
   #drawer,#scrim{transition:none}
 }
 .dhead{display:flex;align-items:center;gap:11px;padding:0 18px 18px}
-.dhead .mark{width:24px;height:24px;flex:0 0 24px}
+/* The mark wears the brand gradient and sweeps it, matching the phone's landing flourish and
+   its resting sweep: same ramp, same bottom-left to top-right axis, same 4.5s cycle.
+   The div carries the gradient; the mask carries the shape. */
+.dhead .mark{
+  width:24px;height:24px;flex:0 0 24px;
+  background:linear-gradient(to top right,var(--brand-ramp));
+  background-size:280% 280%;
+  -webkit-mask:var(--echo-mask) center/contain no-repeat;
+  mask:var(--echo-mask) center/contain no-repeat;
+  animation:railsweep 4.5s linear infinite;
+}
+/* Bottom-left to top-right, one whole period per cycle, so it loops without a seam. */
+@keyframes railsweep{
+  from{background-position:0% 100%}
+  to{background-position:100% 0%}
+}
 .dhead .nm{font-family:var(--fs-title);font-size:16px;font-weight:600;letter-spacing:-.2px;flex:1}
 .dsec{font-family:var(--fs-title);font-size:12px;font-weight:600;color:var(--ink-3);
   padding:16px 18px 7px}
@@ -975,7 +994,7 @@ button.nstate:active{transform:scale(.97)}
 <div id="scrim" hidden></div>
 <nav id="drawer" aria-label="Main navigation">
   <div class="dhead">
-    <div class="mark" id="drawerMark"></div>
+    <div class="mark" id="drawerMark" aria-hidden="true"></div>
     <div class="nm">Echo</div>
     <button class="iconbtn" id="btnClose" title="Close" aria-label="Close menu"></button>
   </div>
@@ -4089,7 +4108,8 @@ sizeShell();
 $("#gateMark").innerHTML = MARK;
 $("#btnMenu").innerHTML = ICON_MENU;
 $("#btnClose").innerHTML = ICON_X;
-$("#drawerMark").innerHTML = MARK;
+/* No innerHTML for the rail mark: it wears the glyph as a CSS mask so the gradient
+   underneath can move. An <svg> child would sit on top of it and hide the sweep. */
 $("#btnMenu").onclick = openDrawer;
 $("#btnClose").onclick = closeDrawer;
 $("#scrim").onclick = closeDrawer;
