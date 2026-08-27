@@ -418,9 +418,11 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
 .w-top{display:flex;align-items:center;gap:calc(5 * var(--u));
   height:calc(12 * var(--u));flex:0 0 auto;margin-bottom:calc(8 * var(--u))}
 /* The mark takes --ink: white on the dark ground, near-black on the light one. A literal white
-   would be invisible in light mode, and the point is that it reads as the page's own ink. */
-.w-mark{width:calc(10.5 * var(--u));height:calc(10.5 * var(--u));color:var(--ink);
-  flex:none;display:block}
+   would be invisible in light mode, and the point is that it reads as the page's own ink.
+   The glyph fills only the middle 78% of its own viewBox, so a box centred on the label still
+   lands its INK below the caps. The negative margin lifts it onto the cap line. */
+.w-mark{width:calc(10 * var(--u));height:calc(10 * var(--u));color:var(--ink);
+  flex:none;display:block;margin-top:calc(-1.4 * var(--u))}
 /* line-height 1 on an all-caps label makes its box hug the caps, so centring the mark against
    it aligns to the letters rather than to the empty descender space under them. */
 .w-label{font-family:var(--fs-title);font-size:calc(9 * var(--u));font-weight:600;
@@ -428,8 +430,9 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .w-stamp{margin-left:auto;font-size:calc(9 * var(--u));font-weight:500;color:var(--ink-3);
   font-variant-numeric:tabular-nums;flex:none}
-/* The headline band: two lines' worth, whether it holds a figure or a word. */
-.w-head{height:calc(40 * var(--u));flex:0 0 auto;display:flex;align-items:center}
+/* The headline band: two lines' worth, whether it holds a figure or a word. Top-aligned, so
+   a one-line topic starts where a two-line one does instead of floating in the middle. */
+.w-head{height:calc(40 * var(--u));flex:0 0 auto;display:flex;align-items:flex-start}
 .w-hero{display:flex;align-items:center;gap:calc(6 * var(--u))}
 /* Every hero figure in Arial Nova Light: one numeric voice across all eight. A light face at
    display size needs looser tracking than a bold one would. */
@@ -440,15 +443,17 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
 .w-line{font-size:calc(11.5 * var(--u));line-height:1.28;font-weight:500;color:var(--ink);
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
   max-height:calc(29.5 * var(--u))}
-/* The descriptive line, under the headline. Takes the slack so the footer stays put. */
-.w-say{flex:1 1 auto;min-height:0;overflow:hidden;font-size:calc(10 * var(--u));
-  color:var(--ink-2);line-height:1.35;
+/* The descriptive line. margin-top:auto pushes it to the BOTTOM of the free space, so it ends
+   just above the footer in every widget. With the rules gone, this shared baseline is what
+   makes the strip read as one set. */
+.w-say{margin-top:auto;flex:0 0 auto;overflow:hidden;font-size:calc(10 * var(--u));
+  color:var(--ink-2);line-height:1.35;padding-bottom:calc(7 * var(--u));
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .w-sub{font-size:calc(10 * var(--u));color:var(--ink-2);line-height:1.35}
-/* Fixed height, so the rule is at the same y in every widget in the row. */
-.w-foot{flex:0 0 auto;height:calc(40 * var(--u));padding-top:calc(9 * var(--u));
+/* Fixed height, so the footer's content starts at the same y in every widget. No rule: the
+   shared geometry separates the bands already, and eight of them across a row read as noise. */
+.w-foot{flex:0 0 auto;height:calc(33 * var(--u));
   display:flex;flex-direction:column;justify-content:center}
-.w-foot.ruled{border-top:1px solid var(--line-2)}
 /* The one hero WORD, set in the same light face as the hero figures. */
 .w-topic{font-family:var(--fs);font-weight:300;font-size:calc(19 * var(--u));
   letter-spacing:-.012em;line-height:1.12;color:var(--ink);
@@ -480,15 +485,22 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
 .wbar{height:calc(4 * var(--u));border-radius:999px;background:var(--track);overflow:hidden}
 .wbar span{display:block;height:100%;border-radius:999px}
 
-/* A column per day or per week. Filled is live, faint is spent. */
-.wticks{display:flex;gap:calc(2.5 * var(--u));align-items:flex-end;height:calc(16 * var(--u))}
-.wticks i{flex:1;border-radius:calc(1.5 * var(--u));background:var(--accent);display:block;height:100%}
-.wticks i.spent{background:var(--track);height:60%}
+/* A column per day or per week. Full height and solid when the day counted, faint when it did
+   not. Proportional heights turned this into a row of dots at widget scale; a binary read of
+   "which days carried news" survives being 3 pixels wide, and a shape count does not. */
+.wticks{display:flex;gap:calc(2.5 * var(--u));align-items:stretch;height:calc(15 * var(--u))}
+.wticks i{flex:1;border-radius:calc(1.5 * var(--u));background:var(--accent);display:block}
+.wticks i.spent{background:var(--track)}
+/* Coverage is not the accent: the accent means "interactive" everywhere else on this page. */
+.wticks.cov i{background:var(--info)}
+.wticks.cov i.spent{background:var(--track)}
 
 /* The widget sparkline is its own thing: a fixed 100x34 box that never stretches, because the
    widget is a fixed square. No non-scaling tricks needed here. */
-/* Edge to edge inside the widget's own padding, and as tall as the footer allows. */
-.wspark{width:100%;height:calc(31 * var(--u));display:block;margin-bottom:calc(-4 * var(--u))}
+/* Edge to edge, and pulled past the widget's own padding on both sides so the fade runs out
+   to the card's edge rather than stopping short of it. */
+.wspark{display:block;height:calc(34 * var(--u));
+  width:calc(100% + 28 * var(--u));margin:0 calc(-14 * var(--u)) calc(-9 * var(--u))}
 
 /* ============================================================
    NEWS WALL — the column wall, with search and filters above it
@@ -518,8 +530,6 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
   font-variant-numeric:tabular-nums}
 .nttl{font-family:var(--fs-title);font-size:15px;font-weight:600;line-height:1.42;margin:9px 0 0}
 .nsum{font-size:13.5px;color:var(--ink-2);line-height:1.62;margin:8px 0 0}
-.nadv{font-size:13px;color:var(--ink-2);line-height:1.6;margin:11px 0 0;
-  padding-left:12px;border-left:2px solid var(--accent)}
 
 /* The source is a link when we have a URL for it, and looks like plain text until you are
    about to use it. Underline on hover, not a permanent blue: a wall of twenty cards with
@@ -793,8 +803,6 @@ button.nstate:active{transform:scale(.97)}
   #report h2{font-size:14px;margin:0 0 6px;line-height:1.35}
   #report .r-meta{font-size:11px;color:#666;margin:0 0 6px}
   #report .r-sum{font-size:12px;line-height:1.6;margin:0}
-  #report .r-adv{font-size:11.5px;line-height:1.6;margin:6px 0 0;padding-left:9px;
-    border-left:2px solid #1F57F5;color:#333}
   a{color:#000;text-decoration:none}
 }
 
@@ -1722,7 +1730,8 @@ function articleCard(a, opts) {
 
   card.appendChild(el("p", "nttl", a.title));
   if (a.summary) card.appendChild(el("p", "nsum", a.summary));
-  if (a.pmAdvisory) card.appendChild(el("p", "nadv", a.pmAdvisory));
+  /* pmAdvisory is deliberately not rendered. The feature is retired; the field is left in
+     the payload so nothing is lost, but nothing on this page reads it. */
 
   var foot = el("div", "ncorners foot");
 
@@ -1778,7 +1787,9 @@ function articleCard(a, opts) {
 
 /* Everything a story can be matched on, lowercased once. */
 function articleHaystack(a) {
-  return [a.title, a.summary, a.pmAdvisory, a.source, a.category]
+  /* No pmAdvisory here. Matching on text the card does not show produces a result you
+     cannot explain by looking at it. */
+  return [a.title, a.summary, a.source, a.category]
     .filter(Boolean).join(" ").toLowerCase();
 }
 
@@ -2618,18 +2629,25 @@ function wPill(kind, text) {
   p.appendChild(el("span", null, text));
   return p;
 }
-function wFoot(ruled) { return el("div", "w-foot" + (ruled ? " ruled" : "")); }
+function wFoot() { return el("div", "w-foot"); }
 
 /* A widget-sized sparkline. The widget is a fixed square, so this one can keep its aspect
    ratio and needs none of the non-scaling treatment the dashboard's stretched rows do. */
-function wSpark(series, colour, wash) {
+var WSPARK_SEQ = 0;
+
+/* The top-mover chart.
+   Two gradients, not one. The VERTICAL gradient fills under the line and fades to nothing
+   before the bottom, which is what stops a filled area reading as a solid block. The
+   HORIZONTAL one is a mask on both the fill and the line, so the whole chart dissolves into
+   the card at the left and right edges instead of ending in two hard stops. */
+function wSpark(series, colour) {
   var svg = svgNode("svg", { "class": "wspark", viewBox: "0 0 100 34",
                              preserveAspectRatio: "none" });
   if (series.length < 2) return svg;
   var mx = Math.max.apply(null, series) || 1, pts = [];
-  // Edge to edge: the widget's own padding is the only inset this needs.
+  // Lifted: the peak sits near the top of the box and the trough well clear of the bottom.
   series.forEach(function (v, i) {
-    pts.push([(i / (series.length - 1)) * 100, 31 - (v / mx) * 26]);
+    pts.push([(i / (series.length - 1)) * 100, 24 - (v / mx) * 21]);
   });
   // Smooth, not a polyline. Control points on the vertical midline between each pair keeps the
   // curve from overshooting the way a Catmull-Rom spline does on a spiky series.
@@ -2640,14 +2658,41 @@ function wSpark(series, colour, wash) {
             " " + cx.toFixed(1) + " " + b[1].toFixed(1) +
             " " + b[0].toFixed(1) + " " + b[1].toFixed(1);
   }
-  var area = svgNode("path", { d: line + " L100 34 L0 34 Z" });
-  area.style.fill = wash;
-  svg.appendChild(area);
+  var id = ++WSPARK_SEQ;
+  var defs = svgNode("defs");
+
+  var grad = svgNode("linearGradient", { id: "wsg" + id, x1: "0", y1: "0", x2: "0", y2: "1" });
+  [["0", ".42"], [".55", ".14"], ["1", "0"]].forEach(function (st) {
+    var stop = svgNode("stop", { offset: st[0], "stop-opacity": st[1] });
+    stop.style.stopColor = colour;
+    grad.appendChild(stop);
+  });
+  defs.appendChild(grad);
+
+  // objectBoundingBox units, so the mask tracks the box at any width.
+  var mgrad = svgNode("linearGradient", { id: "wsm" + id, x1: "0", y1: "0", x2: "1", y2: "0" });
+  [["0", "0"], [".14", "1"], [".86", "1"], ["1", "0"]].forEach(function (st) {
+    var stop = svgNode("stop", { offset: st[0], "stop-color": "#fff", "stop-opacity": st[1] });
+    mgrad.appendChild(stop);
+  });
+  defs.appendChild(mgrad);
+  var mask = svgNode("mask", { id: "wsk" + id, maskUnits: "userSpaceOnUse",
+                               x: "0", y: "0", width: "100", height: "34" });
+  mask.appendChild(svgNode("rect", { x: "0", y: "0", width: "100", height: "34",
+                                     fill: "url(#wsm" + id + ")" }));
+  defs.appendChild(mask);
+  svg.appendChild(defs);
+
+  var g = svgNode("g", { mask: "url(#wsk" + id + ")" });
+  var area = svgNode("path", { d: line + " L100 34 L0 34 Z",
+                               fill: "url(#wsg" + id + ")" });
+  g.appendChild(area);
   var stroke = svgNode("path", { d: line, fill: "none", "stroke-width": "2",
                                  "stroke-linecap": "round", "stroke-linejoin": "round",
                                  "vector-effect": "non-scaling-stroke" });
   stroke.style.stroke = colour;
-  svg.appendChild(stroke);
+  g.appendChild(stroke);
+  svg.appendChild(g);
   return svg;
 }
 
@@ -2674,7 +2719,7 @@ function renderWidgetStrip(w) {
       : haveAge
         ? "Oldest has waited " + oldest + (oldest === 1 ? " day" : " days") + " for a report."
         : "Enough for an edition whenever you want one."));
-    var f = wFoot(true);
+    var f = wFoot();
     var ticks = el("div", "wticks");
     // Twelve slots: filled for what is waiting, faint for the headroom left in an edition.
     for (var i = 0; i < 12; i++) ticks.appendChild(el("i", i < ready ? null : "spent"));
@@ -2689,16 +2734,17 @@ function renderWidgetStrip(w) {
     var grid = arr(w.monthGrid), mx = w.monthMax || 1;
     g.appendChild(wTop("Coverage", w.monthLabel || null));
     g.appendChild(wHead(wHero(w.monthTotal || 0, "stories<br>this month")));
+    var recent = grid.slice(-16);
+    var live = recent.filter(function (c) { return c > 0; }).length;
     g.appendChild(wSay(grid.length
-      ? "Busiest day carried " + mx + ". The last two weeks are below."
+      ? live + " of the last " + recent.length + " days carried news."
       : "No daily breakdown recorded yet."));
-    var f = wFoot(true);
+    var f = wFoot();
     if (grid.length) {
-      var ticks = el("div", "wticks");
-      grid.slice(-16).forEach(function (c) {
-        var t = el("i");
-        t.style.height = Math.max(14, (c / mx) * 100) + "%";
-        if (!c) t.style.background = "var(--track)";
+      var ticks = el("div", "wticks cov");
+      recent.forEach(function (c) {
+        var t = el("i", c > 0 ? null : "spent");
+        t.title = c + (c === 1 ? " story" : " stories");
         ticks.appendChild(t);
       });
       f.appendChild(ticks);
@@ -2718,7 +2764,7 @@ function renderWidgetStrip(w) {
     g.appendChild(wSay(free
       ? "The free feed costs nothing to run."
       : "Grounded search is billed for every query."));
-    var f = wFoot(true);
+    var f = wFoot();
     f.appendChild(wPill(free ? "good" : "warn", mode || "unknown"));
     g.appendChild(f);
     add(g);
@@ -2733,7 +2779,7 @@ function renderWidgetStrip(w) {
     g.appendChild(wSay(top.length
       ? "Leads " + (w.trendTotal || 0) + " stories in the window."
       : "No tracked theme has been mentioned."));
-    var f = wFoot(true);
+    var f = wFoot();
     if (top.length) {
       var split = el("div", "wsplit");
       var cols = ["var(--accent)", "var(--info)", "var(--warn)"];
@@ -2776,7 +2822,7 @@ function renderWidgetStrip(w) {
     g.appendChild(wSay(runners
       ? "Then " + runners + "."
       : "Nothing else is moving in this direction."));
-    var f = wFoot(true);
+    var f = wFoot();
     f.appendChild(wPill(side[3], side[4]));
     g.appendChild(f);
     add(g);
@@ -2791,11 +2837,10 @@ function renderWidgetStrip(w) {
     g.appendChild(wHead(el("p", "w-topic", w.moverName || "No mover")));
     g.appendChild(wSay((up ? "Up " : "Down ") + Math.abs(d) + " stories week on week, " +
                        (w.moverSharePct || 0) + "% of all coverage."));
-    var f = wFoot(true);
+    var f = wFoot();
     var series = arr(w.moverSeries);
     if (series.length > 1) {
-      f.appendChild(wSpark(series, up ? "var(--good)" : "var(--crit)",
-                                   up ? "var(--good-wash)" : "var(--crit-wash)"));
+      f.appendChild(wSpark(series, up ? "var(--good)" : "var(--crit)"));
     }
     g.appendChild(f);
     add(g);
@@ -2812,7 +2857,7 @@ function renderWidgetStrip(w) {
     g.appendChild(wHead(wHero(un, "of " + tot + "<br>in alerts",
                               pct > 60 ? "var(--warn)" : null)));
     g.appendChild(wSay(pct + "% of the feed is still undecided."));
-    var f = wFoot(false);
+    var f = wFoot();
     var cmp = el("div", "wcmp");
     [["Checked", tot - un, "var(--good)"], ["Waiting", un, "var(--warn)"]].forEach(function (r) {
       cmp.appendChild(el("span", null, r[0]));
@@ -2980,7 +3025,7 @@ function renderDashboard(app, d) {
    than reaching.
 
    Three moving parts:
-     chIndex()    BM25-lite over title / advisory / summary / category
+     chIndex()    BM25-lite over title, summary and category
      chRoute()    which of five question shapes this is
      chAnswer()   returns a plain model; chRenderTurn() draws it
 
@@ -3125,7 +3170,6 @@ function chCorpus() {
       k: k, raw: a,
       title: a.title,
       summary: a.summary || "",
-      advisory: a.pmAdvisory || "",
       category: a.category || "",
       source: a.source || "",
       company: a.company || "",
@@ -3154,8 +3198,9 @@ function chIndex() {
 
   var docs = chCorpus(), df = {}, vocab = {}, i, j;
   /* Field weights: a term in the headline says more about the story than the same term
-     buried in a summary, and pmAdvisory is the analyst's own words about why it matters. */
-  var FIELDS = [["title", 3], ["advisory", 2], ["category", 2], ["summary", 1], ["source", 1], ["company", 2], ["region", 1]];
+     buried in a summary. The retired advisory field is not among them, so every ranking can
+     be accounted for by text the reader can actually see. */
+  var FIELDS = [["title", 3], ["category", 2], ["summary", 1], ["source", 1], ["company", 2], ["region", 1]];
 
   for (i = 0; i < docs.length; i++) {
     var tf = {}, len = 0;
@@ -3404,7 +3449,7 @@ function chAnsFind(q, d, ix, ents, wantCount) {
     ents.comps.forEach(function (c) { terms = terms.concat(c.terms); });
     scopeBits.push(chList(ents.comps.map(function (c) { return esc(c.name); })));
     filter = function (doc) {
-      var hay = chFold(doc.title + " " + doc.summary + " " + doc.advisory + " " + doc.company);
+      var hay = chFold(doc.title + " " + doc.summary + " " + doc.company);
       return terms.some(function (t) { return hay.indexOf(t) >= 0; });
     };
   }
@@ -3414,7 +3459,7 @@ function chAnsFind(q, d, ix, ents, wantCount) {
     scopeBits.push(chList(ents.lands.map(function (c) { return esc(c.name); })));
     filter = function (doc) {
       if (prev && !prev(doc)) return false;
-      var hay = chFold(doc.title + " " + doc.summary + " " + doc.advisory + " " + doc.region);
+      var hay = chFold(doc.title + " " + doc.summary + " " + doc.region);
       return lt.some(function (t) { return hay.indexOf(t) >= 0; });
     };
   }
@@ -3856,7 +3901,6 @@ function reportHtml(title, dateLabel, articles) {
           (a.source ? " · " + esc(a.source) : "") + "</div>" +
         "<h2>" + esc(a.title) + "</h2>" +
         (a.summary ? "<p class='r-sum'>" + esc(a.summary) + "</p>" : "") +
-        (a.pmAdvisory ? "<p class='r-adv'>" + esc(a.pmAdvisory) + "</p>" : "") +
       "</div>";
     }).join("");
 }
@@ -3879,7 +3923,6 @@ function downloadWord(title, dateLabel, articles) {
     'h1{font-size:18pt;margin:0 0 4pt}.r-sub{color:#555;font-size:9pt;margin:0 0 18pt}' +
     'h2{font-size:12pt;margin:0 0 4pt}.r-meta{font-size:8.5pt;color:#666;margin:0 0 4pt}' +
     '.r-sum{font-size:10pt;line-height:1.5;margin:0}' +
-    '.r-adv{font-size:9.5pt;line-height:1.5;margin:5pt 0 0;padding-left:8pt;border-left:2pt solid #1F57F5;color:#333}' +
     '.r-art{margin:0 0 14pt;padding:0 0 10pt;border-bottom:1pt solid #ddd}' +
     '</style></head><body>' + reportHtml(title, dateLabel, articles) + '</body></html>';
   var blob = new Blob(["﻿", doc], { type: "application/msword" });
