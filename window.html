@@ -71,6 +71,8 @@
      sets font-weight:300 and only figures and labels climb above that. */
   --fs:'Arial Nova Light','Arial Nova','Segoe UI Light','Segoe UI',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;
   --apph:100dvh;
+  /* Activity-heatmap ramp, light. Five steps, matching the phone's Heatmap(). */
+  --heat-0:#EBEDF0; --heat-1:#9BE9A8; --heat-2:#40C463; --heat-3:#30A14E; --heat-4:#216E39;
 }
 /* System dark, unless the viewer has explicitly chosen light. */
 @media (prefers-color-scheme:dark){
@@ -81,6 +83,7 @@
     --line:#2A2A2F;
     --accent-soft:rgba(31,87,245,.20);
     --sh-2:0 2px 6px rgba(0,0,0,.55),0 14px 34px rgba(0,0,0,.5);
+    --heat-0:#20222A; --heat-1:#0E4429; --heat-2:#006D32; --heat-3:#26A641; --heat-4:#39D353;
   }
 }
 /* An explicit choice wins over the system, in both directions. */
@@ -93,6 +96,7 @@
   --accent-soft:rgba(31,87,245,.20);
   --sh-1:0 1px 2px rgba(0,0,0,.5),0 6px 20px rgba(0,0,0,.4);
   --sh-2:0 2px 6px rgba(0,0,0,.55),0 14px 34px rgba(0,0,0,.5);
+  --heat-0:#20222A; --heat-1:#0E4429; --heat-2:#006D32; --heat-3:#26A641; --heat-4:#39D353;
 }
 
 *{box-sizing:border-box;min-width:0}
@@ -410,70 +414,83 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
 .anstat .k{font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink-3)}
 .anstat .v{font-size:20px;font-weight:400;letter-spacing:-.3px;margin-top:9px;line-height:1.25}
 .anstat .c{font-size:12px;color:var(--ink-3);margin-top:auto;padding-top:8px;line-height:1.45}
-.anstat .rule{height:2px;border-radius:2px;width:26px;margin-top:10px}
+
 .anstat.w2{grid-column:span 2}
 
 /* News volume: stacked bars, one column per week, one colour per channel. */
-.stack{display:flex;align-items:flex-end;gap:6px;height:150px;padding-top:6px}
+/* Channel blocks sit apart rather than fusing into one column, the way the phone draws them --
+   a ten-deep stack of adjacent colours reads as a gradient, not as a count. */
+.stack{display:flex;align-items:flex-end;gap:6px;height:190px;padding-top:6px}
 .stackcol{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;min-width:0}
-.stackbar{width:100%;max-width:54px;margin:0 auto;display:flex;flex-direction:column-reverse;
-  border-radius:4px;overflow:hidden;min-height:2px;background:var(--surface-2)}
-/* A hairline between segments, so a stack of ten channels stays countable. */
-.stackseg{width:100%;min-height:2px;box-shadow:0 -1px 0 var(--surface) inset}
-.stackx{font-size:9.5px;color:var(--ink-3);text-align:center;margin-top:7px;overflow:hidden;
+.stackbar{width:100%;max-width:46px;margin:0 auto;display:flex;flex-direction:column-reverse;
+  gap:2px;min-height:2px}
+.stackseg{width:100%;min-height:5px;border-radius:3px}
+.stackx{font-size:10px;color:var(--ink-3);text-align:center;margin-top:8px;overflow:hidden;
   white-space:nowrap;text-overflow:ellipsis}
-.anlegend{display:flex;flex-wrap:wrap;gap:9px 14px;margin-top:14px}
-.lgi{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-3)}
-.lgd{width:8px;height:8px;border-radius:2px;flex:0 0 auto}
+.lgd{width:9px;height:9px;border-radius:3px;flex:0 0 auto}
+/* The phone ColorKey: two columns of dot + label, and an optional trailing figure. */
+.ankey{display:grid;grid-template-columns:1fr 1fr;gap:7px 18px;margin-top:16px}
+.keyi{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink-3);min-width:0}
+.keyn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.keyv{margin-left:auto;flex:0 0 auto;color:var(--ink-2)}
 
 /* The headline number a card leads with. */
-.anbig{display:flex;align-items:baseline;gap:9px;margin-bottom:12px;flex-wrap:wrap}
+.anbig{display:flex;align-items:baseline;gap:9px;margin-bottom:14px;flex-wrap:wrap}
 .anbign{font-size:32px;font-weight:300;letter-spacing:-1.2px;line-height:1}
 .anbigl{font-size:12.5px;color:var(--ink-3)}
+/* Three figures across, the way News overview leads on the phone. */
+.trio{display:flex;gap:16px;margin-bottom:18px}
+.triocol{flex:1;min-width:0}
+.triov{font-size:29px;font-weight:300;letter-spacing:-1.1px;line-height:1}
+.triok{font-size:11.5px;color:var(--ink-3);margin-top:4px}
 
-/* Conversion flow: three columns of proportional bands. Height IS the count. */
-.flow{display:flex;gap:10px;height:190px}
-.flowcol{flex:1;display:flex;flex-direction:column;gap:3px;min-width:0}
-.flowk{font-size:10px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;
-  color:var(--ink-3);margin-bottom:5px}
-.flowband{border-radius:4px;min-height:16px;display:flex;align-items:center;padding:0 8px;
-  overflow:hidden}
-.flowlab{font-size:10.5px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  letter-spacing:.1px}
+/* Conversion flow: node columns joined by ribbons whose thickness is the count. */
+.sankey{width:100%;height:210px;display:block;overflow:visible}
+.sklab{font-size:8px;fill:#fff;opacity:.9}
+.sknum{font-size:11px;font-weight:600;fill:#fff}
+
+/* Share of voice: donut plus a named legend, as on the phone. */
+.sovwrap{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.donut{width:150px;height:150px;flex:0 0 auto}
+.donutv{font-size:26px;font-weight:500;fill:var(--ink)}
+.donutn{font-size:11px;fill:var(--ink-3)}
+.sovlist{flex:1;min-width:150px;display:flex;flex-direction:column;gap:9px}
+.sovrow{display:flex;align-items:center;gap:9px;font-size:13px}
+.sovn{color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sovv{margin-left:auto;color:var(--ink-3);flex:0 0 auto}
 
 /* Momentum: name, sparkline, delta. */
-.momrow{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line-2)}
-.momrow:last-child{border-bottom:0}
-.momn{flex:0 0 34%;font-size:13px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;
+.momrow{display:flex;align-items:center;gap:14px;padding:9px 0}
+.momn{flex:0 0 32%;font-size:13px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;
   white-space:nowrap}
-.momspark{flex:1;height:26px;min-width:0;overflow:visible}
-.momspark path{fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.momd{flex:0 0 auto;font-size:12.5px;font-weight:500;min-width:30px;text-align:right}
+.momspark{flex:1;height:30px;min-width:0;overflow:visible}
+.momspark path{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.momd{flex:0 0 auto;font-size:12.5px;font-weight:500;min-width:42px;text-align:right}
 
-/* Narrative ownership: one full-width bar per topic, split by competitor. */
-.narrow{display:flex;align-items:center;gap:11px;padding:7px 0;font-size:12.5px}
-.narn{flex:0 0 32%;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.narbar{flex:1;height:9px;border-radius:5px;overflow:hidden;display:flex;background:var(--surface-2)}
-.trendbar{flex:0 0 12px;height:12px;border-radius:6px;overflow:hidden;display:flex;
-  background:var(--surface-2)}
+/* Narrative ownership: who leads named on the row, the whole split on the bar below it. */
+.narblk{margin-bottom:14px}
+.narhead{display:flex;align-items:baseline;gap:10px;margin-bottom:6px;font-size:13px}
+.narn{color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.narlead{margin-left:auto;flex:0 0 auto;font-size:12px;color:var(--ink-3)}
+.narbar{height:14px;border-radius:4px;overflow:hidden;display:flex;background:var(--surface-2)}
+.trendbar{flex:0 0 16px;height:16px;overflow:hidden;display:flex;gap:2px;margin-top:10px}
+.trendbar .narseg{border-radius:3px}
 .narseg{height:100%;min-width:2px}
 
 /* Heatmap: competitor x category. Opacity carries volume, one hue, no colour scale to decode. */
 .heatwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .heat{display:grid;gap:3px;min-width:340px}
-.heathc{font-size:9px;color:var(--ink-3);text-align:center;line-height:1.2;padding-bottom:3px;
+.heathc{font-size:10px;color:var(--ink-3);text-align:center;line-height:1.2;padding-bottom:4px;
   overflow:hidden}
-.heathr{font-size:11.5px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;
-  white-space:nowrap;align-self:center;padding-right:6px}
-.heatc{height:26px;border-radius:3px;background:var(--surface-2)}
+.heathr{font-size:11.5px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;align-self:center;padding-right:8px}
+.heatc{height:22px;border-radius:5px}
+.heatlg{display:flex;align-items:center;gap:5px;margin-top:14px;font-size:11px;color:var(--ink-3)}
+.heatsw{width:13px;height:13px;border-radius:4px;flex:0 0 auto}
 
-/* Rising / cooling, the pair at the foot of Industry trends. */
-.rcgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:16px}
-.rck{font-size:10px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink-3);
-  margin-bottom:7px}
-.rcrow{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;padding:4px 0}
-.rcrow .n{color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rcrow .d{font-weight:500;flex:0 0 auto}
+/* Section labels inside Industry trends: By category, Rising, Cooling. */
+.rck{font-size:11px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;
+  color:var(--ink-3);margin-bottom:2px}
 
 /* Cost card: three figures across, the phone's Today / This month / Daily cap. */
 .costrow{display:flex;gap:18px;flex-wrap:wrap}
@@ -485,10 +502,10 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
 @media (max-width:900px){ .ancard.w4{grid-column:span 2} }
 @media (max-width:620px){
   .ancard.w2,.ancard.w4,.anstat.w2{grid-column:span 1}
-  .rcgrid{grid-template-columns:1fr;gap:14px}
-  .flow{height:auto;flex-direction:column}
-  .flowcol{flex-direction:row;align-items:stretch;height:64px;gap:3px;flex-wrap:nowrap}
-  .flowk{display:none}
+  .ankey{grid-template-columns:1fr}
+  .sovwrap{gap:14px}
+  .trio{gap:10px}
+  .triov{font-size:24px}
 }
 
 .skel{background:var(--surface);border-radius:var(--r-card);height:104px;margin-bottom:10px;
@@ -555,32 +572,96 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
 /* ============================================================
    ASK — Layer 0. Retrieval over what the phone already sent:
    no model, no key, no network. The page stays a viewer.
+
+   Laid out as a chat room: the composer is docked at the bottom and the
+   conversation grows down into it. That is the one arrangement nobody has
+   to be taught.
+
+   The accent stays interactive-only here, as everywhere else in this file.
+   So your own message is a RAISED SURFACE, not a filled blue bubble — a blue
+   bubble would be the only thing on the page wearing the accent without
+   being clickable, and the rule is worth more than the convention.
    ============================================================ */
-.chask{position:sticky;top:0;z-index:3;background:var(--paper);padding:2px 0 12px}
-.chrow{display:flex;gap:8px;align-items:center}
-.chin{flex:1;min-width:0;height:44px;padding:0 15px;border:1px solid var(--line);
-  border-radius:var(--r-pill);background:var(--surface);color:var(--ink);font-weight:300;outline:none;
+
+/* The scroll column becomes a flex column on this tab ONLY, which is what lets the
+   dock sit at the bottom of the VIEWPORT rather than at the bottom of the content.
+   #scroll is a flex item with a resolved height, so the percentage below resolves. */
+#shell.chat #scroll{padding-bottom:0}
+#shell.chat #scroll > .wrap{min-height:100%;display:flex;flex-direction:column}
+#shell.chat #app{flex:1 1 auto;display:flex;flex-direction:column;padding-top:0}
+
+.chpane{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
+/* Few messages sit ON the composer rather than stranded at the top of an empty page. */
+.chflow{flex:1 1 auto;display:flex;flex-direction:column;justify-content:flex-end;gap:18px;padding:10px 0 4px}
+.chflow.start{justify-content:flex-start;padding-top:16px}
+
+/* ---- the dock ---- */
+.chdock{position:sticky;bottom:0;z-index:4;background:var(--paper);
+  padding:8px 0 max(10px,env(safe-area-inset-bottom))}
+/* Without this the conversation appears to be sliced off by a hard edge as it
+   scrolls under the dock. */
+.chdock::before{content:"";position:absolute;left:0;right:0;top:-26px;height:26px;
+  background:linear-gradient(to top,var(--paper),transparent);pointer-events:none}
+.chctx{display:flex;flex-wrap:wrap;align-items:center;gap:5px;
+  padding:0 8px 7px;font-size:12.5px;color:var(--ink-3)}
+.chctx b{font-weight:500;color:var(--ink-2)}
+.chctx button{background:none;border:0;padding:0;font-size:12.5px;color:var(--accent);cursor:pointer}
+.chctx button:hover{text-decoration:underline}
+.chbox{display:flex;align-items:center;gap:8px;background:var(--surface);
+  border:1px solid var(--line);border-radius:var(--r-pill);padding:5px 5px 5px 18px;
   transition:border-color .15s ease,box-shadow .15s ease}
-.chin:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-.chin::-webkit-search-cancel-button{display:none}
-.chchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
-.chchip{border:1px solid var(--line);background:var(--surface);color:var(--ink-2);
-  border-radius:var(--r-pill);padding:5px 12px;font-size:12.5px;cursor:pointer;
-  transition:border-color .15s ease,color .15s ease}
-.chchip:hover{border-color:var(--accent);color:var(--accent)}
-.chturn{margin-bottom:26px}
-.chq{display:flex;gap:9px;align-items:baseline;margin-bottom:9px}
-.chq .qm{flex:none;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
-.chq .qt{font-weight:400;color:var(--ink)}
-.chlead{margin:0 0 12px;font-size:16px;line-height:1.5;color:var(--ink)}
+.chbox:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.chin{flex:1;min-width:0;height:40px;border:0;background:transparent;outline:none;
+  color:var(--ink);font-size:15px;font-weight:300}
+.chgo{flex:none;width:36px;height:36px;border-radius:50%;border:0;cursor:pointer;
+  display:grid;place-items:center;background:var(--surface-2);color:var(--ink-3);
+  transition:background .15s ease,color .15s ease}
+/* Lit only when there is something to send — the accent means "this will do something". */
+.chgo.on{background:var(--accent);color:#fff}
+
+/* ---- the opening ---- */
+.chhi{margin:0 0 8px;font-size:34px;line-height:1.16;font-weight:500;
+  letter-spacing:-.02em;color:var(--ink)}
+.chhi span{display:block;color:var(--ink-3)}
+.chintro{margin:0 0 22px;max-width:58ch;font-size:15px;line-height:1.62;color:var(--ink-2)}
+.chintro b{font-weight:500;color:var(--ink)}
+.chsug{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.chsg{text-align:left;background:var(--surface);border:1px solid var(--line);
+  border-radius:14px;padding:14px 16px;cursor:pointer;transition:border-color .15s ease}
+.chsg:hover{border-color:var(--accent)}
+.chsg .k{display:block;margin-bottom:5px;font-size:12.5px;color:var(--accent)}
+.chsg .t{display:block;font-size:14.5px;line-height:1.45;color:var(--ink)}
+
+/* ---- one turn ---- */
+.chturn{display:flex;flex-direction:column;gap:12px}
+.chmerow{display:flex;justify-content:flex-end}
+.chme{max-width:78%;padding:10px 15px;font-size:15px;line-height:1.5;color:var(--ink);
+  background:var(--surface-2);border:1px solid var(--line-2);border-radius:18px 18px 6px 18px}
+.chbot{background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--r-card);padding:16px 18px;box-shadow:var(--sh-1)}
+.chwho{display:flex;align-items:center;gap:7px;margin-bottom:10px;
+  font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
+.chwho .m{display:block;width:13px;height:13px;color:var(--accent)}
+.chlead{margin:0;font-size:15.5px;line-height:1.55;color:var(--ink)}
 .chlead b{font-weight:500}
-.chstat{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 14px}
-.chsc{flex:1 1 132px;background:var(--surface);border:1px solid var(--line);
-  border-radius:var(--r-box);padding:10px 12px}
+/* Anything nested in a reply steps DOWN a surface, so it still reads as inside it. */
+.chstat{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 0}
+.chsc{flex:1 1 132px;padding:10px 12px;background:var(--surface-2);
+  border:1px solid var(--line-2);border-radius:var(--r-box)}
 .chsk{font-size:11.5px;letter-spacing:.02em;color:var(--ink-3)}
 .chsv{font-size:20px;font-weight:400;line-height:1.3;color:var(--ink)}
 .chss{font-size:12px;color:var(--ink-3)}
-.chwhy,.chnote{margin-top:8px;font-size:12.5px;line-height:1.5;color:var(--ink-3)}
+.chsrc{margin-top:14px}
+.chbot .chsrc .card{margin-bottom:8px;padding:13px 14px;background:var(--surface-2);
+  border:1px solid var(--line-2);border-radius:var(--r-box)}
+.chbot .chsrc .card:last-child{margin-bottom:0}
+.chwhy,.chnote{margin-top:11px;font-size:12.5px;line-height:1.55;color:var(--ink-3)}
+
+@media (max-width:640px){
+  .chsug{grid-template-columns:1fr}
+  .chhi{font-size:27px}
+  .chme{max-width:88%}
+}
 </style>
 </head>
 <body>
@@ -1401,11 +1482,16 @@ function linkRow(href, text) {
    Card order, titles, subtitles and colours follow AnalyticsPane.kt.
    ============================================================ */
 
-/* The phone's analytics palette, verbatim. Accent first, so the leading series is the brand
-   colour on both screens. `palette` is for competitors, `segmentPalette` for the ten channels. */
+/* The phone's analytics palette, verbatim. AnodizedGreen is an old name for the one accent
+   (Signal Blue), so palette[0] is blue on both screens. `AN_SEGMENTS` is the ten-colour set the
+   channel stack needs; `AN_GREY` is what "Other" and "Market-wide" get — they are not a rival. */
 var AN_PALETTE = ["#1F57F5", "#06B6D4", "#F59E0B", "#EF4444", "#8B5CF6", "#10B981"];
 var AN_SEGMENTS = ["#1F57F5", "#06B6D4", "#F59E0B", "#EF4444", "#8B5CF6",
                    "#10B981", "#EC4899", "#3B82F6", "#84CC16", "#F97316"];
+var AN_GREY = "#9A9CAB";
+/* The heatmap's own five-step ramp lives in the theme tokens (--heat-0..4), not here, so a
+   theme switch recolours it without re-rendering the card. */
+var AN_HEAT = ["var(--heat-0)", "var(--heat-1)", "var(--heat-2)", "var(--heat-3)", "var(--heat-4)"];
 var AN_WIN = "1M";
 
 /* Window-aware copy, so every subtitle tracks the active filter exactly as on the phone. */
@@ -1413,7 +1499,12 @@ function anPhrase(w) { return w === "1M" ? "last month" : (w === "3M" ? "last 3 
 function anUnit(w) { return w === "1M" ? "Weekly" : "Monthly"; }
 function anPeriod(w) { return w === "1M" ? "week" : "month"; }
 function anDelta(w) { return w === "1M" ? "week-over-week" : "month-over-month"; }
-
+/* The phone trims a competitor to what fits: drop the bracketed parent, drop anything after a
+   comma, cap at 14 characters. Same rule here so the same rival reads the same on both. */
+function shortName(n) {
+  return String(n || "").split("(")[0].split(",")[0].trim().slice(0, 14);
+}
+function shortLabel(c) { return String(c || "").replace(/&/g, "").trim().slice(0, 4); }
 function anCard(span, title, sub) {
   var c = el("div", "ancard" + (span ? " " + span : ""));
   c.appendChild(el("div", "anttl", title));
@@ -1428,8 +1519,10 @@ function svgNode(name, attrs) {
   for (var k in attrs) if (Object.prototype.hasOwnProperty.call(attrs, k)) e.setAttribute(k, attrs[k]);
   return e;
 }
-/* One bar row: name, proportional track, value. Shared by four cards. */
-function anBar(host, name, value, pct, colour) {
+function anNote(host, text) { host.appendChild(el("div", "anempty", text)); }
+
+/* One bar row: name, proportional track, trailing value. The phone's BarRow. */
+function anBar(host, name, trailing, pct, colour) {
   var row = el("div", "barrow");
   row.appendChild(el("div", "bn", name));
   var track = el("div", "bartrack");
@@ -1438,11 +1531,65 @@ function anBar(host, name, value, pct, colour) {
   if (colour) fill.style.background = colour;
   track.appendChild(fill);
   row.appendChild(track);
-  row.appendChild(el("div", "bv", value));
+  row.appendChild(el("div", "bv", trailing));
   host.appendChild(row);
-  return row;
 }
-function anNote(host, text) { host.appendChild(el("div", "anempty", text)); }
+
+/* The phone's ColorKey: a two-column legend of dot + label. */
+function anKey(host, entries) {
+  var k = el("div", "ankey");
+  entries.forEach(function (e) {
+    var it = el("div", "keyi");
+    var d = el("span", "lgd");
+    d.style.background = e[1];
+    it.appendChild(d);
+    it.appendChild(el("span", "keyn", e[0]));
+    if (e[2]) it.appendChild(el("span", "keyv", e[2]));
+    k.appendChild(it);
+  });
+  host.appendChild(k);
+}
+
+/* A monotone-ish curve through the points, so a sparkline reads as a trend rather than a
+   zig-zag. The phone draws these smoothed; straight segments looked visibly different. */
+function sparkPath(vals, w, h, pad) {
+  var n = vals.length;
+  if (n < 2) return "";
+  var mx = Math.max.apply(null, vals) || 1;
+  var pts = vals.map(function (v, i) {
+    return [(i / (n - 1)) * w, h - pad - (v / mx) * (h - pad * 2)];
+  });
+  var d = "M" + pts[0][0].toFixed(1) + " " + pts[0][1].toFixed(1);
+  for (var i = 0; i < n - 1; i++) {
+    var p0 = pts[i], p1 = pts[i + 1], cx = (p0[0] + p1[0]) / 2;
+    d += " C" + cx.toFixed(1) + " " + p0[1].toFixed(1) +
+         " " + cx.toFixed(1) + " " + p1[1].toFixed(1) +
+         " " + p1[0].toFixed(1) + " " + p1[1].toFixed(1);
+  }
+  return { d: d, end: pts[n - 1] };
+}
+
+/* Name · sparkline · signed delta. Shared by Momentum and the rising/cooling lists. */
+function anTrendRow(host, name, vals, delta, colour) {
+  var row = el("div", "momrow");
+  row.appendChild(el("div", "momn", name));
+  var svg = svgNode("svg", { "class": "momspark", viewBox: "0 0 100 28", preserveAspectRatio: "none" });
+  var p = sparkPath(arr(vals), 100, 28, 4);
+  if (p) {
+    var path = svgNode("path", { d: p.d });
+    path.style.stroke = colour;
+    svg.appendChild(path);
+    var dot = svgNode("circle", { cx: p.end[0].toFixed(1), cy: p.end[1].toFixed(1), r: 2.4 });
+    dot.style.fill = colour;
+    svg.appendChild(dot);
+  }
+  row.appendChild(svg);
+  var d = delta || 0;
+  var lab = el("div", "momd", d > 0 ? "▲ +" + d : (d < 0 ? "▼ " + d : "—"));
+  lab.style.color = d > 0 ? "#10B981" : (d < 0 ? "#EF4444" : "var(--ink-3)");
+  row.appendChild(lab);
+  host.appendChild(row);
+}
 
 /* ---- API cost. The phone's top card: Today / This month / Daily cap. ---- */
 function anCost(host, st) {
@@ -1472,7 +1619,7 @@ function anCost(host, st) {
     "Estimate only — it assumes every search is billed, so the real bill is usually a little lower."));
 }
 
-/* ---- News volume: stacked bars, one column per week, one colour per channel. ---- */
+/* ---- News volume: one narrow column per week, channels as separated blocks. ---- */
 function anVolume(host, a) {
   var weeks = arr(a.weekLabels), rows = arr(a.volPerWeek), cats = arr(a.volCategories);
   if (!weeks.length) { anNote(host, "No news in this window."); return; }
@@ -1490,7 +1637,7 @@ function anVolume(host, a) {
     vals.forEach(function (v, ci) {
       if (!v) return;
       var seg = el("div", "stackseg");
-      seg.style.height = (v / total) * 100 + "%";
+      seg.style.flexGrow = String(v);
       seg.style.background = AN_SEGMENTS[ci % AN_SEGMENTS.length];
       seg.title = (cats[ci] || "") + ": " + v;
       bar.appendChild(seg);
@@ -1500,24 +1647,26 @@ function anVolume(host, a) {
     chart.appendChild(col);
   });
   host.appendChild(chart);
-  var lg = el("div", "anlegend");
-  cats.forEach(function (c, ci) {
-    var it = el("span", "lgi");
-    var d = el("span", "lgd");
-    d.style.background = AN_SEGMENTS[ci % AN_SEGMENTS.length];
-    it.appendChild(d);
-    it.appendChild(el("span", null, c));
-    lg.appendChild(it);
-  });
-  host.appendChild(lg);
+  anKey(host, cats.map(function (c, ci) {
+    return [c, AN_SEGMENTS[ci % AN_SEGMENTS.length]];
+  }));
 }
 
-/* ---- News overview: of what arrived in the window, what you did with it. ---- */
+/* ---- News overview: three headline figures, then what you did with what arrived. ---- */
 function anOverview(host, cv, inFeed) {
   var surfaced = cv.surfaced || 0;
-  var head = el("div", "anbig");
-  head.appendChild(el("span", "anbign", String(surfaced)));
-  head.appendChild(el("span", "anbigl", "received · " + inFeed + " in the feed now"));
+  var pubPct = surfaced ? Math.round(((cv.published || 0) / surfaced) * 100) : 0;
+  var head = el("div", "trio");
+  [[String(surfaced), "news received", null],
+   [String(inFeed), "in feed", null],
+   [pubPct + "%", "published", "var(--accent)"]].forEach(function (c) {
+    var col = el("div", "triocol");
+    var v = el("div", "triov", c[0]);
+    if (c[2]) v.style.color = c[2];
+    col.appendChild(v);
+    col.appendChild(el("div", "triok", c[1]));
+    head.appendChild(col);
+  });
   host.appendChild(head);
   if (!surfaced) { anNote(host, "No news in this window."); return; }
   [["Liked", cv.liked, "#10B981"], ["Disliked", cv.disliked, "#EF4444"],
@@ -1528,200 +1677,265 @@ function anOverview(host, cv, inFeed) {
   });
 }
 
-/* ---- Conversion flow: in feed / not → saved / not → outcome.
-   Three columns of bands; a band's height is its count, so the columns balance by eye. ---- */
+/* ---- Conversion flow: the phone's Sankey.
+   Three node columns, ribbons between them whose thickness IS the count. A ribbon is a filled
+   curve, not a line: the eye follows area here, and stacked bars lose the "which came from
+   where" that is the whole point of the card. ---- */
 function anFlow(host, s) {
   if (!s || !s.received) { anNote(host, "No news in this window."); return; }
-  var ab = arr(s.aToB), out = arr(s.outcomeTotals);
-  var stages = [
-    ["Received", [["in feed", s.inFeed || 0, "#1F57F5"],
-                  ["not in feed", s.notInFeed || 0, "#8E8E93"]]],
-    ["Kept", [["saved", s.saved || 0, "#F59E0B"],
-              ["not saved", s.notSaved || 0, "#8E8E93"]]],
-    ["Outcome", [["published", out[0] || 0, "#1F57F5"],
-                 ["verified", out[1] || 0, "#06B6D4"],
-                 ["deleted", out[2] || 0, "#EF4444"],
-                 ["open", out[3] || 0, "#8E8E93"]]]
-  ];
-  var flow = el("div", "flow");
-  stages.forEach(function (st) {
-    var col = el("div", "flowcol");
-    col.appendChild(el("div", "flowk", st[0]));
-    st[1].forEach(function (b) {
-      if (!b[1]) return;
-      var band = el("div", "flowband");
-      band.style.flexGrow = String(b[1]);
-      band.style.background = b[2];
-      band.title = b[0] + ": " + b[1];
-      band.appendChild(el("span", "flowlab", b[0] + " " + b[1]));
-      col.appendChild(band);
+  var W = 560, H = 210, NODE = 34, total = s.received || 1;
+  var scale = function (v) { return (v / total) * (H - 16); };
+
+  var A = [["In feed", s.inFeed || 0, "#1F57F5"], ["Not in feed", s.notInFeed || 0, AN_GREY]];
+  var B = [["Saved", s.saved || 0, "#F59E0B"], ["Not saved", s.notSaved || 0, "#3B82F6"]];
+  var out = arr(s.outcomeTotals);
+  var C = [["Published", out[0] || 0, "#10B981"], ["Verified", out[1] || 0, "#06B6D4"],
+           ["Deleted", out[2] || 0, "#EF4444"], ["Still open", out[3] || 0, AN_GREY]];
+
+  /* Stack a column's nodes top to bottom, remembering each one's band so the ribbons can be
+     anchored to it. A 4px gap keeps adjacent nodes legible without distorting the heights. */
+  function stack(list, x) {
+    var y = 0, nodes = [];
+    list.forEach(function (n) {
+      var h = Math.max(n[1] ? 3 : 0, scale(n[1]));
+      nodes.push({ name: n[0], v: n[1], c: n[2], x: x, y: y, h: h, cur: y });
+      y += h + 4;
     });
-    flow.appendChild(col);
+    return nodes;
+  }
+  var col1 = stack(A, 0), col2 = stack(B, (W - NODE) / 2), col3 = stack(C, W - NODE);
+
+  var svg = svgNode("svg", { "class": "sankey", viewBox: "0 0 " + W + " " + H,
+                             preserveAspectRatio: "xMidYMid meet" });
+
+  /* A ribbon from one node's next free slot to another's, thickness = v. */
+  function ribbon(from, to, v, colour) {
+    if (!v) return;
+    var h = Math.max(1, scale(v));
+    var y0 = from.cur, y1 = to.cur;
+    from.cur += h; to.cur += h;
+    var x0 = from.x + NODE, x1 = to.x, mid = (x0 + x1) / 2;
+    var d = "M" + x0 + " " + y0 +
+            " C" + mid + " " + y0 + " " + mid + " " + y1 + " " + x1 + " " + y1 +
+            " L" + x1 + " " + (y1 + h) +
+            " C" + mid + " " + (y1 + h) + " " + mid + " " + (y0 + h) + " " + x0 + " " + (y0 + h) + " Z";
+    var p = svgNode("path", { d: d });
+    p.style.fill = colour;
+    p.style.opacity = "0.3";
+    svg.appendChild(p);
+  }
+
+  /* aToB is [inFeed&saved, inFeed&notSaved, notInFeed&saved, notInFeed&notSaved]. */
+  var ab = arr(s.aToB);
+  ribbon(col1[0], col2[0], ab[0] || 0, col1[0].c);
+  ribbon(col1[0], col2[1], ab[1] || 0, col1[0].c);
+  ribbon(col1[1], col2[0], ab[2] || 0, col1[1].c);
+  ribbon(col1[1], col2[1], ab[3] || 0, col1[1].c);
+  var savedTo = arr(s.savedTo), notSavedTo = arr(s.notSavedTo);
+  for (var i = 0; i < 4; i++) {
+    ribbon(col2[0], col3[i], savedTo[i] || 0, col3[i].c);
+    ribbon(col2[1], col3[i], notSavedTo[i] || 0, col3[i].c);
+  }
+
+  [col1, col2, col3].forEach(function (col) {
+    col.forEach(function (n) {
+      if (!n.v) return;
+      var r = svgNode("rect", { x: n.x, y: n.y, width: NODE, height: n.h, rx: 4 });
+      r.style.fill = n.c;
+      svg.appendChild(r);
+      if (n.h > 26) {
+        var t1 = svgNode("text", { x: n.x + NODE / 2, y: n.y + n.h / 2 - 2,
+                                   "text-anchor": "middle", "class": "sklab" });
+        t1.textContent = n.name;
+        var t2 = svgNode("text", { x: n.x + NODE / 2, y: n.y + n.h / 2 + 10,
+                                   "text-anchor": "middle", "class": "sknum" });
+        t2.textContent = String(n.v);
+        svg.appendChild(t1); svg.appendChild(t2);
+      }
+    });
   });
-  host.appendChild(flow);
-  host.appendChild(el("div", "anfoot", (s.received || 0) + " stories routed"));
+  host.appendChild(svg);
+  anKey(host, C.map(function (c) { return [c[0], c[2], String(c[1])]; }));
 }
 
-/* ---- Share of voice, by competitor. ---- */
+/* ---- Share of voice: the phone's donut, with the leader named in the middle. ---- */
 function anSov(host, sov) {
   if (!sov.length) { anNote(host, "No competitor-matched news yet."); return; }
   var total = sov.reduce(function (t, r) { return t + r.c; }, 0) || 1;
+  var wrap = el("div", "sovwrap");
+
+  var R = 62, SW = 20, C2 = 2 * Math.PI * R;
+  var svg = svgNode("svg", { "class": "donut", viewBox: "0 0 160 160" });
+  var offset = 0;
+  sov.forEach(function (r, i) {
+    var frac = r.c / total;
+    var len = Math.max(1, frac * C2 - 4);          // 4px gap, as the phone's 4-degree gap
+    var ring = svgNode("circle", {
+      cx: 80, cy: 80, r: R, fill: "none",
+      "stroke-width": SW, "stroke-linecap": "round",
+      "stroke-dasharray": len.toFixed(2) + " " + (C2 - len).toFixed(2),
+      "stroke-dashoffset": (-offset).toFixed(2),
+      transform: "rotate(-90 80 80)"
+    });
+    ring.style.stroke = AN_PALETTE[i % AN_PALETTE.length];
+    var t = document.createElementNS("http://www.w3.org/2000/svg", "title");
+    t.textContent = r.n + ": " + r.c;
+    ring.appendChild(t);
+    svg.appendChild(ring);
+    offset += frac * C2;
+  });
+  var lead = sov[0];
+  var pv = svgNode("text", { x: 80, y: 78, "text-anchor": "middle", "class": "donutv" });
+  pv.textContent = Math.round((lead.c / total) * 100) + "%";
+  var pn = svgNode("text", { x: 80, y: 95, "text-anchor": "middle", "class": "donutn" });
+  pn.textContent = shortName(lead.n);
+  svg.appendChild(pv); svg.appendChild(pn);
+  wrap.appendChild(svg);
+
+  var list = el("div", "sovlist");
   sov.slice(0, 8).forEach(function (r, i) {
-    var pct = Math.round((r.c / total) * 100);
-    anBar(host, r.n, r.c + " · " + pct + "%", pct, AN_PALETTE[i % AN_PALETTE.length]);
+    var row = el("div", "sovrow");
+    var d = el("span", "lgd");
+    d.style.background = AN_PALETTE[i % AN_PALETTE.length];
+    row.appendChild(d);
+    row.appendChild(el("span", "sovn", shortName(r.n)));
+    row.appendChild(el("span", "sovv", Math.round((r.c / total) * 100) + "%"));
+    list.appendChild(row);
   });
+  wrap.appendChild(list);
+  host.appendChild(wrap);
 }
 
-/* ---- Momentum: a sparkline per competitor with its delta. ---- */
-function anMomentum(host, list) {
+/* ---- Momentum: a sparkline per competitor, coloured by share-of-voice rank. ---- */
+function anMomentum(host, list, colourFor) {
   if (!list.length) { anNote(host, "Not enough competitor-matched news yet."); return; }
-  list.slice(0, 6).forEach(function (m, i) {
-    var row = el("div", "momrow");
-    row.appendChild(el("div", "momn", m.n));
-    var w = arr(m.w);
-    var svg = svgNode("svg", { "class": "momspark", viewBox: "0 0 100 26", preserveAspectRatio: "none" });
-    if (w.length > 1) {
-      var mx = Math.max.apply(null, w) || 1, d = "";
-      w.forEach(function (v, k) {
-        d += (k ? " L" : "M") + ((k / (w.length - 1)) * 100).toFixed(1) +
-             " " + (24 - (v / mx) * 21).toFixed(1);
-      });
-      var path = svgNode("path", { d: d });
-      path.style.stroke = AN_PALETTE[i % AN_PALETTE.length];
-      svg.appendChild(path);
-    }
-    row.appendChild(svg);
-    var dv = m.d || 0;
-    var dl = el("div", "momd", (dv > 0 ? "+" : "") + dv);
-    dl.style.color = dv > 0 ? "#10B981" : (dv < 0 ? "#EF4444" : "var(--ink-3)");
-    row.appendChild(dl);
-    host.appendChild(row);
+  list.slice(0, 6).forEach(function (m) {
+    anTrendRow(host, shortName(m.n), m.w, m.d, colourFor(m.n));
   });
 }
 
-/* ---- Narrative ownership: per topic, whose coverage it is. ---- */
-function anNarrative(host, list, sovNames) {
+/* ---- Narrative ownership: per topic, the leader named, then the full split. ---- */
+function anNarrative(host, list, colourFor) {
   if (!list.length) { anNote(host, "Not enough news yet."); return; }
-  /* Colour a competitor by its share-of-voice rank, so a rival looks the same on every card —
-     the phone does exactly this, and a name that changed colour card to card would read as a
-     different company. */
-  function colourFor(name) {
-    var i = sovNames.indexOf(name);
-    return i < 0 ? "#8E8E93" : AN_PALETTE[i % AN_PALETTE.length];
-  }
+  var seen = [], seenNames = {};
   list.slice(0, 7).forEach(function (row) {
     var segs = arr(row.seg);
     var total = segs.reduce(function (t, x) { return t + x.c; }, 0) || 1;
-    var r = el("div", "narrow");
-    r.appendChild(el("div", "narn", row.cat));
+    var leader = segs.reduce(function (a, b) { return (!a || b.c > a.c) ? b : a; }, null);
+    var block = el("div", "narblk");
+    var head = el("div", "narhead");
+    head.appendChild(el("span", "narn", row.cat));
+    if (leader) {
+      head.appendChild(el("span", "narlead",
+        shortName(leader.n) + " " + Math.floor((leader.c * 100) / total) + "%"));
+    }
+    block.appendChild(head);
     var bar = el("div", "narbar");
     segs.forEach(function (sg) {
       var b = el("div", "narseg");
-      b.style.width = (sg.c / total) * 100 + "%";
+      b.style.flexGrow = String(sg.c);
       b.style.background = colourFor(sg.n);
       b.title = sg.n + ": " + sg.c;
       bar.appendChild(b);
+      if (!seenNames[sg.n]) { seenNames[sg.n] = 1; seen.push(sg.n); }
     });
-    r.appendChild(bar);
-    r.appendChild(el("div", "bv", String(total)));
-    host.appendChild(r);
+    block.appendChild(bar);
+    host.appendChild(block);
   });
+  anKey(host, seen.map(function (n) { return [shortName(n), colourFor(n)]; }));
 }
 
-/* ---- Activity heatmap: competitor × category. ---- */
+/* ---- Activity heatmap: competitor × category, on the five-step green scale. ---- */
 function anHeat(host, a) {
   var rows = arr(a.heatRows), cols = arr(a.heatCols), grid = arr(a.heat);
   if (!rows.length || !cols.length) { anNote(host, "Not enough competitor-matched news yet."); return; }
   var max = 1;
   grid.forEach(function (r) { arr(r).forEach(function (v) { max = Math.max(max, v); }); });
+  var scale = AN_HEAT;
+  var level = function (v) { return v <= 0 ? 0 : Math.min(4, Math.ceil((v / max) * 4)); };
+
   var wrap = el("div", "heatwrap");
   var tbl = el("div", "heat");
-  tbl.style.gridTemplateColumns = "minmax(84px,1.3fr) repeat(" + cols.length + ", minmax(26px,1fr))";
+  tbl.style.gridTemplateColumns = "minmax(78px,1fr) repeat(" + cols.length + ", minmax(30px,1fr))";
   tbl.appendChild(el("div"));
   cols.forEach(function (c) {
-    var h = el("div", "heathc", c.length > 10 ? c.slice(0, 9) + "…" : c);
+    var h = el("div", "heathc", shortLabel(c));
     h.title = c;
     tbl.appendChild(h);
   });
   rows.forEach(function (rn, ri) {
-    var lab = el("div", "heathr", rn);
+    var lab = el("div", "heathr", shortName(rn));
     lab.title = rn;
     tbl.appendChild(lab);
     cols.forEach(function (cn, ci) {
       var v = (arr(grid[ri])[ci]) || 0;
       var cell = el("div", "heatc");
-      if (v > 0) {
-        // Opacity carries volume. One hue, so the eye reads density instead of decoding a scale.
-        cell.style.background = "var(--accent)";
-        cell.style.opacity = String(0.18 + 0.82 * (v / max));
-      }
+      cell.style.background = scale[level(v)];
       cell.title = rn + " · " + cn + ": " + v;
       tbl.appendChild(cell);
     });
   });
   wrap.appendChild(tbl);
   host.appendChild(wrap);
+
+  var lg = el("div", "heatlg");
+  lg.appendChild(el("span", null, "Less"));
+  scale.forEach(function (c) {
+    var s = el("span", "heatsw");
+    s.style.background = c;
+    lg.appendChild(s);
+  });
+  lg.appendChild(el("span", null, "More"));
+  host.appendChild(lg);
 }
 
-/* ---- Source diversity: where the intel comes from. ---- */
+/* ---- Source diversity: the count first, then who. ---- */
 function anSources(host, a) {
   var src = arr(a.sources);
+  var head = el("div", "anbig");
+  head.appendChild(el("span", "anbign", String(a.distinctSources || 0)));
+  head.appendChild(el("span", "anbigl", "distinct sources"));
+  host.appendChild(head);
   if (!src.length) { anNote(host, "No sources yet."); return; }
   var max = src.reduce(function (t, r) { return Math.max(t, r.c); }, 1);
-  src.slice(0, 8).forEach(function (r, i) {
-    anBar(host, r.n, String(r.c), Math.round((r.c / max) * 100), AN_PALETTE[i % AN_PALETTE.length]);
+  src.slice(0, 8).forEach(function (r) {
+    anBar(host, r.n, String(r.c), Math.round((r.c / max) * 100), "var(--accent)");
   });
-  host.appendChild(el("div", "anfoot",
-    (a.distinctSources || 0) + " distinct outlets in this window"));
 }
 
-/* ---- Industry trends: the tracked-theme mix, then what is rising and cooling. ---- */
+/* ---- Industry trends: the theme mix, then what is rising and what is cooling. ---- */
 function anTrends(host, a) {
   var g = arr(a.trendGroups);
   if (!g.length) { anNote(host, "No tracked industry trends mentioned yet."); return; }
   var total = g.reduce(function (t, r) { return t + r.c; }, 0) || 1;
+  host.appendChild(el("div", "rck", "By category"));
   var bar = el("div", "trendbar");
   g.forEach(function (r, i) {
     var b = el("div", "narseg");
-    b.style.width = (r.c / total) * 100 + "%";
+    b.style.flexGrow = String(r.c);
     b.style.background = AN_SEGMENTS[i % AN_SEGMENTS.length];
     b.title = r.n + ": " + r.c;
     bar.appendChild(b);
   });
   host.appendChild(bar);
-  var lg = el("div", "anlegend");
-  g.forEach(function (r, i) {
-    var it = el("span", "lgi");
-    var d = el("span", "lgd");
-    d.style.background = AN_SEGMENTS[i % AN_SEGMENTS.length];
-    it.appendChild(d);
-    it.appendChild(el("span", null, r.n + " " + r.c));
-    lg.appendChild(it);
-  });
-  host.appendChild(lg);
+  anKey(host, g.map(function (r, i) {
+    return [r.n, AN_SEGMENTS[i % AN_SEGMENTS.length],
+            r.c + " · " + Math.round((r.c / total) * 100) + "%"];
+  }));
 
   var kw = arr(a.keywords);
   var rising = kw.filter(function (k) { return k.d > 0; })
-                 .sort(function (x, y) { return y.d - x.d; }).slice(0, 5);
+                 .sort(function (x, y) { return y.d - x.d; }).slice(0, 4);
   var cooling = kw.filter(function (k) { return k.d < 0; })
-                  .sort(function (x, y) { return x.d - y.d; }).slice(0, 5);
-  if (!rising.length && !cooling.length) return;
-  var grid = el("div", "rcgrid");
-  [["Heating up", rising, "#10B981"], ["Cooling down", cooling, "#EF4444"]].forEach(function (side) {
-    var col = el("div");
-    col.appendChild(el("div", "rck", side[0]));
-    if (!side[1].length) col.appendChild(el("div", "anempty", "Nothing yet."));
-    side[1].forEach(function (k) {
-      var row = el("div", "rcrow");
-      row.appendChild(el("span", "n", k.n));
-      var d = el("span", "d", (k.d > 0 ? "+" : "") + k.d);
-      d.style.color = side[2];
-      row.appendChild(d);
-      col.appendChild(row);
-    });
-    grid.appendChild(col);
+                  .sort(function (x, y) { return x.d - y.d; }).slice(0, 4);
+  [["↑ Rising", rising, "#10B981"], ["↓ Cooling", cooling, "#EF4444"]].forEach(function (side) {
+    if (!side[1].length) return;
+    var h = el("div", "rck", side[0]);
+    h.style.color = side[2];
+    h.style.marginTop = "16px";
+    host.appendChild(h);
+    side[1].forEach(function (k) { anTrendRow(host, k.n, k.w, k.d, side[2]); });
   });
-  host.appendChild(grid);
 }
 
 /* The phone stores the circular date as ISO. It shows it in words, so this does too — the
@@ -1729,7 +1943,8 @@ function anTrends(host, a) {
 function circularDate(iso) {
   var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ""));
   if (!m) return iso || "—";
-  var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   return Number(m[3]) + " " + months[Number(m[2]) - 1] + " " + m[1];
 }
 
@@ -1822,6 +2037,11 @@ function renderDashboard(app, d) {
   var cv = a.conversion || {};
   var sov = arr(a.sov);
   var sovNames = sov.map(function (r) { return r.n; });
+  var compColour = function (name) {
+    if (name === "Other" || name === "Market-wide") return AN_GREY;
+    var i = sovNames.indexOf(name);
+    return i >= 0 ? AN_PALETTE[i % AN_PALETTE.length] : AN_GREY;
+  };
 
   /* ---------- section header with the phone's 1M / 3M / 6M selector ---------- */
   var head = el("div", "anhead");
@@ -1866,10 +2086,9 @@ function renderDashboard(app, d) {
   function statCard(k, v, caption, colour) {
     var s = el("div", "anstat w2");
     s.appendChild(el("div", "k", k));
-    s.appendChild(el("div", "v", v || "—"));
-    var rule = el("div", "rule");
-    rule.style.background = colour;
-    s.appendChild(rule);
+    var val = el("div", "v", v || "—");
+    val.style.color = colour;
+    s.appendChild(val);
     s.appendChild(el("div", "c", caption));
     return s;
   }
@@ -1895,11 +2114,11 @@ function renderDashboard(app, d) {
   g.appendChild(c);
 
   c = anCard("w2", "Momentum", anUnit(AN_WIN) + " coverage trend by competitor");
-  anMomentum(c.body, arr(a.momentum));
+  anMomentum(c.body, arr(a.momentum), compColour);
   g.appendChild(c);
 
   c = anCard("w2", "Narrative ownership", "Who owns each topic's coverage");
-  anNarrative(c.body, arr(a.narrative), sovNames);
+  anNarrative(c.body, arr(a.narrative), compColour);
   g.appendChild(c);
 
   c = anCard("w2", "Source diversity", "Where your intel comes from");
@@ -1957,6 +2176,16 @@ var CH_STOP = (function () {
     "his her him any all some more most much many few new news get got give any tell show me please " +
     "any anything something latest recent recently give").split(" ");
   for (var i = 0; i < w.length; i++) o[w[i]] = 1;
+  return o;
+})();
+
+/* Words that pick the ROUTE rather than name a subject. "how many stories do I have" is a
+   question about the whole app, not a search for the word "story" — so these must not count
+   as content when deciding whether the question named anything to look for. */
+var CH_ROUTE_WORDS = (function () {
+  var o = {}, w = ("status summary overview count total number many much stand story article " +
+    "item items feed everything hold").split(" ");
+  for (var i = 0; i < w.length; i++) o[chStem(w[i])] = 1;
   return o;
 })();
 
@@ -2034,6 +2263,18 @@ function chList(a) {
   if (!a.length) return "";
   if (a.length === 1) return a[0];
   return a.slice(0, -1).join(", ") + " and " + a[a.length - 1];
+}
+
+/* What the question is ABOUT, for quoting back. "how many articles mention thermal break"
+   should read as "thermal break" in the answer, not as the whole sentence. Display only —
+   retrieval always sees the full query. */
+function chSubject(q) {
+  var s = String(q || "").trim().replace(/\?+$/, "");
+  s = s.replace(/^(how many|how much|count of|number of|total)\s+/i, "")
+       .replace(/^(stories|story|articles|article|items|item|news)\s+/i, "")
+       .replace(/^(about|on|mentioning|mention|regarding|for|with)\s+/i, "")
+       .trim();
+  return s || String(q || "").trim();
 }
 
 /* ---------- corpus ----------
@@ -2217,9 +2458,11 @@ function chAnswer(q) {
   if (kind === "metric") return chAnsMetric(q, d, ix);
   if (kind === "trend") return chAnsTrend(q, d);
 
-  /* A count question that names something is a count over retrieval, not a global figure. */
+  /* A count question that NAMES something is a count over retrieval; one that names nothing —
+     "what is the status", "how many stories do I have" — is the global figure. */
   var named = ents.comps.length || ents.lands.length || ents.norms.length;
-  if (kind === "count" && !named && !chTokens(q).length) return chAnsMetric(q, d, ix);
+  var body = chTokens(q).filter(function (t) { return !CH_ROUTE_WORDS[t]; });
+  if (kind === "count" && !named && !body.length) return chAnsMetric(q, d, ix);
 
   return chAnsFind(q, d, ix, ents, kind === "count");
 }
@@ -2391,7 +2634,7 @@ function chAnsFind(q, d, ix, ents, wantCount) {
     if (cats[x.category] > bestN) { bestN = cats[x.category]; best = x.category; }
   });
 
-  var scope = scopeBits.length ? "<b>" + chList(scopeBits) + "</b>" : "“" + esc(q.trim()) + "”";
+  var scope = scopeBits.length ? "<b>" + chList(scopeBits) + "</b>" : "“" + esc(chSubject(q)) + "”";
   var lead;
   if (wantCount) {
     lead = "I have <b>" + chPl(docs.length, "story", "stories") + "</b> on " + scope + " — " +
@@ -2426,117 +2669,185 @@ function chAnsFind(q, d, ix, ents, wantCount) {
 
 /* ============================================================
    ASK — view
+   ------------------------------------------------------------
+   A chat room: composer docked at the bottom, turns growing down into it, each
+   side in its own container. Your message is a bubble; the reply is a card that
+   can hold a sentence, figures and the stories behind them without any of it
+   escaping the container it belongs to.
    ============================================================ */
+var ICON_SEND = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+  'stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>';
+
+/* Openers are derived from YOUR data, so a card can never open on something the app does not
+   hold. The label says which KIND of question it is, which is how you learn what can be asked. */
 function chSuggestions() {
   var d = S.data || {}, w = d.widgets || {}, ix = chIndex(), out = [];
-  if (w.moverName) out.push("What is happening with " + w.moverName + "?");
-  else if (ix.comps.length) out.push("What is happening with " + ix.comps[0].name + "?");
-  out.push("How much have I spent this month?");
-  if (w.risingTrend) out.push("Why is " + w.risingTrend + " heating up?");
-  else out.push("What is trending?");
-  if (ix.lands.length) out.push("Any news from " + ix.lands[0].name + "?");
-  out.push("What can you do?");
-  return out.slice(0, 5);
+  var who = w.moverName || (ix.comps[0] && ix.comps[0].name);
+  if (who) out.push(["Competitor", "What is happening with " + who + "?"]);
+  out.push(["Spend", "How much have I spent this month?"]);
+  if (w.risingTrend) out.push(["Trend", "Why is " + w.risingTrend + " heating up?"]);
+  else out.push(["Trend", "What is trending?"]);
+  if (ix.lands.length) out.push(["Market", "Any news from " + ix.lands[0].name + "?"]);
+  else out.push(["About", "What can you do?"]);
+  return out.slice(0, 4);
+}
+
+/* The signed-in address is the only name this page has. No name, no fake one. */
+function chHello() {
+  var n = String(S.email || "").split("@")[0].replace(/[._-]+/g, " ").trim();
+  if (!n) return "Hello";
+  return "Hello, " + n.charAt(0).toUpperCase() + n.slice(1);
 }
 
 function chAsk(q) {
   q = String(q || "").trim();
   if (!q) return;
   CH_DRAFT = "";
-  CH_LOG.unshift(chAnswer(q));      // newest first: the answer lands where you are already looking
+  CH_LOG.push(chAnswer(q));   // oldest first: the conversation grows DOWN into the composer
   render();
-  var box = $("#chIn");
-  if (box) { box.value = ""; box.focus(); }
+  var s = $("#scroll"); if (s) s.scrollTop = s.scrollHeight;
+  var box = $("#chIn"); if (box) box.focus();
 }
 
 function chRenderTurn(m) {
   var turn = el("div", "chturn");
 
-  var qr = el("div", "chq");
-  qr.appendChild(el("span", "qm", "You"));
-  qr.appendChild(el("span", "qt", m.q));
-  turn.appendChild(qr);
+  var row = el("div", "chmerow");
+  row.appendChild(el("div", "chme", m.q));
+  turn.appendChild(row);
+
+  var bot = el("div", "chbot");
+  var who = el("div", "chwho");
+  var mk = el("span", "m"); mk.innerHTML = MARK;   // the same mark as the rail and the phone
+  who.appendChild(mk);
+  who.appendChild(el("span", null, "Echo"));
+  bot.appendChild(who);
 
   var lead = el("p", "chlead");
-  lead.innerHTML = m.lead;          // built here from escaped parts, never from raw data
-  turn.appendChild(lead);
+  lead.innerHTML = m.lead;      // assembled here from escaped parts, never from raw data
+  bot.appendChild(lead);
 
   if (m.stats && m.stats.length) {
-    var row = el("div", "chstat");
+    var stats = el("div", "chstat");
     m.stats.forEach(function (s) {
       var c = el("div", "chsc");
       c.appendChild(el("div", "chsk", s[0]));
       c.appendChild(el("div", "chsv", s[1]));
       if (s[2]) c.appendChild(el("div", "chss", s[2]));
-      row.appendChild(c);
+      stats.appendChild(c);
     });
-    turn.appendChild(row);
+    bot.appendChild(stats);
   }
 
-  /* The same card the rest of the app draws. An answer and a story should never look like
-     two different products, and every claim above is a link away from its source. */
-  (m.items || []).forEach(function (doc) { turn.appendChild(articleCard(doc.raw, {})); });
+  /* The same card the rest of the app draws, one surface down. An answer and a story
+     should never look like two different products, and every claim above is a link
+     away from the thing it was read from. */
+  if (m.items && m.items.length) {
+    var src = el("div", "chsrc");
+    m.items.forEach(function (doc) { src.appendChild(articleCard(doc.raw, {})); });
+    bot.appendChild(src);
+  }
 
-  if (m.why) turn.appendChild(el("div", "chwhy", m.why));
-  if (m.note) turn.appendChild(el("div", "chnote", m.note));
+  if (m.why) bot.appendChild(el("div", "chwhy", m.why));
+  if (m.note) bot.appendChild(el("div", "chnote", m.note));
+
+  turn.appendChild(bot);
   return turn;
 }
 
 function renderAsk(app) {
-  var ix = chIndex();
+  var ix = chIndex(), d = S.data || {};
+  var pane = el("div", "chpane");
+  var flow = el("div", "chflow" + (CH_LOG.length ? "" : " start"));
 
-  var head = el("div", "chask");
-  var row = el("div", "chrow");
+  if (!CH_LOG.length) {
+    var hi = el("div", "chhi", chHello());
+    hi.appendChild(el("span", null, "What do you want to know?"));
+    flow.appendChild(hi);
+
+    var intro = el("p", "chintro");
+    intro.innerHTML =
+      "Ask about a competitor, a market, a theme, what you have spent, or what is moving. " +
+      "I read only what your phone has fetched — <b>" + chPl(ix.docs.length, "story", "stories") +
+      "</b>, plus your <b>" + chPl(ix.comps.length, "competitor", "competitors") + "</b> and <b>" +
+      chPl(ix.lands.length, "market", "markets") + "</b>. There is no model behind me and no key in " +
+      "this page, so asking costs nothing — and I cannot tell you anything that is not already here.";
+    flow.appendChild(intro);
+
+    var grid = el("div", "chsug");
+    chSuggestions().forEach(function (s) {
+      var b = el("button", "chsg");
+      b.appendChild(el("span", "k", s[0]));
+      b.appendChild(el("span", "t", s[1]));
+      b.onclick = function () { chAsk(s[1]); };
+      grid.appendChild(b);
+    });
+    flow.appendChild(grid);
+  } else {
+    CH_LOG.forEach(function (m) { flow.appendChild(chRenderTurn(m)); });
+  }
+  pane.appendChild(flow);
+
+  /* ---- the dock ---- */
+  var dock = el("div", "chdock");
+
+  var ctx = el("div", "chctx");
+  ctx.appendChild(document.createTextNode("Reading "));
+  ctx.appendChild(el("b", null, chPl(ix.docs.length, "story", "stories")));
+  var srcMode = d.newsSource || "";
+  if (srcMode) {
+    ctx.appendChild(document.createTextNode(" · phone is on "));
+    ctx.appendChild(el("b", null, srcMode === "rss" ? "free RSS" : srcMode));
+  }
+  if (CH_LOG.length) {
+    ctx.appendChild(document.createTextNode(" · "));
+    var clr = el("button", null, "Clear");
+    clr.onclick = function () { CH_LOG = []; render(); };
+    ctx.appendChild(clr);
+  }
+  dock.appendChild(ctx);
+
+  var box = el("div", "chbox");
   var input = el("input", "chin");
   input.id = "chIn";
-  input.type = "search";
+  input.type = "text";
   input.placeholder = "Ask about your news, competitors, markets or spend";
   input.autocomplete = "off";
+  input.setAttribute("enterkeyhint", "send");
   input.value = CH_DRAFT;
-  input.oninput = function () { CH_DRAFT = input.value; };
+
+  var go = el("button", "chgo");
+  go.innerHTML = ICON_SEND;
+  go.title = "Ask"; go.setAttribute("aria-label", "Ask");
+  var sync = function () { go.classList.toggle("on", !!input.value.trim()); };
+  input.oninput = function () { CH_DRAFT = input.value; sync(); };
   input.onkeydown = function (e) { if (e.key === "Enter") { e.preventDefault(); chAsk(input.value); } };
-  row.appendChild(input);
-  var go = el("button", "btn sm", "Ask");
   go.onclick = function () { chAsk(input.value); };
-  row.appendChild(go);
-  head.appendChild(row);
+  sync();
 
-  if (!CH_LOG.length) {
-    var chips = el("div", "chchips");
-    chSuggestions().forEach(function (s) {
-      var c = el("button", "chchip", s);
-      c.onclick = function () { chAsk(s); };
-      chips.appendChild(c);
+  box.appendChild(input);
+  box.appendChild(go);
+  dock.appendChild(box);
+  pane.appendChild(dock);
+  app.appendChild(pane);
+
+  /* Land on the newest turn. After layout, or scrollHeight is still the old one. On a phone
+     the keyboard is not opened for you — that would cover the conversation you just asked for. */
+  if (railIsPermanent()) input.focus();
+  if (CH_LOG.length) {
+    requestAnimationFrame(function () {
+      var s = $("#scroll");
+      if (s && S.tab === "ask") s.scrollTop = s.scrollHeight;
     });
-    head.appendChild(chips);
   }
-  app.appendChild(head);
-
-  if (!CH_LOG.length) {
-    var intro = el("div", "info");
-    intro.appendChild(el("div", "i", "i"));
-    var c2 = el("div");
-    c2.appendChild(el("b", null, "Answers, not guesses"));
-    c2.appendChild(document.createTextNode(
-      "This reads " + chPl(ix.docs.length, "story", "stories") + " your phone has fetched, plus your " +
-      ix.comps.length + " competitors and " + ix.lands.length + " markets. There is no model behind it and " +
-      "no key in this page, so it costs nothing to ask — and it can only tell you what is already in " +
-      "your data. Ask about something it does not hold and it will say so."));
-    intro.appendChild(c2);
-    app.appendChild(intro);
-    return;
-  }
-
-  CH_LOG.forEach(function (m) { app.appendChild(chRenderTurn(m)); });
-
-  var clr = el("button", "btn sm ghost", "Clear conversation");
-  clr.onclick = function () { CH_LOG = []; render(); };
-  app.appendChild(clr);
 }
 
 function render() {
   renderDrawerNav(); renderSyncRow(); renderDrawerSettings(); renderTitle();
   $("#shell").classList.toggle("wide", S.tab === "dashboard");
+  /* Turns the scroll column into a flex column so the composer can dock at the
+     bottom of the viewport instead of trailing the last message. */
+  $("#shell").classList.toggle("chat", S.tab === "ask");
   var app = $("#app"); app.innerHTML = "";
   var d = S.data, i;
 

@@ -21,3 +21,11 @@ PROMPTING.md
 RULES.md
 MEMORY.md
 README-full.md
+
+# Scratch copies and local preview harnesses. These are working files, and the whole point of
+# this repo is that only what is meant to be published ends up published.
+*.bak
+*.bak[0-9]
+_preview.html
+_fixture.json
+_chk.js
