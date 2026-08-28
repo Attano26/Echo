@@ -1309,6 +1309,47 @@ button.nstate:active{transform:scale(.97)}
 .chh{font-family:var(--fs-title);font-size:12px;font-weight:600;letter-spacing:.06em;
   text-transform:uppercase;color:var(--ink-3);margin:14px 0 6px}
 .chlead > :first-child{margin-top:0}
+/* Sources, folded. A row you open rather than a wall you scroll past. */
+.chsrcd{margin-top:12px}
+.chsrcd summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  font-size:12.5px;color:var(--ink-3);padding:3px 0}
+.chsrcd summary::-webkit-details-marker{display:none}
+.chsrcd summary::before{content:"";width:0;height:0;border-left:4px solid currentColor;
+  border-top:3.5px solid transparent;border-bottom:3.5px solid transparent;
+  transition:transform var(--t-hover) var(--ease)}
+.chsrcd[open] summary::before{transform:rotate(90deg)}
+.chsrcd summary:hover{color:var(--ink-2)}
+
+/* Follow-ups: quiet until looked at, because they are an offer and not the answer. */
+.chfu{display:flex;flex-wrap:wrap;gap:7px;margin-top:13px}
+.chfub{background:none;border:1px solid var(--line);border-radius:var(--r-pill);
+  color:var(--ink-2);font:inherit;font-size:12.5px;font-weight:300;padding:6px 13px;
+  cursor:pointer;text-align:left;
+  transition:border-color var(--t-hover) var(--ease),color var(--t-hover) var(--ease),
+             background var(--t-hover) var(--ease)}
+.chfub:hover{border-color:var(--accent);color:var(--ink);background:var(--accent-soft)}
+.chfub:active{transform:scale(.98)}
+
+/* Usage: one word, bottom right, at the weight of a page number. */
+.chfoot{display:flex;justify-content:flex-end;margin-top:10px}
+.chuse{position:relative}
+.chusebtn{background:none;border:0;padding:2px 0;font:inherit;font-size:11px;
+  letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);opacity:.6;cursor:pointer;
+  transition:opacity var(--t-hover) var(--ease),color var(--t-hover) var(--ease)}
+.chusebtn:hover{opacity:1;color:var(--ink-2)}
+.chusepop{position:absolute;right:0;bottom:calc(100% + 7px);z-index:8;min-width:210px;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r-box);
+  box-shadow:var(--sh-2);padding:11px 13px;
+  opacity:0;visibility:hidden;transform:translateY(3px);
+  transition:opacity .14s var(--ease),transform .14s var(--ease),visibility .14s}
+@media (hover:hover){.chuse:hover .chusepop{opacity:1;visibility:visible;transform:none}}
+.chuse.open .chusepop{opacity:1;visibility:visible;transform:none}
+.chuh{font-family:var(--fs-title);font-size:10.5px;font-weight:600;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--ink-3);margin-bottom:6px}
+.chur{display:flex;justify-content:space-between;gap:16px;font-size:12px;line-height:1.75;
+  color:var(--ink-3);white-space:nowrap}
+.chur b{font-weight:400;color:var(--ink-2);font-variant-numeric:tabular-nums}
+
 .chlist{margin:0 0 9px;padding-left:18px;display:flex;flex-direction:column;gap:4px}
 .chlist li{font-size:14.5px;line-height:1.5}
 .chlist:last-child{margin-bottom:0}
@@ -4786,32 +4827,114 @@ var CH_RULES = [
   "general. If the material is thin, say it is thin."
 ].join("\n");
 
-/* Two output contracts. A question and a request for a framework want different shapes, and one
-   prompt trying to serve both produces a bulleted answer to "what happened with Reynaers" and a
-   wall of prose in answer to "summarise the quarter". */
-var CH_VOICE_PROSE = [
+/* The register, which does not change with the question. The SHAPE says what the parts are; this
+   says how they sound. */
+var CH_VOICE = [
   "",
-  "Write the way a well-briefed colleague speaks: answer first, two to four sentences, plain British",
-  "English, contractions welcome. No markdown, no bullet points, no headings, no preamble and no",
-  "sign-off. Do not list every story back — the app already shows the source cards under your",
-  "reply, so name only the ones that carry your point."
+  "VOICE. Write the way a well-briefed colleague speaks: answer first, plain British English,",
+  "contractions welcome, no preamble and no sign-off. Never open by restating the question. Use",
+  "only the headings and bullets your shape asks for — '## ' for a heading, '- ' for a bullet,",
+  "'**bold**' for the few phrases that carry the point. Keep the whole answer under 200 words.",
+  "",
+  "Name a story when it is doing the work of your claim. Do not list stories back for their own",
+  "sake and never close with a roll-call of everything you read — the reader can open the sources",
+  "themselves.",
+  "",
+  "FOLLOW-UPS. Also return two or three questions the reader would plausibly ask next. Each must be",
+  "answerable from the INVENTORY you were given: name a company, market or theme that actually",
+  "appears there. Write them as the reader would type them, under about nine words. If the data",
+  "cannot support a good next question, return none rather than filler."
 ].join("\n");
 
-var CH_VOICE_STRUCT = [
-  "",
-  "The reader has asked for a summary, a comparison or a framework, so give them structure.",
-  "Open with one plain sentence that answers the question outright. Then organise the rest under",
-  "short markdown headings (## Heading) with bullets (- point). Bold (**like this**) only the few",
-  "phrases that carry the point. Keep the whole reply under about 220 words, and keep every bullet",
-  "to one line. Do not pad a thin answer into a full framework — if the data supports three",
-  "bullets, give three. Name the story behind a claim when the claim would otherwise float."
-].join("\n");
+/* ---------- answer shapes ----------
+   ONE SHAPE FOR EVERY QUESTION WAS THE PROBLEM. A single contract produced the same skeleton
+   whatever was asked, so a comparison came back as a summary with two names in it and a spend
+   question arrived wearing headings it did not need. Each entry below says what a good answer to
+   THAT kind of question looks like, and says nothing else.
 
-/* What kind of shape the question is asking for. Rules rather than a classifier call: it costs
-   nothing, it is readable, and it is fixable when it misfires. */
-function chWantsStructure(q) {
+   They all end the same way: if the data is thin, say it is thin. A shape is a form to fill
+   honestly, never a quota of bullets to reach. */
+var CH_SHAPES = {
+  competitor: [
+    "SHAPE. One competitor.",
+    "Open with what has actually changed for them, in a sentence. Then '## What they have been",
+    "doing' with two or three bullets, and '## Why it matters' with one or two on the read-across",
+    "to Schüco. If the record is a single story, say so and give that story."
+  ],
+  compare: [
+    "SHAPE. A comparison.",
+    "Open with the difference that matters most, in a sentence. Then one '## ' heading per company",
+    "or market being compared, two bullets each, on the SAME dimensions in the same order so the",
+    "two can be read against one another. Say plainly if the data is much thicker on one side."
+  ],
+  summary: [
+    "SHAPE. A summary or digest.",
+    "Open with the single most important thing in the period, in a sentence. Then group the rest",
+    "under two to four '## ' theme headings you choose from what is actually there — not a fixed",
+    "list — with one-line bullets. Stop there; do not append a conclusion."
+  ],
+  trend: [
+    "SHAPE. Movement.",
+    "Open with what is rising and what is fading, in a sentence. Then '## Picking up' and",
+    "'## Going quiet' with one-line bullets, each naming its evidence. Only include a heading you",
+    "can actually fill."
+  ],
+  metric: [
+    "SHAPE. A figure.",
+    "Answer with the number in the first six words. Two or three sentences of plain prose after it,",
+    "on what drove it and what it means. NO headings and NO bullets — this is one fact, not a",
+    "report."
+  ],
+  explain: [
+    "SHAPE. An explanation.",
+    "Open with what the thing is, in a sentence the reader could repeat to someone else. Then",
+    "'## Why it matters here' and '## What your data says', two bullets each. If your material",
+    "mentions the concept without defining it, say exactly that."
+  ],
+  timeline: [
+    "SHAPE. A sequence.",
+    "Open with the arc in a sentence. Then bullets in date order, oldest first, each starting with",
+    "the date and running to one line. No headings."
+  ],
+  count: [
+    "SHAPE. A count.",
+    "Give the number in the first five words. One or two sentences on how it breaks down. No",
+    "headings, no bullets."
+  ],
+  find: [
+    "SHAPE. A direct question.",
+    "Answer it in the first sentence. Two or three more sentences of substance from the stories that",
+    "carry the point, naming them. No headings and no bullets unless there are genuinely three or",
+    "more parallel items, in which case bullets are right."
+  ],
+  none: [
+    "SHAPE. Nothing matched.",
+    "Say so in one sentence, without apology or padding. Then, in one more, name the nearest thing",
+    "the inventory DOES hold, so the reader can see where the edge of their data is. Do not",
+    "speculate about the subject itself."
+  ]
+};
+
+/* Which shape this question wants. Rules rather than a classifier call: free, readable, and
+   fixable when it misfires. Order matters — the most specific tests run first. */
+function chShape(q, kind, ents) {
   var t = " " + key(q).replace(/[^a-z0-9 ]+/g, " ") + " ";
-  return /\b(summar\w*|recap|digest|overview|brief|briefing|breakdown|break down|compare|comparison|versus|vs|framework|swot|matrix|timeline|pros and cons|structure|organise|organize|bullet|table|list out|walk me through|explain|analysis|analyse|analyze|deep dive)\b/.test(t);
+  if (kind === "metric") return "metric";
+  if (kind === "trend") return "trend";
+  if (/\b(compare|comparison|versus|vs|against|difference between|better than|side by side)\b/.test(t)
+      || (ents && ents.comps && ents.comps.length > 1)) return "compare";
+  if (/\b(timeline|chronolog\w*|over time|history|when did|sequence|so far)\b/.test(t)) return "timeline";
+  if (/\b(summar\w*|recap|digest|overview|brief|briefing|breakdown|break down|what happened|catch me up|deep dive)\b/.test(t)) return "summary";
+  if (kind === "count") return "count";
+  /* COMPETITOR OUTRANKS EXPLAIN. “What is happening with Reynaers” opens with “what is” and
+     was being read as a request for a definition, so it answered with an explanation of a
+     company the reader already tracks. Naming exactly one tracked competitor is the stronger
+     signal. The added guard keeps the same phrasing out of explain when no competitor is
+     named either, so “what is happening in India” falls through to find rather than explain. */
+  if (ents && ents.comps && ents.comps.length === 1) return "competitor";
+  if (/\b(explain|what is|what are|what does|meaning of|definition|why does|how does)\b/.test(t)
+      && !/\b(what|whats) (is|are)? ?(happening|going on|new|up)\b/.test(t)) return "explain";
+  return "find";
 }
 
 /* The retrieved answer, rendered for the model. The composed reply goes in too: its figures are
@@ -4868,9 +4991,15 @@ function chPrompt(m) {
     out.push("");
   }
 
-  out.push("THE APP'S OWN ANSWER (its figures are computed from the data and are correct —");
-  out.push("rephrase them, never contradict them, and never recount them yourself)");
+  /* The composed answer rides along for its FIGURES, which are computed from the data and are
+     right. It is deliberately NOT offered as a draft to rewrite: handing the model a finished
+     sentence is what made every reply inherit its running order — matches, then newest, then
+     published — no matter what had been asked. */
+  out.push("COUNTS ALREADY COMPUTED (use these numbers if you need a number; do not recount them,");
+  out.push("and do not follow this sentence's running order — it is a note, not a draft)");
   out.push(String(m.composed || m.lead).replace(/<[^>]+>/g, ""));
+  out.push("");
+  out.push((CH_SHAPES[m.shape] || CH_SHAPES.find).join("\n"));
   return out.join("\n");
 }
 
@@ -4883,9 +5012,22 @@ function chCallModel(m, done) {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-goog-api-key": key },
     body: JSON.stringify({
-      systemInstruction: { parts: [{ text: CH_RULES + (m.structured ? CH_VOICE_STRUCT : CH_VOICE_PROSE) }] },
+      systemInstruction: { parts: [{ text: CH_RULES + CH_VOICE }] },
       contents: [{ role: "user", parts: [{ text: chPrompt(m) }] }],
-      generationConfig: { temperature: 0.3, maxOutputTokens: 500 }
+      /* A schema rather than a delimiter the model has to remember. The answer keeps its markdown;
+         the follow-ups arrive as real strings instead of a line to be parsed back out of prose. */
+      generationConfig: {
+        temperature: 0.45, maxOutputTokens: 900,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "OBJECT",
+          properties: {
+            answer: { type: "STRING" },
+            followUps: { type: "ARRAY", items: { type: "STRING" } }
+          },
+          required: ["answer"]
+        }
+      }
     }),
     signal: ctrl ? ctrl.signal : undefined
   }).then(function (r) {
@@ -4906,8 +5048,23 @@ function chCallModel(m, done) {
     var parts = (cand && cand.content && cand.content.parts) || [];
     var text = parts.map(function (x) { return x && x.text ? x.text : ""; }).join("").trim();
     if (!text) return done(null, cand && cand.finishReason ? "it stopped: " + cand.finishReason : "an empty reply");
+
+    /* The parse is defended even with a schema in force: a reply truncated at the token ceiling is
+       still JSON-shaped enough to look right and not complete enough to parse, and the honest
+       fallback is to show what came back rather than to lose it. */
+    var payload = null;
+    try { payload = JSON.parse(text); } catch (e) { payload = null; }
+    if (!payload || typeof payload.answer !== "string" || !payload.answer.trim()) {
+      payload = { answer: text, followUps: [] };
+    }
+    var ups = (payload.followUps || []).map(function (x) { return String(x || "").trim(); })
+      .filter(function (x) { return x.length > 3 && x.length <= 90; })
+      .slice(0, 3);
+
     var u = res.j.usageMetadata || {};
-    done({ text: text, inTok: u.promptTokenCount || 0, outTok: u.candidatesTokenCount || 0 }, null);
+    done({ text: payload.answer, followUps: ups,
+           inTok: u.promptTokenCount || 0, outTok: u.candidatesTokenCount || 0,
+           totalTok: u.totalTokenCount || 0, thoughtTok: u.thoughtsTokenCount || 0 }, null);
   }).catch(function (err) {
     clearTimeout(timer);
     done(null, (err && err.name === "AbortError") ? "it timed out" : String((err && err.message) || err));
@@ -4990,8 +5147,11 @@ function chAsk(q) {
   /* The composed reply is kept whatever happens next. It is the fallback if the call fails, and
      it is also part of the prompt, so the model rephrases figures rather than recounting them. */
   m.composed = m.lead;
-  m.structured = chWantsStructure(q);
-  m.pending = chSmart();
+  m.shape = chShape(q, m.kind, chEntities(q));
+  /* Layout follows the MODE, not how the call turns out. Reading it off `via` after the fact meant
+     the composed answer's tiles rendered first and then vanished when the reply landed. */
+  m.smartTurn = chSmart();
+  m.pending = m.smartTurn;
   CH_LOG.push(m);
   render();
   var s = $("#scroll"); if (s) s.scrollTop = s.scrollHeight;
@@ -5002,12 +5162,74 @@ function chAsk(q) {
   if (m.pending) {
     chCallModel(m, function (out, err) {
       m.pending = false;
-      if (out) { m.lead = chProse(out.text); m.via = "model"; m.usage = out; }
+      if (out) {
+        m.lead = chProse(out.text); m.via = "model"; m.usage = out;
+        m.followUps = out.followUps || [];
+      }
       else { m.via = "local"; m.viaErr = err; }
       render();
       var s2 = $("#scroll"); if (s2) s2.scrollTop = s2.scrollHeight;
     });
   }
+}
+
+/* Provenance, kept but got out of the way. Which of the two wrote a sentence and what it cost are
+   things the reader must be able to check — especially on a tab whose whole promise is that it
+   cannot tell you anything you do not already hold. They are not things anyone wants printed under
+   every paragraph, though, so they live behind one quiet word in the bottom right: hover on a
+   pointer, tap on a touch screen.
+
+   It appears on EVERY reply, including the free ones, where it says so and shows nothing spent.
+   A usage readout that only appears when something was spent teaches you to read its absence, and
+   absence is the one thing that is easy to miss. */
+function chUsage(m) {
+  var foot = el("div", "chfoot");
+  var wrap = el("div", "chuse");
+  var btn = el("button", "chusebtn", "Usage");
+  btn.setAttribute("aria-expanded", "false");
+  var pop = el("div", "chusepop");
+
+  var row = function (k, v) {
+    var r = el("div", "chur");
+    r.appendChild(el("span", null, k));
+    r.appendChild(el("b", null, String(v)));
+    pop.appendChild(r);
+  };
+  var n = function (x) { return (Number(x) || 0).toLocaleString("en-IN"); };
+
+  if (m.via === "model" && m.usage) {
+    pop.appendChild(el("div", "chuh", "This reply"));
+    row("Model", CH_MODEL);
+    row("Input", n(m.usage.inTok) + " tokens");
+    row("Output", n(m.usage.outTok) + " tokens");
+    if (m.usage.thoughtTok) row("Thinking", n(m.usage.thoughtTok) + " tokens");
+    if (m.usage.totalTok) row("Total", n(m.usage.totalTok) + " tokens");
+    row("Grounded on", chPl(chIndex().docs.length, "story", "stories"));
+    row("Search grounding", "off — free tier");
+  } else if (m.viaErr) {
+    pop.appendChild(el("div", "chuh", "This reply"));
+    row("Answered by", "the app");
+    row("Model", "not reached");
+    row("Reason", m.viaErr);
+    row("Spent", "nothing");
+  } else {
+    pop.appendChild(el("div", "chuh", "This reply"));
+    row("Answered by", "the app");
+    row("Read", chPl(chIndex().docs.length, "story", "stories"));
+    row("Spent", "nothing");
+  }
+
+  /* Click works on both. Hover alone would strand touch users; click alone would make a pointer
+     user press something to read a footnote. */
+  btn.onclick = function (e) {
+    e.stopPropagation();
+    var open = wrap.classList.toggle("open");
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+  };
+  wrap.appendChild(btn);
+  wrap.appendChild(pop);
+  foot.appendChild(wrap);
+  return foot;
 }
 
 function chRenderTurn(m) {
@@ -5037,7 +5259,11 @@ function chRenderTurn(m) {
   }
   bot.appendChild(lead);
 
-  if (m.stats && m.stats.length) {
+  /* THE TILES BELONG TO THE COMPOSED ANSWER, NOT TO EVERY ANSWER. Matches / Newest / Published is
+     what chAnsFind computes to support ITS sentence. Rendering them under a model reply put the
+     same three-column skeleton beneath every question whatever had been asked, which is what made
+     the bot look like it was filling in a form. Smart mode shows what the model actually said. */
+  if (!m.smartTurn && m.stats && m.stats.length) {
     var stats = el("div", "chstat");
     m.stats.forEach(function (s) {
       var c = el("div", "chsc");
@@ -5049,28 +5275,47 @@ function chRenderTurn(m) {
     bot.appendChild(stats);
   }
 
-  /* The same card the rest of the app draws, one surface down. An answer and a story
-     should never look like two different products, and every claim above is a link
-     away from the thing it was read from. */
+  /* The same card the rest of the app draws, one surface down. An answer and a story should never
+     look like two different products, and every claim above stays a link away from what it was
+     read from.
+
+     In Smart mode they go behind a disclosure. Six cards under every reply was the app insisting on
+     showing its work whether the answer needed it or not, and it made a two-line answer look like a
+     page. Evidence is one click away, which is the right distance for something you check rather
+     than read. */
   if (m.items && m.items.length) {
-    var src = el("div", "chsrc");
-    m.items.forEach(function (doc) { src.appendChild(articleCard(doc.raw, {})); });
-    bot.appendChild(src);
+    if (m.smartTurn) {
+      var det = el("details", "chsrcd");
+      det.appendChild(el("summary", null, chPl(m.items.length, "story", "stories") + " behind this"));
+      var folded = el("div", "chsrc");
+      m.items.forEach(function (doc) { folded.appendChild(articleCard(doc.raw, {})); });
+      det.appendChild(folded);
+      bot.appendChild(det);
+    } else {
+      var src = el("div", "chsrc");
+      m.items.forEach(function (doc) { src.appendChild(articleCard(doc.raw, {})); });
+      bot.appendChild(src);
+    }
   }
 
-  /* Provenance, always. Which of the two wrote this sentence, and what it cost, are things the
-     reader should never have to guess at — especially on a tab whose whole promise is that it
-     cannot tell you anything you do not already hold. */
-  if (m.via === "model" && m.usage) {
-    bot.appendChild(el("div", "chwhy",
-      CH_MODEL + " phrased this over " + chPl((m.items || []).length, "story", "stories") +
-      " from your data · " + m.usage.inTok + " tokens in, " + m.usage.outTok + " out"));
-  } else if (m.viaErr) {
-    bot.appendChild(el("div", "chwhy",
-      "Answered in the app's own words — " + m.viaErr + ". Nothing was charged, and the stories are the same."));
+  /* Where the conversation goes next, offered rather than guessed at. They ASK on click: a chip
+     that only filled the box would be a suggestion you then have to confirm, which is a step for
+     nothing when the chip already is the question. */
+  if (m.followUps && m.followUps.length) {
+    var fu = el("div", "chfu");
+    m.followUps.forEach(function (fq) {
+      var b = el("button", "chfub", fq);
+      b.onclick = function () { chAsk(fq); };
+      fu.appendChild(b);
+    });
+    bot.appendChild(fu);
   }
-  if (m.why) bot.appendChild(el("div", "chwhy", m.why));
+
+  /* The ranking footnote explains how the COMPOSED answer ordered its stories. Under a model
+     reply it describes work the reader is not looking at. */
+  if (!m.smartTurn && m.why) bot.appendChild(el("div", "chwhy", m.why));
   if (m.note) bot.appendChild(el("div", "chnote", m.note));
+  bot.appendChild(chUsage(m));
 
   turn.appendChild(bot);
   return turn;
@@ -5937,6 +6182,17 @@ $("#signin").onclick = async function () {
   catch (e) { setGateStatus(e.message, true); }
 };
 document.querySelectorAll(".themebtn").forEach(function (b) { b.onclick = toggleTheme; });
+/* One listener for every Usage popover there will ever be, rather than one per turn: the log
+   grows without bound and per-turn listeners would grow with it. */
+document.addEventListener("click", function () {
+  var open = document.querySelectorAll(".chuse.open");
+  for (var i = 0; i < open.length; i++) {
+    open[i].classList.remove("open");
+    var b = open[i].querySelector(".chusebtn");
+    if (b) b.setAttribute("aria-expanded", "false");
+  }
+});
+
 $("#btnProfile").onclick  = openSettingsPanel;   // the one way in, from the rail
 $("#btnSettingsClose").onclick = closeSettingsPanel;
 $("#settingsPanel").onclick = function (e) {
