@@ -926,28 +926,32 @@ button.nstate:active{transform:scale(.97)}
 }
 
 /* ---------- skeletons ----------
+   Named ld*, not sk*: `sk` is the Sankey legend's namespace (.sklegend, .skgroup,
+   .skrow, .skn, .skv) and a bare `.sk` here also landed on every Settings key,
+   which paints them grey and pulses them. A loading state that leaks into a
+   settled screen is worse than no loading state.
    One grey block per real element, at the real element's size and in the real element's shell,
    so the page does not reflow when the data lands. A single full-width rectangle per card said
    nothing about what was coming and then jumped when it arrived.
 
-   .sk is the block. The shells below repeat the padding, radius and border of the thing they
+   .ldb is the block. The shells below repeat the padding, radius and border of the thing they
    stand in for, which is the only part that has to stay in step with the real styles. */
-.sk{background:var(--track);border-radius:6px;animation:pulse 1.4s ease-in-out infinite}
-.skrow{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.skcard{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-card);
+.ldb{background:var(--track);border-radius:6px;animation:pulse 1.4s ease-in-out infinite}
+.ldrow{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ldcard{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-card);
   box-shadow:var(--sh-1);padding:15px 17px 13px;margin-bottom:10px;
   display:flex;flex-direction:column}
-.skwidget{flex:0 0 auto;width:calc(155 * 1.55px);height:calc(155 * 1.55px);
+.ldwidget{flex:0 0 auto;width:calc(155 * 1.55px);height:calc(155 * 1.55px);
   border-radius:calc(22 * 1.55px);background:var(--surface);box-shadow:var(--widget-shadow);
   padding:calc(14 * 1.55px);display:flex;flex-direction:column;justify-content:space-between}
-.skbento{display:flex;align-items:flex-start;gap:var(--bento-gap)}
-.skbcol{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:var(--bento-gap)}
-.skpane{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-card);
+.ldbento{display:flex;align-items:flex-start;gap:var(--bento-gap)}
+.ldbcol{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:var(--bento-gap)}
+.ldpane{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-card);
   box-shadow:var(--sh-1);padding:18px 20px;display:flex;flex-direction:column;gap:10px}
-.sksug{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.sksg{background:var(--surface);border:1px solid var(--line);border-radius:14px;
+.ldsug{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ldsg{background:var(--surface);border:1px solid var(--line);border-radius:14px;
   box-shadow:var(--sh-1);padding:14px 16px;display:flex;flex-direction:column;gap:9px}
-@media (max-width:640px){ .sksug{grid-template-columns:1fr} }
+@media (max-width:640px){ .ldsug{grid-template-columns:1fr} }
 @keyframes pulse{0%,100%{opacity:.5}50%{opacity:.85}}
 
 /* ---------- gate ---------- */
@@ -4329,7 +4333,7 @@ var SK_N = 0;
 /* Blocks pulse on a short stagger, so a card reads as one object settling rather than as
    eight rectangles blinking in lockstep. */
 function sk(w, h, r) {
-  var n = el("div", "sk");
+  var n = el("div", "ldb");
   n.style.width = typeof w === "number" ? w + "px" : w;
   n.style.height = (h || 12) + "px";
   if (r) n.style.borderRadius = r + "px";
@@ -4338,12 +4342,12 @@ function sk(w, h, r) {
 }
 function skGap(h) { var n = el("div"); n.style.height = h + "px"; n.style.flex = "0 0 auto"; return n; }
 function skRow(a, b) {
-  var r = el("div", "skrow"); r.appendChild(a); r.appendChild(b); return r;
+  var r = el("div", "ldrow"); r.appendChild(a); r.appendChild(b); return r;
 }
 
 /* A news card: channel and date, a two-line headline, three lines of summary, source and state. */
 function skNewsCard() {
-  var c = el("div", "skcard");
+  var c = el("div", "ldcard");
   c.appendChild(skRow(sk(76, 11), sk(56, 11)));
   c.appendChild(skGap(12));
   c.appendChild(sk("94%", 13));
@@ -4361,12 +4365,12 @@ function skNewsCard() {
 }
 /* A report edition: title, date, and the two download buttons. */
 function skReportCard() {
-  var c = el("div", "skcard");
+  var c = el("div", "ldcard");
   c.appendChild(sk("57%", 14));
   c.appendChild(skGap(9));
   c.appendChild(sk("34%", 10));
   c.appendChild(skGap(16));
-  var row = el("div", "skrow");
+  var row = el("div", "ldrow");
   row.style.justifyContent = "flex-start";
   row.appendChild(sk(76, 30, 15));
   row.appendChild(sk(112, 30, 15));
@@ -4375,7 +4379,7 @@ function skReportCard() {
 }
 /* A database entry: name, then a couple of key and value rows. */
 function skEntryCard(rows) {
-  var c = el("div", "skcard");
+  var c = el("div", "ldcard");
   c.appendChild(sk("52%", 14));
   for (var i = 0; i < rows; i++) {
     c.appendChild(skGap(12));
@@ -4385,7 +4389,7 @@ function skEntryCard(rows) {
 }
 /* A restore point: name and timestamp, nothing else is listed. */
 function skSlimCard() {
-  var c = el("div", "skcard");
+  var c = el("div", "ldcard");
   c.appendChild(skRow(sk("44%", 13), sk(64, 10)));
   return c;
 }
@@ -4402,7 +4406,7 @@ function skDashboard() {
   var f = document.createDocumentFragment();
   var strip = el("div", "wstrip");
   for (var i = 0; i < 5; i++) {
-    var t = el("div", "skwidget");
+    var t = el("div", "ldwidget");
     t.appendChild(sk(78, 10));
     t.appendChild(sk(104, 30));
     t.appendChild(sk(118, 10));
@@ -4410,17 +4414,17 @@ function skDashboard() {
   }
   f.appendChild(strip);
 
-  var head = el("div", "skrow");
+  var head = el("div", "ldrow");
   head.style.margin = "4px 0 16px";
   head.appendChild(sk(132, 20));
   head.appendChild(sk(112, 28, 14));
   f.appendChild(head);
 
-  var bento = el("div", "skbento");
+  var bento = el("div", "ldbento");
   [[168, 236], [222, 150]].forEach(function (heights) {
-    var col = el("div", "skbcol");
+    var col = el("div", "ldbcol");
     heights.forEach(function (h) {
-      var p = el("div", "skpane");
+      var p = el("div", "ldpane");
       p.appendChild(sk("46%", 14));
       p.appendChild(sk("62%", 10));
       var body = el("div");
@@ -4451,9 +4455,9 @@ function skAsk() {
   flow.appendChild(skGap(9));
   flow.appendChild(sk("64%", 11));
   flow.appendChild(skGap(26));
-  var grid = el("div", "sksug");
+  var grid = el("div", "ldsug");
   for (var i = 0; i < 4; i++) {
-    var g = el("div", "sksg");
+    var g = el("div", "ldsg");
     g.appendChild(sk(62, 10));
     g.appendChild(sk("92%", 11));
     g.appendChild(sk("58%", 11));
