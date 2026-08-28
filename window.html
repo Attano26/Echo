@@ -95,12 +95,17 @@
      ink instead: 14.15:1, and the accent still marks the row through the left border and the
      tint behind it. */
   --nav-on:var(--accent-ink);
-  /* The three news-source colours, matched to NewsSourcePill on the phone. They colour the
-     DOT and nothing else: the pill itself stays a neutral surface in both themes, so the
-     status reads as one calm object with a coloured marker rather than a tinted badge. */
+  /* The three news-source colours, matched to the phone's StatusGreen / StatusAmber / StatusBlue.
+     They colour the DOT and nothing else: the pill itself stays a neutral surface in both themes,
+     so the status reads as one calm object with a coloured marker rather than a tinted badge.
+
+     Green and amber have always matched. Hybrid did not: it was #60A5FA, taken from an early phone
+     pill that has since been replaced, while every live surface on the phone used #2BAFF2. Both
+     read as "blue", which is exactly why it went unnoticed — keep these three in step with the
+     Status* values in AluDashboard.kt, which is the one place they are defined on that side. */
   --free:#34C759;       /* the free feed */
   --paid:#E5A33B;       /* anything that spends */
-  --hybrid:#60A5FA;     /* free RSS plus a paid competitor pass */
+  --hybrid:#2BAFF2;     /* free RSS plus a paid competitor pass */
   --danger:#F0616D;
   --sh-2:0 2px 6px rgba(0,0,0,.06),0 14px 34px rgba(0,0,0,.09);
   --r-card:18px;       /* Sightline's radius — the softer corner is most of its calm */
