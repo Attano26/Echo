@@ -330,7 +330,9 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
    the drawer is a SIBLING of #shell, not a child, so a descendant selector on #shell could
    never reach it. start() adds .in, signOut() removes it, so the sweep cannot run on the
    sign-in screen and costs nothing there. */
-body.in .dhead .mark{ animation:railsweep 14s linear infinite }
+/* 9s, down from 14s. Slow enough to stay ambient rather than becoming a thing that moves
+   in the corner of your eye while you read, fast enough that the sweep is legible as one. */
+body.in .dhead .mark{ animation:railsweep 9s linear infinite }
 
 /* Bottom-left to top-right by EXACTLY one period.
    At background-size:200% the image is twice the box, so sliding from one edge to the other
