@@ -1291,7 +1291,6 @@ var ICON_ALARM = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" ' 
   'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
   '<circle cx="12" cy="13" r="8"/><path d="M12 9.5V13l2.4 1.4"/>' +
   '<path d="M5.2 2.8 2.6 5.4M18.8 2.8l2.6 2.6"/></svg>';
-var ICON_X = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 
 /* ============================================================
    STORE
@@ -2094,6 +2093,10 @@ var ICON_SLIDERS = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" 
   '<circle cx="9" cy="6" r="2.1" fill="currentColor" stroke="none"/>' +
   '<circle cx="15" cy="12" r="2.1" fill="currentColor" stroke="none"/>' +
   '<circle cx="8" cy="18" r="2.1" fill="currentColor" stroke="none"/></svg>';
+/* The only ICON_X. There were two: an 18px one declared with the other shell icons and this
+   17px one, and because both were plain `var` at top level the later assignment simply won.
+   Nothing rendered the first, so editing it would have changed nothing on screen, which is
+   the kind of dead code that costs an afternoon rather than a minute. */
 var ICON_X = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" ' +
   'stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 var ICON_TICK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" ' +
