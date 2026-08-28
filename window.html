@@ -2895,8 +2895,10 @@ function renderWidgetStrip(w) {
   (function () {
     var g = el("div", "widget");
     var grid = arr(w.monthGrid), mx = w.monthMax || 1;
-    g.appendChild(wTop("Coverage", w.monthLabel || null));
-    g.appendChild(wHead(wHero(w.monthTotal || 0, "received<br>in " + (w.monthLabel || "this month"))));
+    /* No month in the stamp: the figure underneath already says "articles dated August", and
+       naming the same month twice in one 155dp square is the tile arguing with itself. */
+    g.appendChild(wTop("Coverage"));
+    g.appendChild(wHead(wHero(w.monthTotal || 0, "articles<br>dated " + (w.monthLabel || "this month"))));
     /* monthGrid is a 42-cell CALENDAR: -1 outside the month, and days 1..N sitting at an
        offset that depends on the weekday the month starts on. Taking the last 16 CELLS gave
        trailing padding, not recent days.
