@@ -1231,6 +1231,57 @@ button.nstate:active{transform:scale(.97)}
   .brow{flex-direction:column}
   .bver{font-size:34px}
 }
+
+/* ---------- reports, as a split view ----------
+   Editions on the left, the document itself on the right. The preview is the PDF the PHONE drew,
+   fetched from Drive and shown as-is, which is the only arrangement that cannot drift from the
+   phone's formatting: there is no second renderer to drift.
+
+   Word previews as the phone's own docx-fidelity PDF, for the reason the phone's code gives:
+   nothing can render a .docx to pixels natively, so the preview is a PDF drawn to match the Word
+   output. Same trick, same bytes, so what you see is what downloads. */
+#shell.split #scroll{padding-bottom:0}
+#shell.split #scroll > .wrap{min-height:100%;display:flex;flex-direction:column}
+#shell.split #app{flex:1 1 auto;display:flex;flex-direction:column;padding-top:0}
+.rsplit{flex:1 1 auto;display:flex;gap:16px;min-height:0;padding-bottom:16px}
+.rlist{flex:0 0 336px;min-width:0;display:flex;flex-direction:column;gap:10px;
+  overflow-y:auto;overscroll-behavior:contain;padding:2px 2px 2px 0}
+.rprev{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;overflow:hidden;
+  background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-card);
+  box-shadow:var(--sh-1)}
+.rphead{display:flex;align-items:center;gap:10px;padding:12px 16px;
+  border-bottom:1px solid var(--line-2);font-size:13px;color:var(--ink-3);flex:0 0 auto}
+.rphead b{font-weight:500;color:var(--ink)}
+.rpbody{flex:1 1 auto;min-height:0;position:relative;background:var(--surface-2)}
+.rpbody iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.rpmsg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  padding:34px;text-align:center;font-size:13.5px;line-height:1.7;color:var(--ink-3)}
+.rpmsg span{max-width:44ch}
+
+/* one edition */
+.rcard{flex:0 0 auto;background:var(--surface);border:1px solid var(--line-2);
+  border-radius:var(--r-card);box-shadow:var(--sh-1);padding:14px 16px 12px;cursor:pointer;
+  transition:border-color var(--t-hover) var(--ease),box-shadow var(--t-hover) var(--ease)}
+.rcard:hover{box-shadow:var(--sh-2)}
+.rcard.on{border-color:var(--accent);box-shadow:var(--sh-2)}
+.rctop{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.rcwk{font-family:var(--fs-title);font-size:12px;font-weight:600;color:var(--accent-ink)}
+.rcdate{font-size:12px;color:var(--ink-3);white-space:nowrap;font-variant-numeric:tabular-nums}
+.rcttl{font-family:var(--fs-title);font-size:15px;font-weight:600;line-height:1.4;margin:9px 0 0}
+.rcsub{font-size:12.5px;color:var(--ink-3);margin:5px 0 0}
+.rcfoot{display:flex;align-items:center;gap:10px;margin-top:13px}
+/* The format switch sits bottom LEFT, the download bottom RIGHT. */
+.rcseg{display:flex;flex:0 0 auto;background:var(--track);border-radius:var(--r-pill);padding:2px}
+.rcseg button{border:0;background:none;font:inherit;font-size:12px;font-weight:500;
+  color:var(--ink-3);padding:5px 13px;border-radius:var(--r-pill);cursor:pointer;
+  transition:background var(--t-hover) var(--ease),color var(--t-hover) var(--ease)}
+.rcseg button.on{background:var(--track-on);color:var(--ink)}
+.rcdl{margin-left:auto;flex:0 0 auto}
+@media (max-width:900px){
+  .rsplit{flex-direction:column}
+  .rlist{flex:0 0 auto;overflow:visible}
+  .rprev{flex:0 0 auto;height:70vh}
+}
 </style>
 </head>
 <body>
@@ -4702,6 +4753,9 @@ function render() {
   /* Turns the scroll column into a flex column so the composer can dock at the
      bottom of the viewport instead of trailing the last message. */
   $("#shell").classList.toggle("chat", S.tab === "ask");
+  /* Same trick as the chat tab: the scroll column becomes a flex column so the preview pane
+     can fill the height instead of collapsing to its content. */
+  $("#shell").classList.toggle("split", S.tab === "reports");
   var app = $("#app"); app.innerHTML = "";
   var d = S.data, i;
 
@@ -4730,26 +4784,7 @@ function render() {
       empty: "Nothing published yet. Verify some alerts, then generate a report." });
   }
   else if (S.tab === "reports") {
-    var eds = editions();
-    if (!eds.length) app.appendChild(emptyState("No reports yet."));
-    else eds.forEach(function (e) {
-      var c = el("div", "card");
-      var top = el("div", "crow");
-      top.appendChild(el("span", "cat", e.weekLabel || "Report"));
-      top.appendChild(el("span", "meta", e.dateLabel || ""));
-      c.appendChild(top);
-      c.appendChild(el("p", "ttl", e.title || "Market report"));
-      c.appendChild(el("p", "sum", arr(e.articles).length + " article(s) · " +
-        (e.competitorsCount || 0) + " competitor(s) · " + (e.countriesCount || 0) + " market(s)"));
-      var acts = el("div", "acts");
-      var w = el("button", "btn sm ghost", "Word");
-      w.onclick = function () { downloadWord(e.title || "Market report", e.dateLabel || "", arr(e.articles)); };
-      var p = el("button", "btn sm", "PDF");
-      p.onclick = function () { printReport(e.title || "Market report", e.dateLabel || "", arr(e.articles)); };
-      acts.appendChild(w); acts.appendChild(p);
-      c.appendChild(acts);
-      app.appendChild(c);
-    });
+    renderReports(app);
   }
   else if (S.tab === "liked" || S.tab === "disliked") {
     var titles = arr(S.tab === "liked" ? d.likedTitles : d.dislikedTitles).map(key);
@@ -4907,6 +4942,155 @@ function downloadWord(title, dateLabel, articles) {
     String(dateLabel).replace(/\s+/g, "-") + ".doc";
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+}
+
+/* ============================================================
+   REPORTS
+   ------------------------------------------------------------
+   The phone draws both documents and uploads them beside the backup. This page fetches those
+   bytes and shows them; it does not render a report of its own, because a second renderer is a
+   second format, and the two would drift the first time either changed.
+
+   Three files per edition, named for the edition id:
+     echo-report-<id>.pdf        the PDF, as the phone drew it
+     echo-report-<id>-word.pdf   the same content at docx fidelity, for previewing Word
+     echo-report-<id>.docx       the Word file itself
+   ============================================================ */
+var R_SEL = null;          // which edition is open
+var R_FMT = {};            // id -> "pdf" | "word", per card, as asked
+var R_URL = {};            // "<name>" -> object URL, so a re-select does not re-download
+var R_MISS = {};           // "<name>" -> true when Drive does not have it
+
+function reportFile(id, kind) {
+  return kind === "docx" ? "echo-report-" + id + ".docx"
+       : kind === "word" ? "echo-report-" + id + "-word.pdf"
+       : "echo-report-" + id + ".pdf";
+}
+/* Fetch once, keep the object URL. Returns null when the phone has not uploaded it yet, which
+   is a normal state rather than an error: the files appear on the next backup. */
+async function reportBlobUrl(name) {
+  if (R_URL[name]) return R_URL[name];
+  if (R_MISS[name]) return null;
+  var f = await findFile(name);
+  if (!f) { R_MISS[name] = true; return null; }
+  var r = await dFetch("https://www.googleapis.com/drive/v3/files/" + f.id + "?alt=media");
+  if (!r.ok) { R_MISS[name] = true; return null; }
+  R_URL[name] = URL.createObjectURL(await r.blob());
+  return R_URL[name];
+}
+
+function reportPreviewMsg(host, text) {
+  host.innerHTML = "";
+  var m = el("div", "rpmsg");
+  m.appendChild(el("span", null, text));
+  host.appendChild(m);
+}
+
+/* Load whichever document the selected card is set to. PDF for both states: the Word one is the
+   phone's docx-fidelity render, which is what the phone shows for the same button. */
+async function loadReportPreview() {
+  var host = $("#rpBody");
+  if (!host) return;
+  if (R_SEL == null) { reportPreviewMsg(host, "Choose a report on the left to read it here."); return; }
+  var fmt = R_FMT[R_SEL] || "pdf";
+  var name = reportFile(R_SEL, fmt);
+  reportPreviewMsg(host, "Opening\u2026");
+  try {
+    var url = await reportBlobUrl(name);
+    if (R_SEL == null) return;
+    if (!url) {
+      reportPreviewMsg(host,
+        "Your phone has not uploaded this one yet. It writes both documents when it backs up, so " +
+        "open Settings, then Storage, and press Back up. Nothing is rebuilt here \u2014 this page " +
+        "shows the file the phone made, which is what keeps the two identical.");
+      return;
+    }
+    host.innerHTML = "";
+    var f = el("iframe");
+    f.src = url + "#toolbar=0&navpanes=0";
+    f.title = "Report preview";
+    host.appendChild(f);
+  } catch (e) {
+    reportPreviewMsg(host, "Could not open it: " + (e.message || e));
+  }
+}
+
+function renderReports(app) {
+  var eds = editions();          // already newest first, by createdAtMillis
+  if (!eds.length) { app.appendChild(emptyState("No reports yet.")); return; }
+  if (R_SEL == null || !eds.some(function (e) { return e.id === R_SEL; })) R_SEL = eds[0].id;
+
+  var split = el("div", "rsplit");
+  var list = el("div", "rlist");
+
+  eds.forEach(function (e) {
+    var fmt = R_FMT[e.id] || "pdf";
+    var card = el("div", "rcard" + (e.id === R_SEL ? " on" : ""));
+    card.onclick = function () { R_SEL = e.id; render(); loadReportPreview(); };
+
+    var top = el("div", "rctop");
+    top.appendChild(el("span", "rcwk", e.weekLabel || "Report"));
+    top.appendChild(el("span", "rcdate", e.dateLabel || ""));
+    card.appendChild(top);
+    card.appendChild(el("p", "rcttl", e.title || "Market report"));
+    card.appendChild(el("p", "rcsub", chPl(arr(e.articles).length, "article", "articles") + " \u00b7 " +
+      (e.competitorsCount || 0) + " competitors \u00b7 " + (e.countriesCount || 0) + " markets"));
+
+    var foot = el("div", "rcfoot");
+    var seg = el("div", "rcseg");
+    [["pdf", "PDF"], ["word", "Word"]].forEach(function (o) {
+      var b = el("button", fmt === o[0] ? "on" : null, o[1]);
+      b.onclick = function (ev) {
+        ev.stopPropagation();          // choosing a format is not choosing a different report
+        R_FMT[e.id] = o[0];
+        R_SEL = e.id;
+        render(); loadReportPreview();
+      };
+      seg.appendChild(b);
+    });
+    foot.appendChild(seg);
+
+    /* The label follows the switch, so the button never promises a format you did not pick. */
+    var dl = el("button", "btn sm rcdl", fmt === "word" ? "Download Word" : "Download PDF");
+    dl.onclick = async function (ev) {
+      ev.stopPropagation();
+      var kind = fmt === "word" ? "docx" : "pdf";
+      var name = reportFile(e.id, kind);
+      dl.disabled = true;
+      var was = dl.textContent; dl.textContent = "Fetching\u2026";
+      try {
+        var url = await reportBlobUrl(name);
+        if (!url) { toast("Your phone has not uploaded this one yet. Press Back up on the phone."); return; }
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = (e.title || "Market report").replace(/[^\w\s-]/g, "").trim()
+          .replace(/\s+/g, "-") + "-" + String(e.dateLabel || "").replace(/\s+/g, "-") +
+          (kind === "docx" ? ".docx" : ".pdf");
+        document.body.appendChild(a); a.click(); a.remove();
+      } finally { dl.disabled = false; dl.textContent = was; }
+    };
+    foot.appendChild(dl);
+    card.appendChild(foot);
+    list.appendChild(card);
+  });
+
+  var prev = el("div", "rprev");
+  var head = el("div", "rphead");
+  var sel = eds.filter(function (e) { return e.id === R_SEL; })[0];
+  var selFmt = R_FMT[R_SEL] || "pdf";
+  head.appendChild(el("b", null, (sel && sel.title) || "Report"));
+  head.appendChild(el("span", null, (sel && sel.dateLabel) || ""));
+  var badge = el("span", null, selFmt === "word" ? "Word preview" : "PDF");
+  badge.style.marginLeft = "auto";
+  head.appendChild(badge);
+  prev.appendChild(head);
+  var body = el("div", "rpbody"); body.id = "rpBody";
+  prev.appendChild(body);
+
+  split.appendChild(list);
+  split.appendChild(prev);
+  app.appendChild(split);
+  loadReportPreview();
 }
 
 /* Publishing. Verified stories become an edition, move to Published, and leave
