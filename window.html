@@ -2005,7 +2005,11 @@ function renderDrawerSettings() {
 
   n.appendChild(el("div", "dsec", "Device"));
   [
-    ["App", (g.appVersion || "—") + " (" + (g.appBuild != null ? g.appBuild : "—") + ") · " + (g.flavor || "—")],
+    /* No "(1)". versionCode has never moved, so the bracket said nothing, and the phone
+       dropped it for exactly that reason while this row carried on printing it — which
+       reads as the web being stale when the value was simply always 1. buildType joins in
+       when the payload carries it, so an older backup just shows one part fewer. */
+    ["App", [g.appVersion || "—", g.flavor, g.buildType].filter(Boolean).join(" · ")],
     ["Phone", g.device || "—"],
     ["Android", g.android || "—"],
     ["Last backup", S.data.updatedAtMillis ? new Date(S.data.updatedAtMillis).toLocaleString("en-GB") : "—"]
