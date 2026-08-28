@@ -4,7 +4,7 @@ Competitor and market intelligence for the outward-opening aluminium window indu
 gathers the news. This is the web half: you read what it found, decide what holds up, and turn the
 verified stories into a report.
 
-**Use it at [attano26.github.io/Product_Market_Intel/window.html](https://attano26.github.io/Product_Market_Intel/window.html)**
+**Use it at [attano26.github.io/Echo/window.html](https://attano26.github.io/Echo/window.html)**
 
 ## What it does
 
