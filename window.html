@@ -1164,6 +1164,20 @@ button.nstate:active{transform:scale(.97)}
 .chflow.start{justify-content:flex-start;padding-top:16px}
 
 /* ---- the dock ---- */
+/* Waiting on wording, not on an answer: the figures and cards are already drawn above. */
+.chlead.thinking{display:flex;gap:5px;align-items:center;min-height:22px}
+.tdot{width:6px;height:6px;border-radius:50%;background:var(--ink-3);opacity:.35;
+  animation:tdot 1.1s ease-in-out infinite}
+.tdot:nth-child(2){animation-delay:.15s}
+.tdot:nth-child(3){animation-delay:.3s}
+@keyframes tdot{0%,100%{opacity:.25;transform:translateY(0)}50%{opacity:.85;transform:translateY(-3px)}}
+/* The key field. Monospace so a pasted key is checkable at a glance, and type=password so it is
+   not left legible on a screen someone else can see. */
+.keyrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.keyin{flex:1 1 180px;min-width:0;background:var(--surface-2);border:1px solid var(--line);
+  border-radius:var(--r-box);color:var(--ink);font:inherit;font-size:13px;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;padding:8px 11px}
+.keyin:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .chdock{position:sticky;bottom:0;z-index:4;background:var(--paper);
   padding:8px 0 max(10px,env(safe-area-inset-bottom))}
 /* Without this the conversation appears to be sliced off by a hard edge as it
@@ -1247,6 +1261,16 @@ button.nstate:active{transform:scale(.97)}
 .chwho .m{display:block;width:13px;height:13px;color:var(--accent-ink)}
 .chlead{margin:0;font-size:15.5px;line-height:1.55;letter-spacing:-.013em;color:var(--ink)}
 .chlead b{font-weight:500}
+/* Structured replies. Tight rather than airy: this sits inside a chat turn, so the spacing has to
+   read as one answer with parts, not as a document that has landed in the conversation. */
+.chlead p{margin:0 0 9px}
+.chlead p:last-child{margin-bottom:0}
+.chh{font-family:var(--fs-title);font-size:12px;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ink-3);margin:14px 0 6px}
+.chlead > :first-child{margin-top:0}
+.chlist{margin:0 0 9px;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.chlist li{font-size:14.5px;line-height:1.5}
+.chlist:last-child{margin-bottom:0}
 /* Anything nested in a reply steps DOWN a surface, so it still reads as inside it. */
 .chstat{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 0}
 .chsc{flex:1 1 132px;padding:10px 12px;background:var(--surface-2);
@@ -2372,6 +2396,42 @@ function renderDrawerSettings() {
   so.onclick = function () { closeSettingsPanel(); signOut(); };
   soRow.appendChild(so);
   n.appendChild(soRow);
+
+  /* Above the phone's settings, not inside them: this is the one setting that belongs to THIS
+     browser rather than to the phone, and it has to be reachable before the phone has ever
+     backed up — which is why it sits ahead of the early return below. */
+  n.appendChild(el("div", "dsec", "Ask"));
+  var hasKey = !!chKey();
+  n.appendChild(el("div", "dnote", hasKey
+    ? "Ask is phrasing its replies with " + CH_MODEL + ", using your key. The key is held in THIS " +
+      "browser only — never in the page, never in your Drive backup. Finding the stories is still " +
+      "done here for nothing, so when the free quota runs out the answers keep coming, just in the " +
+      "app's own words."
+    : "Ask already answers from your own stories, instantly and at no cost. Give it a Gemini API " +
+      "key and it will phrase those same answers as prose instead. The key stays in THIS browser " +
+      "— never in the page, which is public, and never in your Drive backup, which syncs. Calls " +
+      "carry no Google Search grounding, which is the part that costs money, so they fall under " +
+      "the free tier; when that runs out Ask falls back to its own wording rather than failing."));
+  var kr = el("div", "srow keyrow");
+  var inp = el("input", "keyin");
+  inp.type = "password"; inp.autocomplete = "off"; inp.spellcheck = false;
+  inp.placeholder = hasKey ? "A key is saved — paste a new one to replace it" : "Paste your Gemini API key";
+  kr.appendChild(inp);
+  var bsave = el("button", "btn sm", hasKey ? "Replace" : "Save");
+  bsave.onclick = function () {
+    var v = inp.value.trim();
+    if (!v) { toast("Paste a key first"); return; }
+    /* Saved as typed. No shape check: AIza... and AQ... are both real, and the only test that
+       means anything is the next call. */
+    chSetKey(v); inp.value = ""; renderDrawerSettings(); toast("Key saved in this browser");
+  };
+  kr.appendChild(bsave);
+  if (hasKey) {
+    var bclr = el("button", "btn sm ghost", "Remove");
+    bclr.onclick = function () { chSetKey(""); renderDrawerSettings(); toast("Key removed from this browser"); };
+    kr.appendChild(bclr);
+  }
+  n.appendChild(kr);
 
   if (!g) {
     n.appendChild(el("div", "dnote",
@@ -4131,6 +4191,52 @@ function chList(a) {
   return a.slice(0, -1).join(", ") + " and " + a[a.length - 1];
 }
 
+/* ---------- voice ----------
+   The replies are assembled, not generated — there is no model behind this tab and no key in the
+   page. So "sounds like a person" has to come from composition: answer first, in the register a
+   colleague would use, with the shape of the answer driving the sentence rather than one template
+   filling its slots.
+
+   VARIANTS ARE CHOSEN BY HASH OF THE QUESTION, NOT AT RANDOM. Asking the same thing twice has to
+   give the same words back: a tool that rephrases its own answer reads as though it is making the
+   answer up, which is the one impression this tab cannot afford. Different questions land on
+   different variants, so a conversation still varies. */
+function chSeed(str) {
+  var h = 5381, t = String(str || "");
+  for (var i = 0; i < t.length; i++) h = ((h * 33) ^ t.charCodeAt(i)) >>> 0;
+  return h;
+}
+function chPick(seedStr, variants) { return variants[chSeed(seedStr) % variants.length]; }
+function chCap(str) { return str ? str.charAt(0).toUpperCase() + str.slice(1) : str; }
+
+/* Small numbers as words, the way anyone writes them. "Three stories", not "3 stories". */
+var CH_WORDS = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+function chNum(n) { return n >= 0 && n <= 10 ? CH_WORDS[n] : String(n); }
+
+/* Relative time, because "14 August 2026" is how a record speaks and "last week" is how a person
+   does. The exact date is still one tap away on the card, so nothing is lost by being vague here. */
+function chAgo(ms) {
+  if (!ms) return "";
+  var days = Math.floor((Date.now() - ms) / 86400000);
+  if (days < 0) return "dated ahead of today";
+  if (days === 0) return "today";
+  if (days === 1) return "yesterday";
+  if (days < 7) return days + " days ago";
+  if (days < 14) return "last week";
+  if (days < 31) return Math.round(days / 7) + " weeks ago";
+  if (days < 365) return "back in " + new Date(ms).toLocaleDateString("en-GB", { month: "long" });
+  return "back in " + new Date(ms).getFullYear();
+}
+
+/* "Glass Bulletin, yesterday" — whichever halves exist. */
+function chCite(doc) {
+  var from = doc && doc.source ? esc(doc.source) : "";
+  var when = chAgo(doc && doc.ms);
+  return from && when ? from + ", " + when : (from || when || "");
+}
+function chQuote(doc) { return "“" + esc(doc.title) + "”"; }
+
+
 /* What the question is ABOUT, for quoting back. "how many articles mention thermal break"
    should read as "thermal break" in the answer, not as the whole sentence. Display only —
    retrieval always sees the full query. */
@@ -4483,7 +4589,11 @@ function chAnsFind(q, d, ix, ents, wantCount) {
         note: norm.row.linkUrl ? "The reference link is on the Data tab." : "" };
     }
     return { q: q, kind: "none",
-      lead: "I do not have anything on that in your data.",
+      lead: chPick(q, [
+        "Nothing on that, I am afraid.",
+        "I have nothing on that in your data.",
+        "That one draws a blank."
+      ]),
       stats: [], items: [], why: "",
       note: "I read only what your phone has fetched — " + chPl(ix.docs.length, "story", "stories") +
             ", plus your competitors, markets and norms. I will not answer from outside the app." +
@@ -4505,20 +4615,54 @@ function chAnsFind(q, d, ix, ents, wantCount) {
   });
 
   var scope = scopeBits.length ? "<b>" + chList(scopeBits) + "</b>" : "“" + esc(chSubject(q)) + "”";
+  var n = docs.length, cite = chCite(top), quoted = chQuote(top);
+  var tail = cite ? " — " + cite + "." : ".";
   var lead;
+
+  /* The SHAPE of the answer picks the sentence. One hit and forty hits are different pieces of
+     news about your own data, and a person says them differently; a single template with the
+     count dropped into it says them identically, which is what made this read like a receipt. */
   if (wantCount) {
-    lead = "I have <b>" + chPl(docs.length, "story", "stories") + "</b> on " + scope + " — " +
-           inAlerts + " in alerts, " + pubbed + " published.";
+    /* chNum(0) is "no", which only reads as English in some positions ("no published" is fine,
+       "no still in alerts" is not), so the zero cases are spelled out rather than substituted. */
+    var inAl = inAlerts ? chNum(inAlerts) : "none";
+    var pub = pubbed ? chNum(pubbed) : "none";
+    lead = chPick(q, [
+      chCap(chNum(n)) + " on " + scope + ": " + inAl + " still in alerts, " + pub + " published.",
+      "You have " + chNum(n) + " on " + scope + " — " + inAl + " in alerts, " + pub + " already published.",
+      chCap(chNum(n)) + " altogether on " + scope + ". " +
+        (inAlerts ? chCap(inAl) + (inAlerts === 1 ? " is" : " are") + " still in alerts" : "None are still in alerts") + "; " +
+        (pubbed ? pub + (pubbed === 1 ? " made it" : " made it") + " into a report." : "none have made it into a report.")
+    ]);
+  } else if (n === 1) {
+    lead = chPick(q, [
+      "Just the one on " + scope + ": " + quoted + tail,
+      "One story on " + scope + " — " + quoted + tail,
+      "There is a single story on " + scope + ": " + quoted + tail
+    ]);
+  } else if (n <= 5) {
+    lead = chPick(q, [
+      chCap(chNum(n)) + " on " + scope + ". The closest is " + quoted + tail,
+      "Not many — " + chNum(n) + " on " + scope + ", the nearest being " + quoted + tail,
+      chCap(chNum(n)) + " match " + scope + "; the best fit is " + quoted + tail
+    ]);
   } else {
-    lead = chPl(docs.length, "story", "stories") + " in your data " +
-           (docs.length === 1 ? "matches " : "match ") + scope + ".";
+    lead = chPick(q, [
+      chCap(chNum(n)) + " on " + scope + ", led by " + quoted + tail,
+      "Plenty — " + n + " on " + scope + ". " + quoted + " sits at the top" + (cite ? " (" + cite + ")." : "."),
+      "There are " + n + " on " + scope + ". The closest is " + quoted + tail
+    ]);
   }
-  if (top.ms) {
-    lead += " The most relevant is from " + esc(top.source || "an unnamed source") + ", " + chWhen(top.ms) + ".";
-  } else if (top.source) {
-    lead += " The most relevant is from " + esc(top.source) + ".";
+
+  /* Only worth saying when the cluster is real. "Three of forty are filed under X" is noise, and
+     every variant here has to stay true at the threshold that lets it through. */
+  if (bestN > 1 && n > 2 && bestN / n >= 0.4) {
+    lead += " " + chPick(q + "|cat", [
+      chCap(chNum(bestN)) + " of the " + chNum(n) + " are filed under " + esc(best) + ".",
+      esc(best) + " accounts for " + chNum(bestN) + " of them.",
+      "They lean toward " + esc(best) + " — " + chNum(bestN) + " of " + chNum(n) + "."
+    ]);
   }
-  if (bestN > 1 && docs.length > 2) lead += " " + bestN + " of them are filed under " + esc(best) + ".";
 
   var stats = [];
   if (docs.length > 2) {
@@ -4530,11 +4674,220 @@ function chAnsFind(q, d, ix, ents, wantCount) {
     ];
   }
 
-  var why = "Ranked by wording, then recency, then your own likes." +
-            (dis ? " " + chPl(dis, "story", "stories") + " you disliked pushed down, not hidden." : "");
+  var why = "I ranked these on wording first, then how recent they are, then what you have liked." +
+            (dis ? " " + chPl(dis, "story", "stories") + " you disliked got pushed down rather than hidden." : "");
 
+  /* Six cards is the right number to READ. The model gets more than that, because a summary
+     drawn from six of forty matches is a summary of the wrong thing — so the extras ride along
+     for grounding and are not drawn. */
   return { q: q, kind: "find", lead: lead, stats: stats,
-           items: docs.slice(0, 6), why: why, note: "" };
+           items: docs.slice(0, 6), context: docs.slice(0, 24), why: why, note: "" };
+}
+
+
+/* ============================================================
+   THE MODEL, WHEN YOU SUPPLY ONE
+   ------------------------------------------------------------
+   RETRIEVAL STAYS LOCAL AND FREE. Everything above this line picks WHICH of your stories answer
+   the question and composes a reply from them at zero cost. The model is only ever asked to
+   PHRASE that answer over the handful of stories already retrieved — which is why the prompt is
+   small, why the reply cannot drift onto material you do not hold, and why the source cards under
+   it remain the evidence rather than decoration.
+
+   NO GROUNDING, EVER. The `tools` field is deliberately absent. Google Search grounding is the
+   part of the phone's bill that actually costs money — it is billed per QUERY — and it is also
+   what makes a grounded 3.x call 429 on a project without billing. A plain generateContent call is
+   the free-tier-eligible kind, and every fact it needs is already in the prompt.
+
+   THE KEY LIVES IN THIS BROWSER AND NOWHERE ELSE. Not in the HTML, which is served publicly from
+   GitHub Pages and readable by anyone; and not in the Drive backup, which is private but is a SYNC
+   file: loaded into every browser that opens this page, copied into restore points, and one click
+   from being shared. The phone made the same call — its payload ships `hasApiKey` as a boolean,
+   with "no keys, no request bodies" written beside it.
+
+   WHEN THE FREE QUOTA RUNS OUT the call 429s and the turn falls back to the composed answer, which
+   costs nothing and is always there. Running out degrades the wording, never the answer. */
+var CH_KEY_LS = "echo.gemini.key";
+var CH_MODEL = "gemini-3.5-flash-lite";   // the phone's pinned model; keep the two in step
+var CH_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/" + CH_MODEL + ":generateContent";
+
+/* NO FORMAT CHECK ON THE KEY, EVER. AIza... and AQ... are both valid and the shapes keep changing;
+   the only honest test of a key is a live call, and a prefix guard would reject a working one. */
+function chKey() { try { return localStorage.getItem(CH_KEY_LS) || ""; } catch (e) { return ""; } }
+function chSetKey(v) {
+  try { v ? localStorage.setItem(CH_KEY_LS, v) : localStorage.removeItem(CH_KEY_LS); } catch (e) {}
+}
+
+var CH_RULES = [
+  "You are Echo, the assistant inside a personal market-intelligence app for the outward-opening",
+  "aluminium window and facade industry. The reader is a product manager at Schüco.",
+  "",
+  "GROUNDING. Two blocks follow. INVENTORY is the COMPLETE list of stories the reader holds; if a",
+  "company, market, product or event is not in it, they do not have it, and the honest answer is to",
+  "say so. DETAIL carries the full text of the stories that best match this question, and is where",
+  "substance should come from. Never state a fact that is not traceable to one of those lines.",
+  "Never invent a company, figure, headline, date or source, and never answer from your own",
+  "knowledge of the industry — the reader is asking what THEIR data says, not what is true in",
+  "general. If the material is thin, say it is thin."
+].join("\n");
+
+/* Two output contracts. A question and a request for a framework want different shapes, and one
+   prompt trying to serve both produces a bulleted answer to "what happened with Reynaers" and a
+   wall of prose in answer to "summarise the quarter". */
+var CH_VOICE_PROSE = [
+  "",
+  "Write the way a well-briefed colleague speaks: answer first, two to four sentences, plain British",
+  "English, contractions welcome. No markdown, no bullet points, no headings, no preamble and no",
+  "sign-off. Do not list every story back — the app already shows the source cards under your",
+  "reply, so name only the ones that carry your point."
+].join("\n");
+
+var CH_VOICE_STRUCT = [
+  "",
+  "The reader has asked for a summary, a comparison or a framework, so give them structure.",
+  "Open with one plain sentence that answers the question outright. Then organise the rest under",
+  "short markdown headings (## Heading) with bullets (- point). Bold (**like this**) only the few",
+  "phrases that carry the point. Keep the whole reply under about 220 words, and keep every bullet",
+  "to one line. Do not pad a thin answer into a full framework — if the data supports three",
+  "bullets, give three. Name the story behind a claim when the claim would otherwise float."
+].join("\n");
+
+/* What kind of shape the question is asking for. Rules rather than a classifier call: it costs
+   nothing, it is readable, and it is fixable when it misfires. */
+function chWantsStructure(q) {
+  var t = " " + key(q).replace(/[^a-z0-9 ]+/g, " ") + " ";
+  return /\b(summar\w*|recap|digest|overview|brief|briefing|breakdown|break down|compare|comparison|versus|vs|framework|swot|matrix|timeline|pros and cons|structure|organise|organize|bullet|table|list out|walk me through|explain|analysis|analyse|analyze|deep dive)\b/.test(t);
+}
+
+/* The retrieved answer, rendered for the model. The composed reply goes in too: its figures are
+   computed from the data and are correct, so handing them over stops the model recounting and
+   arriving at a different number from the cards directly beneath it. */
+/* How many INVENTORY lines to send. A title line is roughly 25 tokens, so 600 of them is about
+   15k — comfortably inside a flash-lite context and inside the free tier's per-minute token
+   budget, while covering a corpus several times the size of a normal one. Beyond that the list is
+   trimmed to the newest and the model is TOLD it was trimmed, because a model that thinks it has
+   seen everything will answer "you have nothing on X" about a story that was simply cut. */
+var CH_INVENTORY_MAX = 600;
+var CH_DETAIL_MAX = 14;
+
+function chPrompt(m) {
+  var ix = chIndex();
+  var out = ["QUESTION", m.q, ""];
+
+  if (m.stats && m.stats.length) {
+    out.push("FIGURES ALREADY COMPUTED FROM THE READER'S DATA");
+    m.stats.forEach(function (r) { out.push("- " + r[0] + ": " + r[1] + (r[2] ? " (" + r[2] + ")" : "")); });
+    out.push("");
+  }
+
+  /* THE WHOLE CORPUS, newest first. This is what stops the model reaching outside the data: it can
+     see the shape of everything the reader holds, so "you have nothing on that" becomes a checkable
+     statement rather than a guess, and a summary can be drawn across the lot rather than across the
+     six cards retrieval happened to surface. */
+  var all = ix.docs.slice().sort(function (a, b) { return (b.ms || 0) - (a.ms || 0); });
+  var shown = all.slice(0, CH_INVENTORY_MAX);
+  out.push("INVENTORY — every story the reader holds (" + all.length + " in total" +
+           (all.length > shown.length ? ", newest " + shown.length + " listed" : "") + ")");
+  shown.forEach(function (doc, i) {
+    out.push((i + 1) + ". " + doc.title +
+      " [" + [doc.source, doc.category, chAgo(doc.ms)].filter(Boolean).join(" · ") + "]");
+  });
+  if (all.length > shown.length) {
+    out.push("(" + (all.length - shown.length) + " older stories not listed. Do not claim the reader " +
+             "lacks something purely because it is absent here — say the older ones were not shown.)");
+  }
+  out.push("");
+
+  if (m.items && m.items.length) {
+    var detail = (m.context && m.context.length ? m.context : m.items).slice(0, CH_DETAIL_MAX);
+    out.push("DETAIL — the stories that best match this question, most relevant first");
+    detail.forEach(function (doc, i) {
+      out.push((i + 1) + ". " + doc.title);
+      var meta = [doc.source, doc.category, doc.region, chAgo(doc.ms)].filter(Boolean).join(" · ");
+      if (meta) out.push("   " + meta);
+      if (doc.summary) out.push("   " + String(doc.summary).slice(0, 600));
+    });
+    out.push("");
+  } else {
+    out.push("DETAIL — nothing in the inventory matched this question closely.");
+    out.push("");
+  }
+
+  out.push("THE APP'S OWN ANSWER (its figures are computed from the data and are correct —");
+  out.push("rephrase them, never contradict them, and never recount them yourself)");
+  out.push(String(m.composed || m.lead).replace(/<[^>]+>/g, ""));
+  return out.join("\n");
+}
+
+function chCallModel(m, done) {
+  var key = chKey();
+  if (!key) return done(null, "no key");
+  var ctrl = window.AbortController ? new AbortController() : null;
+  var timer = setTimeout(function () { ctrl && ctrl.abort(); }, 25000);
+  fetch(CH_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: CH_RULES + (m.structured ? CH_VOICE_STRUCT : CH_VOICE_PROSE) }] },
+      contents: [{ role: "user", parts: [{ text: chPrompt(m) }] }],
+      generationConfig: { temperature: 0.3, maxOutputTokens: 500 }
+    }),
+    signal: ctrl ? ctrl.signal : undefined
+  }).then(function (r) {
+    return r.json().catch(function () { return {}; }).then(function (j) {
+      return { ok: r.ok, status: r.status, j: j };
+    });
+  }).then(function (res) {
+    clearTimeout(timer);
+    if (!res.ok) {
+      var e = res.j && res.j.error;
+      return done(null, res.status === 429 ? "the free quota is spent for now"
+                      : (res.status === 400 || res.status === 403) ? "the key was rejected"
+                      : (e && e.message) || ("HTTP " + res.status));
+    }
+    var cand = res.j && res.j.candidates && res.j.candidates[0];
+    /* NEVER parts[0]. This is a thinking model: the first part can be a thought carrying no text
+       at all, and reading it alone is how you get an empty answer out of a perfectly good reply. */
+    var parts = (cand && cand.content && cand.content.parts) || [];
+    var text = parts.map(function (x) { return x && x.text ? x.text : ""; }).join("").trim();
+    if (!text) return done(null, cand && cand.finishReason ? "it stopped: " + cand.finishReason : "an empty reply");
+    var u = res.j.usageMetadata || {};
+    done({ text: text, inTok: u.promptTokenCount || 0, outTok: u.candidatesTokenCount || 0 }, null);
+  }).catch(function (err) {
+    clearTimeout(timer);
+    done(null, (err && err.name === "AbortError") ? "it timed out" : String((err && err.message) || err));
+  });
+}
+
+/* Model output is UNTRUSTED TEXT and is escaped before anything else happens to it. Only then is
+   the small markdown vocabulary the model was asked for turned back into tags — headings, bullets,
+   numbered items and bold. Escaping first is what makes that safe: by the time these regexes run
+   there is no live markup left in the string for them to re-enable, so a story title containing
+   <script> arrives as text and stays text. */
+function chProse(t) {
+  var raw = String(t || "").replace(/\r/g, "").trim();
+  if (!raw) return "";
+  var lines = esc(raw).split(/\n/);
+  var html = [], list = null;
+
+  var closeList = function () { if (list) { html.push("</" + list + ">"); list = null; } };
+  var openList = function (tag) { if (list !== tag) { closeList(); html.push("<" + tag + ' class="chlist">'); list = tag; } };
+  var inline = function (x) { return x.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>"); };
+
+  lines.forEach(function (ln) {
+    var line = ln.trim();
+    if (!line) { closeList(); return; }
+    var h = /^#{1,6}\s+(.*)$/.exec(line);
+    if (h) { closeList(); html.push("<h4 class=\"chh\">" + inline(h[1]) + "</h4>"); return; }
+    var b = /^[-*\u2022]\s+(.*)$/.exec(line);
+    if (b) { openList("ul"); html.push("<li>" + inline(b[1]) + "</li>"); return; }
+    var o = /^\d+[.)]\s+(.*)$/.exec(line);
+    if (o) { openList("ol"); html.push("<li>" + inline(o[1]) + "</li>"); return; }
+    closeList();
+    html.push("<p>" + inline(line) + "</p>");
+  });
+  closeList();
+  return html.join("");
 }
 
 /* ============================================================
@@ -4578,10 +4931,28 @@ function chAsk(q) {
   q = String(q || "").trim();
   if (!q) return;
   CH_DRAFT = "";
-  CH_LOG.push(chAnswer(q));   // oldest first: the conversation grows DOWN into the composer
+  var m = chAnswer(q);        // oldest first: the conversation grows DOWN into the composer
+  /* The composed reply is kept whatever happens next. It is the fallback if the call fails, and
+     it is also part of the prompt, so the model rephrases figures rather than recounting them. */
+  m.composed = m.lead;
+  m.structured = chWantsStructure(q);
+  m.pending = !!chKey();
+  CH_LOG.push(m);
   render();
   var s = $("#scroll"); if (s) s.scrollTop = s.scrollHeight;
   var box = $("#chIn"); if (box) box.focus();
+
+  /* The cards and figures are on screen already; only the wording is waiting. A failure costs the
+     reader nothing but the phrasing, so it is reported as a footnote rather than as an error. */
+  if (m.pending) {
+    chCallModel(m, function (out, err) {
+      m.pending = false;
+      if (out) { m.lead = chProse(out.text); m.via = "model"; m.usage = out; }
+      else { m.via = "local"; m.viaErr = err; }
+      render();
+      var s2 = $("#scroll"); if (s2) s2.scrollTop = s2.scrollHeight;
+    });
+  }
 }
 
 function chRenderTurn(m) {
@@ -4598,8 +4969,17 @@ function chRenderTurn(m) {
   who.appendChild(el("span", null, "Echo"));
   bot.appendChild(who);
 
-  var lead = el("p", "chlead");
-  lead.innerHTML = m.lead;      // assembled here from escaped parts, never from raw data
+  /* A div, not a p: a structured reply carries headings and lists, and a <p> cannot legally hold
+     either. Prose replies look identical — .chlead styles the box, not the tag. */
+  var lead = el("div", "chlead");
+  if (m.pending) {
+    /* Three dots rather than a spinner: the answer is already below, so this says "still
+       wording it", not "still working out whether there is an answer". */
+    lead.className = "chlead thinking";
+    lead.innerHTML = '<span class="tdot"></span><span class="tdot"></span><span class="tdot"></span>';
+  } else {
+    lead.innerHTML = m.lead;    // assembled from escaped parts, or escaped model text
+  }
   bot.appendChild(lead);
 
   if (m.stats && m.stats.length) {
@@ -4623,6 +5003,17 @@ function chRenderTurn(m) {
     bot.appendChild(src);
   }
 
+  /* Provenance, always. Which of the two wrote this sentence, and what it cost, are things the
+     reader should never have to guess at — especially on a tab whose whole promise is that it
+     cannot tell you anything you do not already hold. */
+  if (m.via === "model" && m.usage) {
+    bot.appendChild(el("div", "chwhy",
+      CH_MODEL + " phrased this over " + chPl((m.items || []).length, "story", "stories") +
+      " from your data · " + m.usage.inTok + " tokens in, " + m.usage.outTok + " out"));
+  } else if (m.viaErr) {
+    bot.appendChild(el("div", "chwhy",
+      "Answered in the app's own words — " + m.viaErr + ". Nothing was charged, and the stories are the same."));
+  }
   if (m.why) bot.appendChild(el("div", "chwhy", m.why));
   if (m.note) bot.appendChild(el("div", "chnote", m.note));
 
@@ -4651,7 +5042,10 @@ function renderAsk(app) {
       "I read only what your phone has fetched — <b>" + chPl(ix.docs.length, "story", "stories") +
       "</b>, plus your <b>" + chPl(ix.comps.length, "competitor", "competitors") + "</b> and <b>" +
       chPl(ix.lands.length, "market", "markets") + "</b>. There is no model behind me and no key in " +
-      "this page, so asking costs nothing — and I cannot tell you anything that is not already here.";
+      (chKey()
+        ? "this page. Wording comes from " + CH_MODEL + " using your own key, over those stories and " +
+          "nothing else — so I still cannot tell you anything that is not already here."
+        : "this page, so asking costs nothing — and I cannot tell you anything that is not already here.");
     flow.appendChild(intro);
 
     var grid = el("div", "chsug");
