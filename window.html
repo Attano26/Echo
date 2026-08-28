@@ -283,7 +283,13 @@ a:hover{text-decoration:underline}
 
 /* ---------- shell ---------- */
 #shell{height:var(--apph);display:flex;flex-direction:column;overflow:hidden}
+/* The gap to the left of the first card and the gap to the right of the last one must match.
+   A scrollbar takes its width out of the content box, so a symmetric 20px padding renders as
+   20 on the left and 20 + scrollbar on the right — 12px wider here, and a different number on
+   every platform. --sbw is measured once at runtime and taken back off the right, so the two
+   gaps match whatever the scrollbar happens to be, including zero where it overlays. */
 .wrap{width:100%;max-width:880px;margin:0 auto;padding:0 20px}
+#scroll > .wrap{padding-right:max(0px, calc(20px - var(--sbw, 0px)))}
 /* The dashboard is the one view that WANTS the whole screen. Article lists keep the 880px
    measure because long headlines are read left-to-right and a 1600px line is punishing; a bento
    grid is scanned, not read, so starving it of width just makes the tiles small and the page
@@ -304,7 +310,7 @@ a:hover{text-decoration:underline}
    and anything else that needs to must do the same. The page itself never scrolls
    sideways, which is the rule this app already states for its own layouts. */
 #scroll{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;
-  padding-bottom:40px}
+  scrollbar-gutter:stable;padding-bottom:40px}
 
 /* ---------- top bar ---------- */
 .bar{display:flex;align-items:center;gap:12px;padding:2px 0 14px}
@@ -4847,6 +4853,17 @@ function skeletonFor(tab) {
   return skList(skNewsCard, 4);   // every feed list draws the same card
 }
 
+/* Measured, not assumed: scrollbar width is a platform and setting-dependent number, and it
+   is zero where the scrollbar overlays the content. Re-measured on resize because moving a window
+   between displays can change it. */
+function measureScrollbar() {
+  var sc = $("#scroll");
+  if (!sc) return;
+  var w = sc.offsetWidth - sc.clientWidth;
+  document.documentElement.style.setProperty("--sbw", (w > 0 ? w : 0) + "px");
+}
+window.addEventListener("resize", measureScrollbar);
+
 function render() {
   renderDrawerNav(); renderSyncRow(); renderDrawerSettings(); renderTitle();
   /* Wide is for pages whose content is a grid and genuinely gets better with room. Reports
@@ -4985,6 +5002,7 @@ function render() {
     app.appendChild(box);
   }
   refreshReportBar();
+  measureScrollbar();
 }
 
 function refreshReportBar() {
