@@ -2253,7 +2253,7 @@ function anOverview(host, cv, inFeed) {
   var surfaced = cv.surfaced || 0;
   var pubPct = surfaced ? Math.round(((cv.published || 0) / surfaced) * 100) : 0;
   var head = el("div", "trio");
-  [[String(surfaced), "news received", null],
+  [[String(surfaced), "news fetched", null],
    [String(inFeed), "in feed", null],
    [pubPct + "%", "published", "var(--accent)"]].forEach(function (c) {
     var col = el("div", "triocol");
@@ -2943,8 +2943,10 @@ function renderWidgetStrip(w) {
     var mode = String(w.sourceMode || "");
     var free = /free/i.test(mode);
     g.appendChild(wTop("Spend", w.monthLabel || null));
-    g.appendChild(wHead(wHero("\u20B9" + (Number(w.monthRupees) || 0).toFixed(2),
-                              "this<br>month", free ? "var(--good-ink)" : null, true)));
+    // Full size, like every other hero on the strip. It was the small variant so a string like
+    // 1234.56 would fit; with the phone's rounding rule that string cannot occur.
+    g.appendChild(wHead(wHero(rupee(w.monthRupees),
+                              "this<br>month", free ? "var(--good-ink)" : null)));
     g.appendChild(wSay(free
       ? "The free feed costs nothing to run."
       : "Grounded search is billed for every query."));
@@ -3075,7 +3077,15 @@ function renderWidgetStrip(w) {
   return strip;
 }
 
-function rupee(v) { return "₹" + (Number(v) || 0).toFixed(2); }
+/* The phone's formatRupees, ported exactly: no decimals above a thousand, one decimal above a
+   hundred, two below. Ported rather than rewritten — a second implementation of a format is how
+   the two screens start disagreeing about the same number, which has happened three times
+   already on figures that were each individually correct. */
+function rupee(v) {
+  var n = Number(v) || 0;
+  if (n >= 1000) return "₹" + Math.round(n).toLocaleString("en-US");
+  return "₹" + n.toFixed(n >= 100 ? 1 : 2);
+}
 
 function renderDashboard(app, d) {
   var wrap = el("div", "dash");
@@ -3179,7 +3189,7 @@ function renderDashboard(app, d) {
   anVolume(c.body, a);
   add(c);
 
-  c = anCard("News overview", "Of news received in the " + anPhrase(AN_WIN) + ", what you did with it");
+  c = anCard("News overview", "Of news fetched in the " + anPhrase(AN_WIN) + ", what you did with it");
   anOverview(c.body, cv, arr(d.alerts).length);
   add(c);
 
