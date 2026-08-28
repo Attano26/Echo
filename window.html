@@ -40,6 +40,30 @@
 
 <style>
 /* ============================================================
+   THE BRAND FACE, SHIPPED RATHER THAN ASSUMED
+   ------------------------------------------------------------
+   This sheet used to name 'Arial Nova' and hope the reader had it installed. Measured on this
+   machine and on the deployed page, it never did: naming the family rendered at exactly the
+   generic fallback width, so the whole app was drawing in Segoe UI while claiming otherwise.
+   The phone has never had this problem because it bundles the font, which is why the two
+   screens never quite matched.
+
+   Both family names carry all three weights, mapping to three files. The CSS asks for
+   'Arial Nova Light' in some places and 'Arial Nova' in others, at weights from 300 to 700;
+   declaring every weight under both names means nothing is ever synthesised, and the browser
+   still downloads each file once because it dedupes by URL.
+
+   font-display:swap, so text stays readable while 140KB arrives. The worker caches all three,
+   so it arrives once.
+   ============================================================ */
+@font-face{font-family:'Arial Nova Light';src:url("ArialNova-Light.woff2") format("woff2");font-weight:300;font-style:normal;font-display:swap}
+@font-face{font-family:'Arial Nova Light';src:url("ArialNova.woff2") format("woff2");font-weight:400 600;font-style:normal;font-display:swap}
+@font-face{font-family:'Arial Nova Light';src:url("ArialNova-Bold.woff2") format("woff2");font-weight:700 900;font-style:normal;font-display:swap}
+@font-face{font-family:'Arial Nova';src:url("ArialNova-Light.woff2") format("woff2");font-weight:300;font-style:normal;font-display:swap}
+@font-face{font-family:'Arial Nova';src:url("ArialNova.woff2") format("woff2");font-weight:400 600;font-style:normal;font-display:swap}
+@font-face{font-family:'Arial Nova';src:url("ArialNova-Bold.woff2") format("woff2");font-weight:700 900;font-style:normal;font-display:swap}
+
+/* ============================================================
    ECHO
    The phone app's language on the web: one accent that only ever
    means "interactive", layered near-black surfaces, sentence case,
@@ -4497,7 +4521,7 @@ function renderAsk(app) {
    bad layout for another, since a 1600px line of body text is unreadable however much room
    there is. Capped and centred is what the reference does too. */
 var WIDE_TABS = ["dashboard", "alerts", "saved", "published", "liked", "disliked",
-                 "database", "restorepoints", "ask"];
+                 "database", "restorepoints", "ask", "reports"];
 
 /* ============================================================
    SKELETONS

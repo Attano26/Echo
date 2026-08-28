@@ -11,7 +11,7 @@
 
    Bump VERSION on every deploy. That is what tells every installed copy that
    something changed. */
-const VERSION = "echo-2026-08-28-ao";
+const VERSION = "echo-2026-08-28-ap";
 
 const ASSETS = [
   "./",
@@ -24,7 +24,12 @@ const ASSETS = [
   "./icon-512.png",
   "./icon-maskable-512.png",
   "./icon-monochrome-512.png",
-  "./apple-touch-icon.png"
+  "./apple-touch-icon.png",
+  // The brand face. Cache-first like the icons: three files, ~140KB, and they never
+  // change unless the typeface does.
+  "./ArialNova-Light.woff2",
+  "./ArialNova.woff2",
+  "./ArialNova-Bold.woff2"
 ];
 
 self.addEventListener("install", e => {
