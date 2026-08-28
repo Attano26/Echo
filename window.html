@@ -115,6 +115,10 @@
   --fs:'Arial Nova Light','Arial Nova','Segoe UI Light','Segoe UI',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;
   --fs-title:'Arial Nova','Arial Nova Light','Segoe UI',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;
   --apph:100dvh;
+  /* The page never declared one, so every browser-drawn surface — scrollbars, form
+     controls, the built-in PDF viewer — rendered in the browser's default scheme rather
+     than the app's. Declaring it is the only supported lever over those. */
+  color-scheme:light;
   /* The Echo mark as a mask, so anything can wear its shape. Same path as MARK. */
   --echo-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024'><path fill='%23000' d='M112 110 H912 V336 H112 Z M112 398 H338 A226 226 0 0 1 112 624 Z M400 398 H912 V624 H626 A226 226 0 0 1 400 398 Z M112 686 A226 226 0 0 1 338 912 H112 Z M400 912 A226 226 0 0 1 626 686 H912 V912 Z'/></svg>");
   /* The brand ramp for the WEB's sidebar sweep, listed as TWO identical periods.
@@ -197,6 +201,7 @@
     --accent-soft:rgba(31,87,245,.20);
     --accent-ink:#5982F8;
     --nav-on:var(--ink);
+    color-scheme:dark;
     --hero-bg:#1A1A1F;
     --hero-ink:#F5F5F7;
     --hero-ink-3:#9A9CAB;
@@ -226,6 +231,7 @@
   --accent-soft:rgba(31,87,245,.20);
   --accent-ink:#5982F8;
   --nav-on:var(--ink);
+  color-scheme:dark;
   --hero-bg:#1A1A1F;
   --hero-ink:#F5F5F7;
   --hero-ink-3:#9A9CAB;
@@ -411,6 +417,13 @@ body.in .dhead .mark{ animation:railsweep 9s linear infinite }
   background:var(--accent-soft)}
 .drow .dn{margin-left:auto;font-size:12.5px;color:var(--ink-3);font-weight:400}
 .drow.on .dn{color:var(--nav-on);opacity:.8}
+/* Reads as a label, not a count: it sits where a number would and must not be mistaken for
+   one. Accent-tinted because it is saying something about the feature, not about data. */
+.dpill{margin-left:auto;flex:0 0 auto;font-family:var(--fs-title);font-size:10px;
+  font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink);
+  background:var(--accent-soft);border-radius:var(--r-pill);padding:2px 7px;line-height:1.5}
+.drow.on .dpill{color:var(--nav-on);background:transparent;
+  box-shadow:inset 0 0 0 1px currentColor;opacity:.75}
 /* Read-only settings rows: the phone owns these values, so they are stated, not offered. */
 .srow{display:flex;align-items:baseline;gap:12px;padding:8px 18px;font-size:13.5px}
 .srow .sk{color:var(--ink-3);flex:1}
@@ -738,7 +751,12 @@ body.in .dhead .mark{ animation:railsweep 9s linear infinite }
    state bottom right. Once that is fixed, you stop reading each card and start reading the
    wall -- the eye goes to one corner for the thing it wants.
    ============================================================ */
-.wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(330px,100%),1fr));
+/* auto-FIT, not auto-fill. auto-fill lays down every column the width allows and keeps the
+   empty ones, so a feed with two cards on a 1920px screen put them in the first two of four
+   tracks and left 822px of nothing on the right — the wider the monitor, the worse it got,
+   and it looked like a huge right padding. auto-fit collapses the empty tracks, so whatever
+   cards exist stretch across the full width. */
+.wall{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(330px,100%),1fr));
   gap:14px;align-content:start}
 
 .ncard{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-card);
@@ -1820,7 +1838,10 @@ var TABS = [
   /* Ids stay "dashboard" and "alerts": S.tab is restored from localStorage and both are
      named in WIDE_TABS, so only the labels move. */
   ["dashboard", "Analytics",   function () { return ""; }],
-  ["ask",       "Ask",       function () { return ""; }],
+  /* A fourth slot: a badge that stands in for the count. Ask has no number to report — it
+     answers from the same stories the other tabs count — and the row would otherwise sit
+     blank where every sibling carries a figure. */
+  ["ask",       "Ask",       function () { return ""; }, "beta"],
   ["alerts",    "News alerts", function () { return alerts().length; }],
   ["saved",     "Saved",     function () { return arr(S.data && S.data.savedNews).length; }],
   ["published", "Published", function () { return published().length; }],
@@ -1903,7 +1924,7 @@ function renderDrawerNav() {
       delete byId[id];
       var b = el("button", "drow" + (S.tab === t[0] ? " on" : ""));
       b.appendChild(el("span", null, t[1]));
-      b.appendChild(el("span", "dn", String(t[2]())));
+      b.appendChild(t[3] ? el("span", "dpill", t[3]) : el("span", "dn", String(t[2]())));
       b.onclick = function () {
         S.tab = t[0]; save(); render();
         $("#scroll").scrollTop = 0;
@@ -1921,7 +1942,7 @@ function renderDrawerNav() {
     leftover.forEach(function (t) {
       var b = el("button", "drow" + (S.tab === t[0] ? " on" : ""));
       b.appendChild(el("span", null, t[1]));
-      b.appendChild(el("span", "dn", String(t[2]())));
+      b.appendChild(t[3] ? el("span", "dpill", t[3]) : el("span", "dn", String(t[2]())));
       b.onclick = function () {
         S.tab = t[0]; save(); render();
         $("#scroll").scrollTop = 0;
@@ -3797,7 +3818,6 @@ function renderDashboard(app, d) {
   /* ---------- section header with the phone's 1M / 3M / 6M selector ---------- */
   var head = el("div", "anhead");
   var left = el("div");
-  left.appendChild(el("h2", null, "Analytics"));
   /* COUNT WHAT THE CARDS BELOW ACTUALLY PLOT.
      totalCount is `news.size` on the phone — the WHOLE feed, never filtered by the window — so
      labelling it "· last month" was wrong, and it read the same at 1M, 3M and 6M because it
@@ -3806,9 +3826,12 @@ function renderDashboard(app, d) {
   var inWindow = arr(a.volPerWeek).reduce(function (t, wk) {
     return t + arr(wk).reduce(function (x, y) { return x + y; }, 0);
   }, 0);
-  left.appendChild(el("div", "sub",
-    inWindow + (inWindow === 1 ? " story · " : " stories · ") + anPhrase(AN_WIN) +
-    "   ·   " + (a.totalCount || 0) + " in the feed"));
+  /* The heading carries the COUNT, not the word "Analytics". The page title above it already
+     says Analytics, and a section header repeating the name of the page it is on tells you
+     nothing you did not know two lines ago. */
+  left.appendChild(el("h2", null,
+    inWindow + (inWindow === 1 ? " story " : " stories ") + anPhrase(AN_WIN) + ", " +
+    (a.totalCount || 0) + " in the feed"));
   head.appendChild(left);
   var seg = el("div", "anseg");
   ["1M", "3M", "6M"].forEach(function (k) {
