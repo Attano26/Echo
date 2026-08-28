@@ -137,19 +137,6 @@
     #F5D7FF 0%,  #FBC79B 11%, #FF9AA6 22%, #9AA6F0 32%, #CDB9F7 41%,
     #F5D7FF 50%, #FBC79B 61%, #FF9AA6 72%, #9AA6F0 82%, #CDB9F7 91%,
     #F5D7FF 100%;
-  /* The same idea for TEXT, and it cannot be the same ramp. --brand-ramp is five pastels chosen
-     to read as a 24px mark on the near-black drawer; at 46px on #F5F5F7 paper they are barely
-     there, and this ramp has to carry a whole line of type. So the light face is the same hue
-     ORDER — violet, warm, pink, blue, violet — pushed deep enough that every stop clears 3:1 on
-     paper, which is the AA floor for text this size. The dark face can stay pastel, because on
-     #0E0E0E the pastels are the high-contrast end.
-
-     Two identical periods, exactly like --brand-ramp: that is what lets the loop close without a
-     seam. See @keyframes askflow. */
-  --ask-ramp:
-    #7C3AED 0%,  #C2410C 11%, #DB2777 22%, #2563EB 32%, #6D28D9 41%,
-    #7C3AED 50%, #C2410C 61%, #DB2777 72%, #2563EB 82%, #6D28D9 91%,
-    #7C3AED 100%;
   --bento-gap:14px;
   /* The hero panel. It used to stay dark in both themes because the four pastels were picked
      against a near-black card and vanish on a white one. The answer is a second ramp rather
@@ -212,10 +199,7 @@
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
 
-    --ask-ramp:
-    #F5D7FF 0%,  #FBC79B 11%, #FF9AA6 22%, #9AA6F0 32%, #CDB9F7 41%,
-    #F5D7FF 50%, #FBC79B 61%, #FF9AA6 72%, #9AA6F0 82%, #CDB9F7 91%,
-    #F5D7FF 100%;    --paper:#0E0E0E; --surface:#161618; --surface-2:#1F1F22;
+    --paper:#0E0E0E; --surface:#161618; --surface-2:#1F1F22;
     --track:#232329; --track-on:#43434E;
     --ink:#F5F5F7; --ink-2:#C9CAD3; --ink-3:#9A9CAB;
     --line:#2A2A2F;
@@ -245,10 +229,6 @@
 }
 /* An explicit choice wins over the system, in both directions. Same list as above. */
 :root[data-theme="dark"]{
-  --ask-ramp:
-  #F5D7FF 0%,  #FBC79B 11%, #FF9AA6 22%, #9AA6F0 32%, #CDB9F7 41%,
-  #F5D7FF 50%, #FBC79B 61%, #FF9AA6 72%, #9AA6F0 82%, #CDB9F7 91%,
-  #F5D7FF 100%;
   --paper:#0E0E0E; --surface:#161618; --surface-2:#1F1F22;
   --track:#232329; --track-on:#43434E;
   --ink:#F5F5F7; --ink-2:#C9CAD3; --ink-3:#9A9CAB;
@@ -1223,9 +1203,11 @@ button.nstate:active{transform:scale(.97)}
 .chhi{margin:0 0 10px;font-size:clamp(29px,7vw,46px);line-height:1.1;font-weight:700;
   letter-spacing:-.035em;color:var(--ink)}
 .chnm{display:block;color:var(--ink)}
-/* The invitation wears the brand ramp and drifts it left to right over 12s — slower than the
-   drawer mark's 9s, because this is a line of 46px type rather than a 24px glyph and the same
-   rate across that much width reads as a scroll rather than a drift.
+/* The invitation wears --brand-ramp — the logo's own five pastels, no substitutions — and drifts
+   it left to right over 12s, slower than the drawer mark's 9s, because this is a line of 46px type
+   rather than a 24px glyph and the same rate across that much width reads as a scroll rather than
+   a drift. The mark and this line are the only two places the ramp appears, and they now hold the
+   same colours in both themes.
 
    background-clip:text paints the gradient THROUGH the letterforms, which needs a transparent
    fill to show. That is only safe where the clip is supported, so the transparency lives inside
@@ -1234,7 +1216,7 @@ button.nstate:active{transform:scale(.97)}
 .chask{display:block;color:var(--ink-3)}
 @supports ((-webkit-background-clip:text) or (background-clip:text)){
   .chask{
-    background:linear-gradient(to right,var(--ask-ramp));
+    background:linear-gradient(to right,var(--brand-ramp));
     background-size:200% 100%;
     -webkit-background-clip:text;background-clip:text;
     color:transparent;-webkit-text-fill-color:transparent;
