@@ -516,10 +516,6 @@ body.in .dhead .mark{ animation:railsweep 9s linear infinite }
 .avatar{position:relative;width:26px;height:26px;flex:0 0 26px;border-radius:50%;
   background:var(--surface-2);border:1px solid var(--line);display:flex;align-items:center;
   justify-content:center;font-size:11px;font-weight:600;color:var(--ink-2)}
-/* The sync signal rides ON the avatar rather than taking a row of its own — it is a status,
-   not a menu item, and the footer is meant to be one line. */
-.avatar .syncdot{position:absolute;right:-1px;bottom:-1px;width:8px;height:8px;flex:0 0 8px;
-  border:1.5px solid var(--surface);box-sizing:content-box}
 .profname{flex:1;font-size:14px;font-weight:500}
 .profchev{color:var(--ink-3);font-size:17px;line-height:1}
 /* Settings panel */
@@ -1460,7 +1456,7 @@ button.nstate:active{transform:scale(.97)}
        with the list is a settings entry you have to go looking for. -->
   <div id="drawerFoot">
     <button class="profrow" id="btnProfile" aria-haspopup="dialog">
-      <span class="avatar" id="profAvatar"><span class="syncdot" id="profDot"></span></span>
+      <span class="avatar" id="profAvatar"></span>
       <span class="profname">Settings</span>
       <span class="profchev" aria-hidden="true">›</span>
     </button>
@@ -2183,16 +2179,14 @@ function settingsPills(g) {
 /* Sync status in the rail — Sightline puts this in the same place, and it is the right place:
    it is ambient information you want visible without asking, not a thing you go and look up. */
 function renderSyncRow() {
-  // The rail footer is one line now, so the sync state rides on the avatar as a dot and the
-  // wording moves to the row's tooltip and into the Settings panel. Same signal, no extra row.
-  var dot = $("#profDot");
+  // The avatar carries the initial and nothing else. It used to wear a sync dot too, which said
+  // the same thing as the pill immediately above it — so the pill keeps the signal, the row's
+  // tooltip keeps the wording, and the footer loses a marker that was reporting it twice.
   var av = $("#profAvatar");
   var btn = $("#btnProfile");
   if (av) {
     var email = (S.data && S.data.settings && S.data.settings.account) || S.email || "";
-    av.firstChild && av.firstChild.nodeType === 3 && av.removeChild(av.firstChild);
-    var initial = email ? email.trim().charAt(0).toUpperCase() : "";
-    if (initial) av.insertBefore(document.createTextNode(initial), dot || null);
+    av.textContent = email ? email.trim().charAt(0).toUpperCase() : "";
   }
   var d0 = S.data, label;
   if (!d0) label = "Not loaded";
@@ -2203,9 +2197,7 @@ function renderSyncRow() {
       : mins0 < 60 ? mins0 + " min ago"
       : mins0 < 1440 ? Math.round(mins0 / 60) + " h ago"
       : Math.round(mins0 / 1440) + " d ago");
-    if (dot) dot.className = "syncdot " + (mins0 > 1440 ? "behind" : "ok");
   }
-  if (dot && (!d0 || !d0.updatedAtMillis)) dot.className = "syncdot";
   if (btn) btn.title = label;
 
   /* The pill. Short enough to sit in a 290px rail without truncating, with the exact
