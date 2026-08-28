@@ -1186,14 +1186,55 @@ button.nstate:active{transform:scale(.97)}
   background:linear-gradient(to top,var(--paper),transparent);pointer-events:none}
 .chctx{display:flex;flex-wrap:wrap;align-items:center;gap:5px;
   padding:0 8px 7px;font-size:12.5px;color:var(--ink-3)}
+/* The mode switch: the analytics segmented control, one size down. Same material, so the two
+   read as the same kind of object rather than two designers' idea of a toggle. */
+.chseg{display:inline-flex;background:var(--surface-2);border-radius:var(--r-pill);
+  padding:2px;gap:2px;flex:0 0 auto;margin-right:4px}
+/* Scoped through .chctx deliberately. `.chctx button` styles the Clear link and carries the same
+   specificity as a bare `.chseg button`, so on equal weight the later rule won and stripped the
+   padding and colour off both segments. Winning by specificity rather than by source order keeps
+   that true wherever either rule is later moved to. */
+.chctx .chseg button{border:0;background:transparent;color:var(--ink-3);font:inherit;
+  font-size:11.5px;padding:4px 11px;border-radius:var(--r-pill);cursor:pointer;
+  letter-spacing:-.01em;
+  transition:background var(--t-hover) var(--ease),color var(--t-hover) var(--ease)}
+.chctx .chseg button:hover{text-decoration:none;color:var(--ink-2)}
+.chctx .chseg button.on{background:var(--surface);color:var(--ink);
+  box-shadow:var(--sh-1);font-weight:500}
+.chctx .chseg button.on:hover{color:var(--ink)}
+.chkey{padding:0 4px 9px}
+.chkn{margin:0 0 7px;font-size:12px;line-height:1.5;color:var(--ink-3)}
+.chkl{font-size:12.5px;color:var(--accent-ink);text-decoration:none;flex:0 0 auto}
+.chkl:hover{text-decoration:underline}
 .chctx b{font-weight:500;color:var(--ink-2)}
 .chctx button{background:none;border:0;padding:0;font-size:12.5px;color:var(--accent-ink);cursor:pointer}
 .chctx button:hover{text-decoration:underline}
-.chbox{display:flex;align-items:center;gap:8px;background:var(--surface);
+.chbox{position:relative;display:flex;align-items:center;gap:8px;background:var(--surface);
   border:1px solid var(--line);border-radius:var(--r-pill);padding:5px 5px 5px 18px;
   box-shadow:var(--sh-1);
   transition:border-color var(--t-hover) var(--ease),box-shadow var(--t-hover) var(--ease)}
 .chbox:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+
+/* ---- Smart mode: the stroke turns ----
+   A conic gradient cannot be animated by animating the gradient, so the ANGLE is animated instead,
+   and an angle only animates if the browser knows it is an angle — which is what @property does.
+   Without it --chang stays 0deg and the ring is a static brand gradient: still correct, just not
+   turning. That is the whole degradation.
+
+   The ring itself is one element masked into a hoop: paint the gradient over the border box, then
+   subtract the padding box from it, leaving only the 1px frame. --brand-ramp opens and closes on
+   the same colour, so the circle joins without a seam, and it holds two periods, so the sweep
+   passes twice per turn. Same ramp as the mark and the Ask heading. */
+@property --chang{syntax:"<angle>";initial-value:0deg;inherits:false}
+.chbox.smart.live{border-color:transparent;box-shadow:var(--sh-1)}
+.chbox.smart.live::before{
+  content:"";position:absolute;inset:-1px;border-radius:inherit;padding:1px;
+  background:conic-gradient(from var(--chang),var(--brand-ramp));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  mask-composite:exclude;
+  animation:chspin 2.6s linear infinite;pointer-events:none}
+@keyframes chspin{to{--chang:360deg}}
 .chin{flex:1;min-width:0;height:40px;border:0;background:transparent;outline:none;
   color:var(--ink);font-size:15px;font-weight:300}
 .chgo{flex:none;width:36px;height:36px;border-radius:50%;border:0;cursor:pointer;
@@ -4708,6 +4749,20 @@ function chAnsFind(q, d, ix, ents, wantCount) {
    WHEN THE FREE QUOTA RUNS OUT the call 429s and the turn falls back to the composed answer, which
    costs nothing and is always there. Running out degrades the wording, never the answer. */
 var CH_KEY_LS = "echo.gemini.key";
+var CH_MODE_LS = "echo.ask.mode";
+
+/* MODE IS A CHOICE, NOT A CONSEQUENCE. Before this, holding a key silently meant every question
+   went to the model. Now Basic and Smart are picked explicitly and remembered, so a key can sit
+   saved while you deliberately stay on the free path — and Smart with no key asks for one rather
+   than quietly behaving like Basic. */
+function chMode() {
+  try { return localStorage.getItem(CH_MODE_LS) === "smart" ? "smart" : "basic"; } catch (e) { return "basic"; }
+}
+function chSetMode(v) {
+  try { localStorage.setItem(CH_MODE_LS, v === "smart" ? "smart" : "basic"); } catch (e) {}
+}
+/* The only test that matters at the call site: Smart chosen AND a key to call with. */
+function chSmart() { return chMode() === "smart" && !!chKey(); }
 var CH_MODEL = "gemini-3.5-flash-lite";   // the phone's pinned model; keep the two in step
 var CH_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/" + CH_MODEL + ":generateContent";
 
@@ -4936,7 +4991,7 @@ function chAsk(q) {
      it is also part of the prompt, so the model rephrases figures rather than recounting them. */
   m.composed = m.lead;
   m.structured = chWantsStructure(q);
-  m.pending = !!chKey();
+  m.pending = chSmart();
   CH_LOG.push(m);
   render();
   var s = $("#scroll"); if (s) s.scrollTop = s.scrollHeight;
@@ -5042,7 +5097,7 @@ function renderAsk(app) {
       "I read only what your phone has fetched — <b>" + chPl(ix.docs.length, "story", "stories") +
       "</b>, plus your <b>" + chPl(ix.comps.length, "competitor", "competitors") + "</b> and <b>" +
       chPl(ix.lands.length, "market", "markets") + "</b>. There is no model behind me and no key in " +
-      (chKey()
+      (chSmart()
         ? "this page. Wording comes from " + CH_MODEL + " using your own key, over those stories and " +
           "nothing else — so I still cannot tell you anything that is not already here."
         : "this page, so asking costs nothing — and I cannot tell you anything that is not already here.");
@@ -5066,6 +5121,21 @@ function renderAsk(app) {
   var dock = el("div", "chdock");
 
   var ctx = el("div", "chctx");
+
+  /* Basic / Smart, in the same segmented control the analytics window uses. It leads the context
+     line rather than taking a row of its own — the dock is already the densest part of this
+     screen and a mode switch is a small thing to say. */
+  var mode = chMode(), seg = el("div", "chseg");
+  [["basic", "Basic"], ["smart", "Smart"]].forEach(function (o) {
+    var b = el("button", mode === o[0] ? "on" : null, o[1]);
+    b.title = o[0] === "basic"
+      ? "Answers composed here from your own stories. Free, instant, works offline."
+      : "Same stories, phrased by " + CH_MODEL + " with your own key.";
+    b.onclick = function () { chSetMode(o[0]); render(); };
+    seg.appendChild(b);
+  });
+  ctx.appendChild(seg);
+
   ctx.appendChild(document.createTextNode("Reading "));
   ctx.appendChild(el("b", null, chPl(ix.docs.length, "story", "stories")));
   var srcMode = newsSourceOf(d);
@@ -5081,7 +5151,36 @@ function renderAsk(app) {
   }
   dock.appendChild(ctx);
 
-  var box = el("div", "chbox");
+  /* Smart with no key asks for one HERE, rather than sending you to Settings to find a field you
+     have never seen. Same input and buttons as the Settings row, so it is one control in two
+     places rather than two controls. */
+  var wantsKey = mode === "smart" && !chKey();
+  if (wantsKey) {
+    var kn = el("div", "chkey");
+    kn.appendChild(el("p", "chkn",
+      "Smart mode needs a Google AI Studio key. It is stored in this browser only — never in the " +
+      "page, never in your Drive backup. Calls carry no search grounding, so they run on the free tier."));
+    var krow = el("div", "keyrow");
+    var kin = el("input", "keyin");
+    kin.type = "password"; kin.autocomplete = "off"; kin.spellcheck = false;
+    kin.placeholder = "Paste your Gemini API key";
+    var ksave = el("button", "btn sm", "Save");
+    var commit = function () {
+      var v = kin.value.trim();
+      if (!v) { toast("Paste a key first"); return; }
+      chSetKey(v); render(); toast("Smart mode is on");
+    };
+    ksave.onclick = commit;
+    kin.onkeydown = function (e) { if (e.key === "Enter") { e.preventDefault(); commit(); } };
+    var glink = el("a", "chkl", "Get a free key");
+    glink.href = "https://aistudio.google.com/apikey";
+    glink.target = "_blank"; glink.rel = "noopener noreferrer";
+    krow.appendChild(kin); krow.appendChild(ksave); krow.appendChild(glink);
+    kn.appendChild(krow);
+    dock.appendChild(kn);
+  }
+
+  var box = el("div", "chbox" + (chSmart() ? " smart" : ""));
   var input = el("input", "chin");
   input.id = "chIn";
   input.type = "text";
@@ -5093,7 +5192,16 @@ function renderAsk(app) {
   var go = el("button", "chgo");
   go.innerHTML = ICON_SEND;
   go.title = "Ask"; go.setAttribute("aria-label", "Ask");
-  var sync = function () { go.classList.toggle("on", !!input.value.trim()); };
+  /* The stroke animates while the box is BEING USED — focused, or holding a draft. Running it
+     whenever Smart is merely selected would put a rotating gradient on the screen for as long as
+     the tab is open, which is a very different thing from a box that responds to you. */
+  var sync = function () {
+    go.classList.toggle("on", !!input.value.trim());
+    box.classList.toggle("live",
+      chSmart() && (document.activeElement === input || !!input.value.trim()));
+  };
+  input.onfocus = sync;
+  input.onblur = sync;
   input.oninput = function () { CH_DRAFT = input.value; sync(); };
   input.onkeydown = function (e) { if (e.key === "Enter") { e.preventDefault(); chAsk(input.value); } };
   go.onclick = function () { chAsk(input.value); };
