@@ -2956,6 +2956,13 @@ window.addEventListener("resize", function () {
    Every figure comes from `data.widgets`, the snapshot the phone computes for the launcher, so
    a number here and the same number on the home screen cannot disagree.
    ============================================================ */
+/* "AUG", the way the phone's own widget stamps it: monthAbbrev uppercased. Backups written
+   before monthAbbrev existed fall back to the first three letters of the full name, so the
+   stamp is never the whole word on a 240px tile. */
+function monthStamp(w) {
+  var a = String((w && (w.monthAbbrev || w.monthLabel)) || "").trim();
+  return a ? a.slice(0, 3).toUpperCase() : null;
+}
 function wTop(label, stamp) {
   var top = el("div", "w-top");
   var m = el("span", "w-mark");
@@ -3213,11 +3220,13 @@ function renderWidgetStrip(w) {
     var g = el("div", "widget");
     var mode = String(w.sourceMode || "");
     var free = /free/i.test(mode);
-    g.appendChild(wTop("Spend", w.monthLabel || null));
+    g.appendChild(wTop("Spend", monthStamp(w)));
     // Full size, like every other hero on the strip. It was the small variant so a string like
     // 1234.56 would fit; with the phone's rounding rule that string cannot occur.
-    g.appendChild(wHead(wHero(rupee(w.monthRupees),
-                              "this<br>month", free ? "var(--good-ink)" : null)));
+    //
+    // No unit beside the figure. The stamp above already names the month, and saying it twice
+    // on a 240px tile cost the number the room it was widened to have.
+    g.appendChild(wHead(wHero(rupee(w.monthRupees), null, free ? "var(--good-ink)" : null)));
     g.appendChild(wSay(free
       ? "The free feed costs nothing to run."
       : "Grounded search is billed for every query."));
