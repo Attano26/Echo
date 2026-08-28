@@ -1565,9 +1565,11 @@ var S = {
     schema: 1, updatedAtMillis: 0,
     verifiedTitles: [], publishedTitles: [], publishedNews: [], reportEditions: []
   },
-  // Dashboard is the landing page: the glance strip answers "anything to look at?" before
-  // the feed asks you to read anything.
-  tab: "dashboard", loading: false
+  // News alerts is the landing page. It was Analytics, on the argument that the glance strip
+  // answers "anything to look at?" before the feed asks you to read anything — but the strip
+  // moved to News alerts, so that argument now lands on this tab, and it is the feed itself.
+  // Only NEW arrivals see it: load() restores a returning reader's last tab over this.
+  tab: "alerts", loading: false
 };
 
 function save() {
