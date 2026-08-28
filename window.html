@@ -2030,7 +2030,11 @@ function renderDrawerSettings() {
        dropped it for exactly that reason while this row carried on printing it — which
        reads as the web being stale when the value was simply always 1. buildType joins in
        when the payload carries it, so an older backup just shows one part fewer. */
-    ["App", [g.appVersion || "—", g.flavor, g.buildType].filter(Boolean).join(" · ")],
+    /* "1.0.13 · windows · debug". BUILD_ID is the third part of the version number, joined
+       with a dot the way the phone joins it, not a separate fact beside it. A backup from
+       before buildId shipped simply reads "1.0". */
+    ["App", [[g.appVersion || "—", g.buildId].filter(Boolean).join("."),
+             g.flavor, g.buildType].filter(Boolean).join(" · ")],
     ["Phone", g.device || "—"],
     ["Android", g.android || "—"],
     ["Last backup", S.data.updatedAtMillis ? new Date(S.data.updatedAtMillis).toLocaleString("en-GB") : "—"]
