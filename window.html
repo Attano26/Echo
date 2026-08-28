@@ -1260,6 +1260,17 @@ function editions() {
   });
   return out.sort(function (a, b) { return (b.createdAtMillis || 0) - (a.createdAtMillis || 0); });
 }
+/* Which feed the phone is set to.
+   It lives in `settings`, NOT at the top level. renderTitle read S.data.newsSource, which the
+   phone has never written, so the source pill silently hid itself on every real payload: the
+   value was only ever `settings.newsSource`, which is why Settings showed "Hybrid" while the
+   pill beside the title showed nothing. Reads settings first and keeps the top-level read as a
+   fallback, so a payload that promotes the field later still works and no phone rebuild or
+   fresh backup is needed to fix the backups already in Drive. */
+function newsSourceOf(d) {
+  d = d || S.data || {};
+  return (d.settings && d.settings.newsSource) || d.newsSource || "";
+}
 function verifiedArticles() {
   var v = verifiedSet();
   return alerts().filter(function (a) { return v.has(key(a.title)); });
@@ -1782,7 +1793,7 @@ function renderTitle() {
   $("#pageSub").textContent = t[1];
   /* Source chip: which feed the PHONE is set to. Read-only here — the web never
      fetches, so this is information, not a control. */
-  var chip = $("#srcChip"), v = (S.data && S.data.newsSource) || "";
+  var chip = $("#srcChip"), v = newsSourceOf();
   if (!v) { chip.hidden = true; return; }
   var map = {
     rss: ["Free RSS", "var(--free)"],
@@ -3917,7 +3928,7 @@ function renderAsk(app) {
   var ctx = el("div", "chctx");
   ctx.appendChild(document.createTextNode("Reading "));
   ctx.appendChild(el("b", null, chPl(ix.docs.length, "story", "stories")));
-  var srcMode = d.newsSource || "";
+  var srcMode = newsSourceOf(d);
   if (srcMode) {
     ctx.appendChild(document.createTextNode(" · phone is on "));
     ctx.appendChild(el("b", null, srcMode === "rss" ? "free RSS" : srcMode));
