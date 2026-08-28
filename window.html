@@ -290,7 +290,16 @@ a:hover{text-decoration:underline}
    look empty. #shell gets the wide class so the header and the grid stay aligned. */
 #shell.wide .wrap{max-width:1680px}
 #top{flex:0 0 auto;padding-top:max(14px,env(safe-area-inset-top))}
-#scroll{flex:1 1 auto;overflow-y:auto;overscroll-behavior:contain;padding-bottom:40px}
+/* overflow-x:hidden is NOT redundant beside overflow-y:auto. Setting one axis to auto makes
+   the other compute to auto as well, so anything a few pixels too wide gave the content
+   area its own horizontal scrollbar along the bottom — and scrolling it revealed empty
+   space, because the overflow was slack rather than content.
+
+   Wide things scroll inside their OWN container instead: the widget strip already does,
+   and anything else that needs to must do the same. The page itself never scrolls
+   sideways, which is the rule this app already states for its own layouts. */
+#scroll{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;
+  padding-bottom:40px}
 
 /* ---------- top bar ---------- */
 .bar{display:flex;align-items:center;gap:12px;padding:2px 0 14px}
