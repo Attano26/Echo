@@ -105,6 +105,18 @@
     #F5D7FF 50%, #FBC79B 61%, #FF9AA6 72%, #9AA6F0 82%, #CDB9F7 91%,
     #F5D7FF 100%;
   --bento-gap:14px;
+  /* The hero panel. It used to stay dark in both themes because the four pastels were picked
+     against a near-black card and vanish on a white one. The answer is a second ramp rather
+     than a frozen panel: same four hues, deeper and more opaque, so the sweep still reads
+     when the ground is light. */
+  --hero-bg:#FBFBFD;
+  --hero-ink:var(--ink);
+  --hero-ink-3:var(--ink-3);
+  --hero-sweep:
+    radial-gradient(105% 85% at 92% 6%,   rgba(74,98,255,.30), transparent 62%),
+    radial-gradient(95% 75% at 74% 40%,   rgba(255,92,104,.22), transparent 64%),
+    radial-gradient(85% 65% at 95% 74%,   rgba(244,160,74,.26), transparent 62%),
+    radial-gradient(75% 60% at 62% 96%,   rgba(186,132,255,.24), transparent 64%);
   /* The widget set's status ramp, from the widget mockups. Deliberately NOT the accent:
      --accent means "interactive", and a widget is not. These four mean what they say. */
   /* ONE PALETTE. THE FILLS DO NOT CHANGE BETWEEN THEMES.
@@ -161,6 +173,14 @@
     --accent-soft:rgba(31,87,245,.20);
     --accent-ink:#5982F8;
     --nav-on:var(--ink);
+    --hero-bg:#1A1A1F;
+    --hero-ink:#F5F5F7;
+    --hero-ink-3:#9A9CAB;
+    --hero-sweep:
+    radial-gradient(105% 85% at 92% 6%,   rgba(80,103,255,.55), transparent 62%),
+    radial-gradient(95% 75% at 74% 40%,   rgba(255,123,129,.42), transparent 64%),
+    radial-gradient(85% 65% at 95% 74%,   rgba(251,199,155,.40), transparent 62%),
+    radial-gradient(75% 60% at 62% 96%,   rgba(245,215,255,.34), transparent 64%);
     --sh-1:0 1px 2px rgba(0,0,0,.5),0 6px 20px rgba(0,0,0,.4);
     --sh-2:0 2px 6px rgba(0,0,0,.55),0 14px 34px rgba(0,0,0,.5);
     --heat-0:#20222A; --heat-1:#0E4429; --heat-2:#006D32; --heat-3:#26A641; --heat-4:#39D353;
@@ -182,6 +202,14 @@
   --accent-soft:rgba(31,87,245,.20);
   --accent-ink:#5982F8;
   --nav-on:var(--ink);
+  --hero-bg:#1A1A1F;
+  --hero-ink:#F5F5F7;
+  --hero-ink-3:#9A9CAB;
+  --hero-sweep:
+  radial-gradient(105% 85% at 92% 6%,   rgba(80,103,255,.55), transparent 62%),
+  radial-gradient(95% 75% at 74% 40%,   rgba(255,123,129,.42), transparent 64%),
+  radial-gradient(85% 65% at 95% 74%,   rgba(251,199,155,.40), transparent 62%),
+  radial-gradient(75% 60% at 62% 96%,   rgba(245,215,255,.34), transparent 64%);
   --sh-1:0 1px 2px rgba(0,0,0,.5),0 6px 20px rgba(0,0,0,.4);
   --sh-2:0 2px 6px rgba(0,0,0,.55),0 14px 34px rgba(0,0,0,.5);
   --heat-0:#20222A; --heat-1:#0E4429; --heat-2:#006D32; --heat-3:#26A641; --heat-4:#39D353;
@@ -1135,15 +1163,11 @@ button.nstate:active{transform:scale(.97)}
    panel whose whole job is to be the brand rather than to be read through. */
 .bento2{display:flex;flex-direction:column;gap:12px;padding:14px 18px 4px}
 .brow{display:flex;gap:12px}
-.bhero{position:relative;overflow:hidden;border-radius:20px;background:#1A1A1F;padding:24px}
+.bhero{position:relative;overflow:hidden;border-radius:20px;background:var(--hero-bg);
+  border:1px solid var(--line-2);padding:24px}
 /* Four soft radials in the right two thirds, which is where the phone's 22 overlapping strokes
    put their ink. Same four colours, same diagonal, without redrawing a canvas. */
-.bsweep{position:absolute;inset:0;pointer-events:none;
-  background:
-    radial-gradient(105% 85% at 92% 6%,   rgba(80,103,255,.55), transparent 62%),
-    radial-gradient(95% 75% at 74% 40%,   rgba(255,123,129,.42), transparent 64%),
-    radial-gradient(85% 65% at 95% 74%,   rgba(251,199,155,.40), transparent 62%),
-    radial-gradient(75% 60% at 62% 96%,   rgba(245,215,255,.34), transparent 64%)}
+.bsweep{position:absolute;inset:0;pointer-events:none;background:var(--hero-sweep)}
 .bheroin{position:relative}
 .bmark{width:45px;height:45px;display:block;
   background:linear-gradient(to top right,var(--brand-ramp));background-size:200% 200%;
@@ -1151,15 +1175,17 @@ button.nstate:active{transform:scale(.97)}
   mask:var(--echo-mask) center/contain no-repeat;
   animation:railsweep 4.5s linear infinite}
 .blabel{font-family:var(--fs-title);font-size:11px;font-weight:700;letter-spacing:.13em;
-  text-transform:uppercase;color:#9A9CAB}
-.bver{font-family:var(--fs-title);font-size:40px;font-weight:600;letter-spacing:-1px;
-  line-height:1.1;color:#F5F5F7;margin-top:8px}
-.bsub{font-size:13.5px;color:#9A9CAB;margin-top:6px}
+  text-transform:uppercase;color:var(--hero-ink-3)}
+/* The hero is the one bold thing on this screen. Everything under it is Arial Nova Light. */
+.bver{font-family:var(--fs-title);font-size:40px;font-weight:700;letter-spacing:-1px;
+  line-height:1.1;color:var(--hero-ink);margin-top:8px}
+.bsub{font-size:13.5px;color:var(--hero-ink-3);margin-top:6px}
 .btile{flex:1 1 0;min-width:0;background:var(--surface-2);border:1px solid var(--line-2);
   border-radius:20px;padding:22px}
 .btop{display:flex;align-items:center;gap:8px}
 .btop .blabel{color:var(--ink-3)}
-.bval{font-family:var(--fs-title);font-size:21px;font-weight:500;letter-spacing:-.3px;
+/* Arial Nova Light at 300, which is the point of the face. Only the hero climbs above it. */
+.bval{font-family:var(--fs);font-size:21px;font-weight:300;letter-spacing:-.2px;
   color:var(--ink);margin-top:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bcap{font-size:12.5px;color:var(--ink-3);margin-top:5px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1937,11 +1963,14 @@ function settingsBento(g) {
   var srcDot = g.newsSource === "rss" ? "var(--free)"
              : g.newsSource === "hybrid" ? "var(--hybrid)"
              : g.newsSource ? "var(--paid)" : null;
-  wrap.appendChild(bRow(
-    bTile("Installed", inst ? dateOnly(inst) : "\u2014",
-          inst ? "at " + timeOnly(inst) : "Not sent by this build"),
-    bTile("News source", srcName,
-          g.newsSource === "rss" ? "No API cost" : "Paid calls", srcDot)));
+  var srcTile = bTile("News source", srcName,
+        g.newsSource === "rss" ? "No API cost" : "Paid calls", srcDot);
+  /* A tile whose value is a dash is worse than no tile: it reports a blank as though it were
+     a reading. Until a phone built after installedAt shipped has backed up, News source
+     simply takes the whole row. */
+  wrap.appendChild(inst
+    ? bRow(bTile("Installed", dateOnly(inst), "at " + timeOnly(inst)), srcTile)
+    : bRow(srcTile));
 
   /* Wide: the phone itself. */
   wrap.appendChild(bRow(bTile("Device", g.device || "\u2014",
@@ -2169,43 +2198,21 @@ function renderDrawerSettings() {
   soRow.appendChild(so);
   n.appendChild(soRow);
 
-  n.appendChild(el("div", "dsec", "On your phone"));
   if (!g) {
     n.appendChild(el("div", "dnote",
       "Your phone has not sent its settings yet. Open Settings, then Storage, and press Back up."));
     return;
   }
 
-  var srcName = { rss: "Free RSS", grounded: "Grounded", hybrid: "Hybrid" }[g.newsSource] || g.newsSource || "—";
-  var rows = [
-    /* News source, Alerts and Automatic backup are the pills under the bento now. */
-    ["Daily cost cap", g.dailyCostCap != null ? rupee(g.dailyCostCap) : "—"],
-    ["Spent today", rupee(g.spendToday)],
-    ["Spent this month", rupee(g.spendMonth)],
-    ["Google API key", g.hasApiKey ? "Set" : "Not set"],
-    ["Restore points", String(g.restorePointCount != null ? g.restorePointCount : "—")],
-    ["Liked", String(g.likedCount != null ? g.likedCount : "—")],
-    ["Disliked", String(g.dislikedCount != null ? g.dislikedCount : "—")],
-    ["Theme", g.theme === "dark" ? "Dark" : "Light"],
-    ["Accent", g.accent || "—"],
-    ["Haptics", g.haptics ? "On" : "Off"]
-  ];
-  rows.forEach(function (r) {
-    var row = el("div", "srow");
-    row.appendChild(el("span", "sk", r[0]));
-    var v = el("span", "sv", r[1]);
-    // The one place colour is allowed here: the free-vs-paid signal, same as the phone.
-    if (r[2] === "free") v.style.color = "var(--free)";
-    if (r[2] === "paid") v.style.color = "var(--paid)";
-    row.appendChild(v);
-    n.appendChild(row);
-  });
+  /* The pills lead: four facts about how the phone is RUNNING, before the identity of the
+     build it is running. */
+  n.appendChild(settingsPills(g));
+
 
   /* The Device section is the bento now, tile for tile as the phone draws it, with the four
      status pills under it. Everything those four rows said is in there, said larger. */
   n.appendChild(el("div", "dsec", "This build"));
   n.appendChild(settingsBento(g));
-  n.appendChild(settingsPills(g));
 
   n.appendChild(el("div", "dnote",
     "These are shown as your phone last reported them. They cannot be changed here — " +
