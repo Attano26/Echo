@@ -1163,8 +1163,12 @@ button.nstate:active{transform:scale(.97)}
    panel whose whole job is to be the brand rather than to be read through. */
 .bento2{display:flex;flex-direction:column;gap:12px;padding:14px 18px 4px}
 .brow{display:flex;gap:12px}
+/* Arial Nova across the whole hero, the title face rather than the light one. .bsub was
+   inheriting --fs from the body, so the panel mixed two faces: the version in Arial Nova
+   and the line under it in Arial Nova Light. Setting it here means every child inherits
+   one face and the panel reads as one object. */
 .bhero{position:relative;overflow:hidden;border-radius:20px;background:var(--hero-bg);
-  border:1px solid var(--line-2);padding:24px}
+  border:1px solid var(--line-2);padding:24px;font-family:var(--fs-title)}
 /* Four soft radials in the right two thirds, which is where the phone's 22 overlapping strokes
    put their ink. Same four colours, same diagonal, without redrawing a canvas. */
 .bsweep{position:absolute;inset:0;pointer-events:none;background:var(--hero-sweep)}
