@@ -1124,6 +1124,59 @@ button.nstate:active{transform:scale(.97)}
 @media (prefers-reduced-motion:reduce){
   .chsg:hover,.chsg:active,.chgo:active{transform:none}
 }
+
+/* ---------- settings bento ----------
+   The phone's App version pane, tile for tile: the brand hero, then paired tiles, then the wide
+   ones. Same shapes, same 20px radius, same label-over-value-over-caption rhythm.
+
+   The hero keeps its dark slate in BOTH themes, as the phone's SlateCardApp does. The sweep is
+   four pastels and they were chosen against a near-black card; on a white one they wash out to
+   nothing. It is the one panel in this file that does not follow the theme, and it is the one
+   panel whose whole job is to be the brand rather than to be read through. */
+.bento2{display:flex;flex-direction:column;gap:12px;padding:14px 18px 4px}
+.brow{display:flex;gap:12px}
+.bhero{position:relative;overflow:hidden;border-radius:20px;background:#1A1A1F;padding:24px}
+/* Four soft radials in the right two thirds, which is where the phone's 22 overlapping strokes
+   put their ink. Same four colours, same diagonal, without redrawing a canvas. */
+.bsweep{position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(105% 85% at 92% 6%,   rgba(80,103,255,.55), transparent 62%),
+    radial-gradient(95% 75% at 74% 40%,   rgba(255,123,129,.42), transparent 64%),
+    radial-gradient(85% 65% at 95% 74%,   rgba(251,199,155,.40), transparent 62%),
+    radial-gradient(75% 60% at 62% 96%,   rgba(245,215,255,.34), transparent 64%)}
+.bheroin{position:relative}
+.bmark{width:45px;height:45px;display:block;
+  background:linear-gradient(to top right,var(--brand-ramp));background-size:200% 200%;
+  -webkit-mask:var(--echo-mask) center/contain no-repeat;
+  mask:var(--echo-mask) center/contain no-repeat;
+  animation:railsweep 4.5s linear infinite}
+.blabel{font-family:var(--fs-title);font-size:11px;font-weight:700;letter-spacing:.13em;
+  text-transform:uppercase;color:#9A9CAB}
+.bver{font-family:var(--fs-title);font-size:40px;font-weight:600;letter-spacing:-1px;
+  line-height:1.1;color:#F5F5F7;margin-top:8px}
+.bsub{font-size:13.5px;color:#9A9CAB;margin-top:6px}
+.btile{flex:1 1 0;min-width:0;background:var(--surface-2);border:1px solid var(--line-2);
+  border-radius:20px;padding:22px}
+.btop{display:flex;align-items:center;gap:8px}
+.btop .blabel{color:var(--ink-3)}
+.bval{font-family:var(--fs-title);font-size:21px;font-weight:500;letter-spacing:-.3px;
+  color:var(--ink);margin-top:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bcap{font-size:12.5px;color:var(--ink-3);margin-top:5px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* The phone's PulsingDot. Breathing, not blinking: it says "live", and a hard blink would say
+   "something is wrong". */
+.bdot{width:8px;height:8px;border-radius:50%;flex:0 0 8px;margin-left:auto;
+  animation:bpulse 2.4s ease-in-out infinite}
+@keyframes bpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.82)}}
+/* The four status pills, one line, wrapping on a narrow sheet. */
+.bpills{display:flex;flex-wrap:wrap;gap:8px;padding:14px 18px 2px}
+.bpills .srcchip{margin-top:0}
+.srcchip .picon{display:flex;flex:0 0 auto;color:var(--ink-3)}
+.srcchip .picon svg{display:block}
+@media (max-width:560px){
+  .brow{flex-direction:column}
+  .bver{font-size:34px}
+}
 </style>
 </head>
 <body>
@@ -1291,6 +1344,12 @@ var ICON_MOON = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" str
 var ICON_MENU = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
 /* An alarm clock: the face, the hands, and the two bells. Same 24 grid and stroke weight as
    every other icon in this file. */
+var ICON_CAL = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" ' +
+  'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+  '<rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';
+var ICON_CLOUD = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" ' +
+  'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+  '<path d="M7 19h10.5a4 4 0 0 0 .4-7.98A6 6 0 0 0 6.3 9.2 3.9 3.9 0 0 0 7 19z"/></svg>';
 var ICON_ALARM = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" ' +
   'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
   '<circle cx="12" cy="13" r="8"/><path d="M12 9.5V13l2.4 1.4"/>' +
@@ -1787,6 +1846,130 @@ function alertScheduleText(g) {
   return time + " · " + when;
 }
 
+/* Just the days from the alert schedule, for the calendar pill. alertScheduleText() builds
+   "9:30 AM \u00b7 Mon\u2013Fri"; the pill beside it already carries the time, so it needs the
+   second half on its own rather than the whole sentence repeated. */
+function alertDaysText() {
+  var sc = S.data && S.data.alertSchedule;
+  if (!sc || !sc.enabled) return "";
+  var names = ["", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  var days = arr(sc.days).slice().sort(function (a, b) { return a - b; });
+  if (!days.length) return "No days set";
+  if (days.length === 7) return "Every day";
+  if (days.length === 5 && days.join() === "2,3,4,5,6") return "Mon\u2013Fri";
+  if (days.length === 2 && days.join() === "1,7") return "Weekends";
+  return days.map(function (d) { return names[d] || d; }).join(", ");
+}
+/* "Every 24 Hours" is a sentence in a pill that is 90px wide. */
+function backupEveryText(g) {
+  var v = String((g && g.autoRestoreInterval) || "");
+  if (!v || /^none$/i.test(v)) return "";
+  return v.replace(/\bHours\b/i, "h").replace(/\bHour\b/i, "h")
+          .replace(/\bMinutes\b/i, "min").replace(/\bMinute\b/i, "min");
+}
+
+/* ---- the bento, tile for tile as the phone's App version pane draws it ---- */
+function bTile(label, value, caption, dotColour) {
+  var t = el("div", "btile");
+  var top = el("div", "btop");
+  top.appendChild(el("span", "blabel", label));
+  if (dotColour) {
+    var d = el("span", "bdot");
+    d.style.background = dotColour;
+    top.appendChild(d);
+  }
+  t.appendChild(top);
+  t.appendChild(el("div", "bval", value));
+  if (caption) t.appendChild(el("div", "bcap", caption));
+  return t;
+}
+function bRow(a, b) { var r = el("div", "brow"); r.appendChild(a); if (b) r.appendChild(b); return r; }
+
+function settingsBento(g) {
+  var d = S.data || {};
+  var wrap = el("div", "bento2");
+
+  /* Hero. The mark carries the brand ramp here and nowhere else on this page, the same rule the
+     phone follows: this is the one panel with no operational job. */
+  var hero = el("div", "bhero");
+  hero.appendChild(el("div", "bsweep"));
+  var inner = el("div", "bheroin");
+  var mk = el("div", "bmark");
+  inner.appendChild(mk);
+  var lbl = el("div", "blabel", "ECHO");
+  lbl.style.marginTop = "26px";
+  inner.appendChild(lbl);
+  inner.appendChild(el("div", "bver",
+    [g.appVersion || "\u2014", g.buildId].filter(Boolean).join(".")));
+  inner.appendChild(el("div", "bsub",
+    [g.flavor, g.buildType].filter(Boolean).join(" \u00b7 ") || "\u2014"));
+  hero.appendChild(inner);
+  wrap.appendChild(hero);
+
+  /* Backed up + Drive. The size is measured from the payload this page received, the same figure
+     the storage dialog totals. */
+  var total = storageSlices().reduce(function (t, r) { return t + r[2]; }, 0);
+  var when = d.updatedAtMillis ? new Date(d.updatedAtMillis) : null;
+  var dateOnly = function (dt) {
+    return dt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  };
+  var timeOnly = function (dt) {
+    return dt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  };
+  wrap.appendChild(bRow(
+    bTile("Backed up", total ? fmtBytes(total) : "\u2014", when ? dateOnly(when) : "Not yet"),
+    bTile("Drive", S.email ? "Linked" : "Off",
+          S.email ? String(S.email).split("@")[0] : "Not signed in",
+          S.email ? "var(--free)" : null)));
+
+  /* Wide: how old the whole page is. */
+  var stale = when && (Date.now() - when.getTime()) > 86400000;
+  wrap.appendChild(bRow(bTile("Last backed up",
+    when ? dateOnly(when) + ", " + timeOnly(when) : "Never",
+    when ? (stale ? "More than a day old" : "Up to date") : "Open Storage on the phone",
+    when ? (stale ? "var(--paid)" : "var(--free)") : null)));
+
+  /* Installed + News source. installedAt only arrives from a phone built after it was added, so
+     the tile says so rather than inventing a date. */
+  var inst = g.installedAt > 1e12 ? new Date(g.installedAt) : null;
+  var srcName = { rss: "Free RSS", grounded: "Grounded", hybrid: "Hybrid" }[g.newsSource] ||
+                g.newsSource || "\u2014";
+  var srcDot = g.newsSource === "rss" ? "var(--free)"
+             : g.newsSource === "hybrid" ? "var(--hybrid)"
+             : g.newsSource ? "var(--paid)" : null;
+  wrap.appendChild(bRow(
+    bTile("Installed", inst ? dateOnly(inst) : "\u2014",
+          inst ? "at " + timeOnly(inst) : "Not sent by this build"),
+    bTile("News source", srcName,
+          g.newsSource === "rss" ? "No API cost" : "Paid calls", srcDot)));
+
+  /* Wide: the phone itself. */
+  wrap.appendChild(bRow(bTile("Device", g.device || "\u2014",
+    g.android ? "Android " + g.android : "")));
+  return wrap;
+}
+
+/* The four status pills: where the news comes from, when the next fetch is, which days it runs,
+   and how often the phone snapshots itself. Same object as the chips in the title row. */
+function settingsPills(g) {
+  var row = el("div", "bpills");
+  var add = function (iconHtml, text, cls) {
+    if (!text) return;
+    var p = el("div", "srcchip" + (cls || ""));
+    var ic = el("span", iconHtml === null ? "dot" : "picon");
+    if (iconHtml) ic.innerHTML = iconHtml;
+    p.appendChild(ic);
+    p.appendChild(el("span", null, text));
+    row.appendChild(p);
+  };
+  var srcName = { rss: "Free RSS", grounded: "Grounded", hybrid: "Hybrid" }[g.newsSource] || g.newsSource;
+  add(null, srcName, g.newsSource ? " m-" + g.newsSource : "");
+  add(ICON_ALARM, (S.data && S.data.widgets && S.data.widgets.nextBriefing) || "");
+  add(ICON_CAL, alertDaysText());
+  add(ICON_CLOUD, backupEveryText(g));
+  return row;
+}
+
 /* Sync status in the rail — Sightline puts this in the same place, and it is the right place:
    it is ambient information you want visible without asking, not a thing you go and look up. */
 function renderSyncRow() {
@@ -1986,10 +2169,6 @@ function renderDrawerSettings() {
   soRow.appendChild(so);
   n.appendChild(soRow);
 
-  n.appendChild(el("div", "dsec", "Sync"));
-  var sd = el("div", "syncrow"); sd.id = "syncDetail";
-  n.appendChild(sd);
-
   n.appendChild(el("div", "dsec", "On your phone"));
   if (!g) {
     n.appendChild(el("div", "dnote",
@@ -1999,13 +2178,11 @@ function renderDrawerSettings() {
 
   var srcName = { rss: "Free RSS", grounded: "Grounded", hybrid: "Hybrid" }[g.newsSource] || g.newsSource || "—";
   var rows = [
-    ["News source", srcName, g.newsSource === "rss" ? "free" : "paid"],
+    /* News source, Alerts and Automatic backup are the pills under the bento now. */
     ["Daily cost cap", g.dailyCostCap != null ? rupee(g.dailyCostCap) : "—"],
     ["Spent today", rupee(g.spendToday)],
     ["Spent this month", rupee(g.spendMonth)],
     ["Google API key", g.hasApiKey ? "Set" : "Not set"],
-    ["Alerts", alertScheduleText(g)],
-    ["Automatic backup", g.autoRestoreInterval || "None"],
     ["Restore points", String(g.restorePointCount != null ? g.restorePointCount : "—")],
     ["Liked", String(g.likedCount != null ? g.likedCount : "—")],
     ["Disliked", String(g.dislikedCount != null ? g.dislikedCount : "—")],
@@ -2024,26 +2201,11 @@ function renderDrawerSettings() {
     n.appendChild(row);
   });
 
-  n.appendChild(el("div", "dsec", "Device"));
-  [
-    /* No "(1)". versionCode has never moved, so the bracket said nothing, and the phone
-       dropped it for exactly that reason while this row carried on printing it — which
-       reads as the web being stale when the value was simply always 1. buildType joins in
-       when the payload carries it, so an older backup just shows one part fewer. */
-    /* "1.0.13 · windows · debug". BUILD_ID is the third part of the version number, joined
-       with a dot the way the phone joins it, not a separate fact beside it. A backup from
-       before buildId shipped simply reads "1.0". */
-    ["App", [[g.appVersion || "—", g.buildId].filter(Boolean).join("."),
-             g.flavor, g.buildType].filter(Boolean).join(" · ")],
-    ["Phone", g.device || "—"],
-    ["Android", g.android || "—"],
-    ["Last backup", S.data.updatedAtMillis ? new Date(S.data.updatedAtMillis).toLocaleString("en-GB") : "—"]
-  ].forEach(function (r) {
-    var row = el("div", "srow");
-    row.appendChild(el("span", "sk", r[0]));
-    row.appendChild(el("span", "sv dim", r[1]));
-    n.appendChild(row);
-  });
+  /* The Device section is the bento now, tile for tile as the phone draws it, with the four
+     status pills under it. Everything those four rows said is in there, said larger. */
+  n.appendChild(el("div", "dsec", "This build"));
+  n.appendChild(settingsBento(g));
+  n.appendChild(settingsPills(g));
 
   n.appendChild(el("div", "dnote",
     "These are shown as your phone last reported them. They cannot be changed here — " +
