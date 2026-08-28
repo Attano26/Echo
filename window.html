@@ -418,12 +418,12 @@ body.in .dhead .mark{ animation:railsweep 9s linear infinite }
 .drow .dn{margin-left:auto;font-size:12.5px;color:var(--ink-3);font-weight:400}
 .drow.on .dn{color:var(--nav-on);opacity:.8}
 /* Reads as a label, not a count: it sits where a number would and must not be mistaken for
-   one. Accent-tinted because it is saying something about the feature, not about data. */
-.dpill{margin-left:auto;flex:0 0 auto;font-family:var(--fs-title);font-size:10px;
-  font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink);
-  background:var(--accent-soft);border-radius:var(--r-pill);padding:2px 7px;line-height:1.5}
-.drow.on .dpill{color:var(--nav-on);background:transparent;
-  box-shadow:inset 0 0 0 1px currentColor;opacity:.75}
+   one. A hairline and nothing else — no fill, and Arial Nova Light at 300 like the rest of
+   the rail. A filled accent badge shouted louder than the navigation it sits in. */
+.dpill{margin-left:auto;flex:0 0 auto;font-family:var(--fs);font-weight:300;font-size:10px;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);background:none;
+  border:1px solid var(--line);border-radius:var(--r-pill);padding:1px 7px;line-height:1.6}
+.drow.on .dpill{color:var(--nav-on);border-color:currentColor;opacity:.7}
 /* Read-only settings rows: the phone owns these values, so they are stated, not offered. */
 .srow{display:flex;align-items:baseline;gap:12px;padding:8px 18px;font-size:13.5px}
 .srow .sk{color:var(--ink-3);flex:1}
@@ -863,8 +863,18 @@ button.nstate:active{transform:scale(.97)}
    column because it is 400px wide; here they sit in the bento so the width earns its keep,
    but a card never changes what it says just because it has more room.
    ============================================================ */
+/* Sticky, and no longer pushed down by a margin meant for something that has moved.
+   The 26px top margin was clearing the widget strip that used to sit above this; the strip
+   is on News alerts now, so it was 26px of nothing under the page subtitle.
+
+   It sticks because the 1M/3M/6M selector is the control for every card below it. Scrolling
+   your own filter off the screen is how you end up reading a chart you can no longer
+   identify — and the count beside it is the one number that says what the whole wall is
+   plotting. Padding rather than margin, so the paper band covers the full height it holds
+   as the cards pass under it. */
 .anhead{display:flex;align-items:baseline;justify-content:space-between;gap:16px;
-  margin:26px 0 12px;flex-wrap:wrap}
+  flex-wrap:wrap;position:sticky;top:0;z-index:5;background:var(--paper);
+  margin:0 0 12px;padding:6px 0 12px}
 .anhead h2{font-family:var(--fs-title);font-size:20px;font-weight:400;letter-spacing:-.3px}
 .anhead .sub{font-size:12.5px;color:var(--ink-3)}
 /* Window selector: the phone's 1M / 3M / 6M segmented control. */
