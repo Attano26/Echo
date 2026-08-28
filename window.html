@@ -352,6 +352,46 @@ body.in .dhead .mark{ animation:railsweep 14s linear infinite }
 /* The rail is a column: nav scrolls, footer is pinned. */
 #drawer{display:flex;flex-direction:column}
 #drawerNav{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+/* Last backup, pinned in the rail just above the Settings divider. It never scrolls and
+   never moves between pages, which is the whole point: how stale everything you are reading
+   is should not be something you go looking for. */
+#drawerSync{flex:0 0 auto;padding:0 10px 9px}
+.syncpill{display:flex;align-items:center;gap:9px;width:100%;text-align:left;font:inherit;
+  background:var(--surface-2);border:1px solid var(--line-2);border-radius:var(--r-pill);
+  padding:8px 14px;font-size:13px;color:var(--ink-2);cursor:pointer;
+  transition:border-color var(--t-hover) var(--ease),box-shadow var(--t-hover) var(--ease),
+    transform var(--t-hover) var(--ease)}
+.syncpill:hover{border-color:transparent;box-shadow:var(--sh-1)}
+.syncpill:active{transform:scale(.97)}
+.syncpill .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ---- the storage breakdown, drawn the way the phone's Settings > Storage draws it ----
+   One hue stepping down into neutral rather than nine unrelated colours: the segments are a
+   single object read by proportion, not nine things to tell apart. Matches StorageUsageBlock. */
+/* Beats .askbox's 380px, which is defined later in the sheet at the same specificity.
+   Nine rows of label plus count plus size need the extra room. */
+.askbox.stbox{max-width:460px}
+.stwhen{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-3);margin:0 0 18px}
+.sttotal{display:flex;align-items:baseline;gap:9px}
+.stbig{font-family:var(--fs-title);font-size:30px;font-weight:600;letter-spacing:-.03em;
+  line-height:1;color:var(--ink)}
+.stcap{font-size:14px;color:var(--ink-3)}
+.stbar{display:flex;height:9px;border-radius:5px;overflow:hidden;margin:16px 0 6px;
+  background:var(--track)}
+.stbar span{display:block;height:100%;min-width:1px}
+.stlist{margin-top:10px}
+.strow{display:flex;align-items:center;gap:12px;padding:7px 0;font-size:14px}
+.strow .n{flex:1;min-width:0;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.strow .m{flex:0 0 auto;font-size:13px;color:var(--ink-3)}
+.stkey{width:9px;height:9px;border-radius:5px;flex:0 0 9px}
+.r1{background:var(--accent)}
+.r2{background:var(--accent);opacity:.72}
+.r3{background:var(--accent);opacity:.52}
+.r4{background:var(--accent);opacity:.36}
+.r5{background:var(--ink-3);opacity:.55}
+.r6{background:var(--ink-3);opacity:.32}
+.stnote{margin-top:16px;padding-top:14px;border-top:1px solid var(--line-2);
+  font-size:12.5px;line-height:1.6;color:var(--ink-3)}
 #drawerFoot{flex:0 0 auto;border-top:1px solid var(--line);padding:8px 10px;margin-top:8px}
 .profrow{display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:none;
   border:0;cursor:pointer;padding:9px 8px;border-radius:10px;color:var(--ink-2);font:inherit}
@@ -440,6 +480,7 @@ body.in .dhead .mark{ animation:railsweep 14s linear infinite }
 /* ---------- states ---------- */
 .empty{text-align:center;color:var(--ink-3);padding:56px 20px;font-size:14px;line-height:1.7}
 .status{font-size:13px;color:var(--ink-3);padding:10px 0}
+.status:empty{display:none}
 .status.err{color:var(--danger)}
 /* ============================================================
    DASHBOARD — bento
@@ -1103,6 +1144,8 @@ button.nstate:active{transform:scale(.97)}
     <button class="iconbtn" id="btnClose" title="Close" aria-label="Close menu"></button>
   </div>
   <div id="drawerNav"></div>
+  <!-- Pinned with the footer, above its divider: freshness first, then the way in to Settings. -->
+  <div id="drawerSync"></div>
   <!-- Footer is pinned: the nav above it scrolls, this does not. A settings entry that drifts
        with the list is a settings entry you have to go looking for. -->
   <div id="drawerFoot">
@@ -1705,7 +1748,137 @@ function renderSyncRow() {
   }
   if (dot && (!d0 || !d0.updatedAtMillis)) dot.className = "syncdot";
   if (btn) btn.title = label;
+
+  /* The pill. Short enough to sit in a 290px rail without truncating, with the exact
+     timestamp one click away rather than behind a hover, which a phone cannot do. */
+  var host = $("#drawerSync");
+  if (host) {
+    host.innerHTML = "";
+    var b = el("button", "syncpill");
+    var pdot = el("span", "syncdot");
+    var text;
+    if (!d0) text = "Not loaded";
+    else if (!d0.updatedAtMillis) text = "Never backed up";
+    else {
+      var mm = Math.round((Date.now() - d0.updatedAtMillis) / 60000);
+      pdot.className = "syncdot " + (mm > 1440 ? "behind" : "ok");
+      text = "Backed up " + (mm < 2 ? "just now"
+        : mm < 60 ? mm + " min ago"
+        : mm < 1440 ? Math.round(mm / 60) + " h ago"
+        : Math.round(mm / 1440) + " d ago");
+    }
+    b.appendChild(pdot);
+    b.appendChild(el("span", "t", text));
+    b.title = d0 && d0.updatedAtMillis
+      ? new Date(d0.updatedAtMillis).toLocaleString("en-GB") : label;
+    b.onclick = function () { openStorage(); };
+    host.appendChild(b);
+  }
   renderSyncDetail(label);
+}
+
+/* ---- what is actually in the backup ----
+   The phone measures the bytes it is about to upload; this measures the bytes it received,
+   which is the same file read from the other end. The two can differ by a handful of bytes
+   from JSON formatting, so this is honest about being a measurement of THIS file rather than
+   a second guess at the phone's. Sections are the phone's, in the phone's order. */
+var CH_ENC = window.TextEncoder ? new TextEncoder() : null;
+function jsonBytes(v) {
+  if (v == null) return 0;
+  var t = typeof v === "string" ? v : JSON.stringify(v);
+  return CH_ENC ? CH_ENC.encode(t).length : t.length;
+}
+function fmtBytes(b) {
+  return b >= 1048576 ? (b / 1048576).toFixed(1) + " MB"
+       : b >= 1024 ? Math.round(b / 1024) + " KB"
+       : b + " B";
+}
+function storageSlices() {
+  var d = S.data || {};
+  var seen = String(d.seenStoryTitles || "");
+  /* One line per story ever seen, so the line count IS the item count. */
+  var ledger = seen.split("\n").filter(function (l) { return l.trim(); }).length;
+  return [
+    ["News", arr(d.newsArticles).length, jsonBytes(arr(d.newsArticles))],
+    ["Saved", arr(d.savedNews).length, jsonBytes(arr(d.savedNews))],
+    ["Published", published().length, jsonBytes(arr(d.publishedNews))],
+    ["Reports", editions().length, jsonBytes(arr(d.reportEditions))],
+    ["Competitors", arr(d.competitors).length,
+      jsonBytes(arr(d.competitors)) + jsonBytes(arr(d.competitorProducts))],
+    ["Countries and norms", arr(d.countries).length + arr(d.normCodes).length,
+      jsonBytes(arr(d.countries)) + jsonBytes(arr(d.normCodes))],
+    ["News ledger", ledger,
+      jsonBytes(seen) + jsonBytes(String(d.seenStoryDates || "")) +
+      jsonBytes(String(d.deletedStoryRecords || ""))],
+    ["Metrics", 3, jsonBytes(d.analytics || {}) + jsonBytes(d.widgets || {})],
+    ["Metal prices", arr(d.nalcoPrices).length, jsonBytes(arr(d.nalcoPrices))]
+  ].filter(function (r) { return r[2] > 2; });   // an empty table is "[]" and earns no segment
+}
+
+/* Settings > Storage, as a dialog: total on top, one stacked bar, then the breakdown. */
+function openStorage() {
+  var d = S.data;
+  var slices = storageSlices();
+  var total = slices.reduce(function (t, r) { return t + r[2]; }, 0);
+  return askShell(function (box, done) {
+    box.className = "askbox stbox";
+    box.appendChild(el("h2", "askttl", "What is in your backup"));
+
+    var when = el("div", "stwhen");
+    var wdot = el("span", "syncdot");
+    if (d && d.updatedAtMillis) {
+      var mins = Math.round((Date.now() - d.updatedAtMillis) / 60000);
+      wdot.className = "syncdot " + (mins > 1440 ? "behind" : "ok");
+    }
+    when.appendChild(wdot);
+    when.appendChild(el("span", null, d && d.updatedAtMillis
+      ? "Backed up " + new Date(d.updatedAtMillis).toLocaleString("en-GB",
+          { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })
+      : "Your phone has not backed up yet"));
+    box.appendChild(when);
+
+    if (!slices.length) {
+      box.appendChild(el("p", "askbody",
+        "Nothing has arrived yet. Open Settings, then Storage, on the phone and press Back up."));
+    } else {
+      var top = el("div", "sttotal");
+      top.appendChild(el("div", "stbig", fmtBytes(total)));
+      top.appendChild(el("div", "stcap", "backed up"));
+      box.appendChild(top);
+
+      /* Widths come straight from the byte counts, so the bar reads as true proportion. */
+      var bar = el("div", "stbar");
+      slices.forEach(function (r, i) {
+        var seg = el("span", "r" + ((i % 6) + 1));
+        seg.style.width = (r[2] / total) * 100 + "%";
+        seg.title = r[0] + " · " + fmtBytes(r[2]);
+        bar.appendChild(seg);
+      });
+      box.appendChild(bar);
+
+      var list = el("div", "stlist");
+      slices.forEach(function (r, i) {
+        var row = el("div", "strow");
+        row.appendChild(el("span", "stkey r" + ((i % 6) + 1)));
+        row.appendChild(el("span", "n", r[0]));
+        row.appendChild(el("span", "m", r[1].toLocaleString("en-IN") + " \u00b7 " + fmtBytes(r[2])));
+        list.appendChild(row);
+      });
+      box.appendChild(list);
+
+      box.appendChild(el("div", "stnote",
+        "Measured from the file this page received, so it is the backup as it actually arrived. " +
+        "The phone measures the same sections before it uploads them, which is why the two can " +
+        "differ by a few bytes. Only the phone writes this file."));
+    }
+
+    var row2 = el("div", "askrow");
+    var ok = el("button", "btn sm", "Close");
+    ok.onclick = function () { done(true); };
+    row2.appendChild(ok);
+    box.appendChild(row2);
+    ok.focus();
+  });
 }
 
 /* The full sentence, inside Settings where there is room for it. */
@@ -4292,9 +4465,10 @@ async function loadEverything() {
       function (e) { return e && e.id; });
     save();
   }
-  setStatus(data.updatedAtMillis
-    ? "Your phone last backed up " + new Date(data.updatedAtMillis).toLocaleString("en-GB") + "."
-    : "");
+  /* The backup time lives in the rail now, where it is one line on every page instead of a
+     full-width row under every title. This slot goes back to being the error channel only,
+     which is what it is used for everywhere else. */
+  setStatus("");
   render();
 }
 

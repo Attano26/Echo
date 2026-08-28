@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Echo — last backup, six ways</title>
+<meta name="theme-color" content="#F5F5F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E0E0E" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+
+<!--
+  Echo — last backup, six ways.
+
+  A THROWAWAY page for choosing a direction, not shipping code. Same rules as
+  mockups.html: separate from window.html so nothing here can affect the live app,
+  and not in the service worker's asset list so it will never be cached as part of it.
+
+  Every option sits in a real 290px rail, above the divider that carries Settings,
+  and uses window.html's own tokens. Toggle the theme and the freshness so you can
+  see the amber state, which is the one that has to earn its place: a backup that is
+  three days old is the only time this line has anything urgent to say.
+-->
+
+<style>
+:root{
+  --paper:#F5F5F7; --surface:#FFFFFF; --surface-2:#F7F7F9;
+  --track:#EAEAEF;
+  --ink:#1D1D1F; --ink-2:#3F4048; --ink-3:#5D5E66;
+  --line:#E3E3E6; --line-2:#EFEFF1;
+  --accent:#1F57F5; --accent-ink:#1F57F5; --accent-soft:rgba(31,87,245,.13);
+  --free:#34C759; --paid:#E5A33B; --hybrid:#60A5FA;
+  --sh-1:0 1px 2px rgba(0,0,0,.04),0 6px 20px rgba(0,0,0,.05);
+  --r-card:18px; --r-box:10px; --r-pill:999px;
+  --ease:cubic-bezier(.2,.7,.3,1); --t-hover:200ms;
+  --fs:'Arial Nova Light','Arial Nova','Segoe UI Light','Segoe UI',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;
+  --fs-title:'Arial Nova','Arial Nova','Segoe UI',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E0E0E; --surface:#161618; --surface-2:#1F1F22; --track:#232329;
+    --ink:#F5F5F7; --ink-2:#C9CAD3; --ink-3:#9A9CAB;
+    --line:#2A2A2F; --line-2:#242427;
+    --accent-ink:#5982F8; --accent-soft:rgba(31,87,245,.20);
+    --sh-1:0 1px 2px rgba(0,0,0,.5),0 6px 20px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E0E0E; --surface:#161618; --surface-2:#1F1F22; --track:#232329;
+  --ink:#F5F5F7; --ink-2:#C9CAD3; --ink-3:#9A9CAB;
+  --line:#2A2A2F; --line-2:#242427;
+  --accent-ink:#5982F8; --accent-soft:rgba(31,87,245,.20);
+  --sh-1:0 1px 2px rgba(0,0,0,.5),0 6px 20px rgba(0,0,0,.4);
+}
+
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--fs);
+  font-weight:300;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;
+  padding:40px 26px 90px}
+.w{max-width:1180px;margin:0 auto}
+
+h1{font-family:var(--fs-title);font-size:clamp(28px,5vw,40px);font-weight:700;
+  letter-spacing:-.035em;line-height:1.1;margin:0 0 10px}
+.lede{max-width:64ch;font-size:15.5px;line-height:1.6;color:var(--ink-2);
+  letter-spacing:-.01em;margin:0 0 8px}
+.lede b{font-weight:500;color:var(--ink)}
+.small{max-width:64ch;font-size:13px;color:var(--ink-3);margin:0 0 26px;line-height:1.6}
+
+.bar{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 34px}
+.tg{border:1px solid var(--line);background:var(--surface);color:var(--ink-2);
+  border-radius:var(--r-pill);padding:8px 15px;font:inherit;font-size:13.5px;cursor:pointer;
+  transition:border-color var(--t-hover) var(--ease),color var(--t-hover) var(--ease)}
+.tg:hover{border-color:var(--accent-ink);color:var(--accent-ink)}
+.tg.on{border-color:transparent;background:var(--accent);color:#fff}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:26px}
+.opt{min-width:0}
+.ohead{display:flex;align-items:baseline;gap:9px;margin:0 0 4px}
+.okey{font-family:var(--fs-title);font-size:12px;font-weight:700;color:var(--accent-ink)}
+.oname{font-family:var(--fs-title);font-size:15px;font-weight:600;letter-spacing:-.015em}
+.owhy{font-size:13px;color:var(--ink-3);line-height:1.55;margin:0 0 13px;min-height:3.4em}
+
+/* ---- the rail, as the app actually draws it ---- */
+.rail{width:290px;max-width:100%;background:var(--surface);border:1px solid var(--line);
+  border-radius:14px;overflow:hidden;box-shadow:var(--sh-1);
+  display:flex;flex-direction:column;height:340px}
+.rhead{display:flex;align-items:center;gap:11px;padding:16px 18px 14px}
+.rmark{width:22px;height:22px;flex:0 0 22px;color:var(--accent)}
+.rnm{font-family:var(--fs-title);font-size:16px;font-weight:700;letter-spacing:-.02em}
+.rnav{flex:1 1 auto;overflow:hidden;opacity:.5}
+.dsec{font-family:var(--fs-title);font-size:12px;font-weight:600;color:var(--ink-3);padding:10px 18px 6px}
+.drow{display:flex;align-items:center;gap:11px;padding:8px 18px;font-size:14.5px;color:var(--ink-2);
+  border-left:2.5px solid transparent}
+.drow.on{color:var(--accent-ink);font-weight:500;border-left-color:var(--accent)}
+.dn{margin-left:auto;font-size:12.5px;color:var(--ink-3)}
+
+/* the slot every option fills, pinned just above the divider */
+.rsync{flex:0 0 auto;padding:0 10px 9px}
+.rfoot{flex:0 0 auto;border-top:1px solid var(--line);padding:8px 10px}
+.profrow{display:flex;align-items:center;gap:11px;width:100%;padding:9px 8px;
+  border-radius:10px;color:var(--ink-2)}
+.avatar{position:relative;width:26px;height:26px;flex:0 0 26px;border-radius:50%;
+  background:var(--surface-2);border:1px solid var(--line);display:flex;align-items:center;
+  justify-content:center;font-size:11px;font-weight:600;color:var(--ink-2)}
+.profname{flex:1;font-size:14px;font-weight:500}
+.profchev{color:var(--ink-3);font-size:17px;line-height:1}
+
+.dot{width:7px;height:7px;border-radius:50%;flex:0 0 7px;background:var(--free)}
+body.stale .dot{background:var(--paid)}
+
+/* ============ A. quiet pill, relative ============ */
+.a{display:flex;align-items:center;gap:9px;background:var(--surface-2);
+  border:1px solid var(--line-2);border-radius:var(--r-pill);padding:8px 14px;font-size:13px;color:var(--ink-2)}
+.a .t{font-weight:400}
+
+/* ============ B. pill, the timestamp itself ============ */
+.b{display:flex;align-items:center;gap:9px;background:var(--surface-2);
+  border:1px solid var(--line-2);border-radius:var(--r-pill);padding:8px 14px;font-size:13px;color:var(--ink-2)}
+.b .k{color:var(--ink-3)}
+.b .v{font-family:var(--fs-title);font-weight:600;color:var(--ink);letter-spacing:-.01em}
+
+/* ============ C. box, label over value ============ */
+.c{background:var(--surface-2);border:1px solid var(--line-2);border-radius:var(--r-box);
+  padding:10px 13px 11px;display:flex;align-items:flex-start;gap:10px}
+.c .col{flex:1;min-width:0}
+.c .k{font-size:11.5px;letter-spacing:.02em;color:var(--ink-3);display:block}
+.c .v{font-family:var(--fs-title);font-size:14px;font-weight:600;letter-spacing:-.015em;
+  color:var(--ink);display:block;margin-top:1px}
+.c .dot{margin-top:6px}
+
+/* ============ D. box, age leads ============ */
+.d{background:var(--surface-2);border:1px solid var(--line-2);border-radius:var(--r-box);
+  padding:10px 13px;display:flex;align-items:center;gap:10px}
+.d .col{flex:1;min-width:0}
+.d .v{font-family:var(--fs-title);font-size:14.5px;font-weight:600;letter-spacing:-.02em;
+  color:var(--ink);display:block;line-height:1.25}
+.d .k{font-size:12px;color:var(--ink-3);display:block}
+
+/* ============ E. ghost line, no box at all ============ */
+.e{display:flex;align-items:center;gap:9px;padding:6px 12px;font-size:12.5px;color:var(--ink-3)}
+
+/* ============ F. pill with a freshness bar ============ */
+.f{background:var(--surface-2);border:1px solid var(--line-2);border-radius:var(--r-box);
+  padding:9px 13px 10px}
+.f .top{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--ink-2)}
+.f .when{margin-left:auto;font-family:var(--fs-title);font-size:12px;font-weight:600;color:var(--ink-3)}
+.f .track{height:3px;border-radius:999px;background:var(--track);margin-top:9px;overflow:hidden}
+.f .fill{height:100%;border-radius:999px;background:var(--free);width:4%;
+  transition:width var(--t-hover) var(--ease)}
+body.stale .f .fill{background:var(--paid);width:100%}
+
+.note{margin-top:40px;max-width:64ch;font-size:13px;line-height:1.65;color:var(--ink-3);
+  border-top:1px solid var(--line);padding-top:18px}
+.note b{color:var(--ink-2);font-weight:500}
+@media (prefers-reduced-motion:reduce){*{transition:none !important}}
+</style>
+</head>
+<body>
+<div class="w">
+
+  <h1>Last backup, six ways</h1>
+  <p class="lede">All six sit in the rail, in the slot you described: <b>pinned just above the
+  divider that carries Settings</b>, so they never scroll away and never move between pages.</p>
+  <p class="small">Toggle the freshness to see the amber state. That state is the only time this
+  line has something urgent to say, so it is the one worth judging the options on — an option
+  that looks calm when fresh and still says nothing useful at three days old is not doing its job.</p>
+
+  <div class="bar">
+    <button class="tg on" id="tLight">Light</button>
+    <button class="tg" id="tDark">Dark</button>
+    <button class="tg on" id="tFresh">Fresh · 4 min</button>
+    <button class="tg" id="tStale">Stale · 3 days</button>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <p class="note"><b>My read.</b> D is the one I would ship. It answers the question you
+  actually have — how old is this — in the first line, and keeps the timestamp underneath for
+  when you want to be sure, so nothing is hidden behind a hover. A and E are quieter but make
+  you hover for the date, which on a phone means it is simply unavailable. B states the date and
+  makes you do the arithmetic. C is D with the two lines the wrong way round: the label earns
+  less than the answer does. F is the most informative and the least calm; the bar is a second
+  encoding of something the dot already says.</p>
+
+</div>
+
+<script>
+"use strict";
+var FRESH = { rel: "4 minutes ago", relShort: "4 min ago", abs: "Today, 06:06", full: "28 Aug 2026, 06:06" };
+var STALE = { rel: "3 days ago",    relShort: "3 d ago",   abs: "25 Aug, 06:06", full: "25 Aug 2026, 06:06" };
+
+var OPTIONS = [
+  ["A", "Quiet pill", "The least it can be and still be a thing. A dot and an age, on the rail's inset surface. The exact time lives in the tooltip.",
+   function (t) { return '<div class="a"><span class="dot"></span><span class="t">Backed up ' + t.relShort + '</span></div>'; }],
+
+  ["B", "The timestamp itself", "States the fact rather than the age. Nothing to compute and nothing to hover, but you do the arithmetic to know whether it is stale.",
+   function (t) { return '<div class="b"><span class="dot"></span><span class="k">Backed up</span><span class="v">' + t.abs + '</span></div>'; }],
+
+  ["C", "Label over value", "Reads like a settings row. Familiar, but the label takes the strong position and the answer sits underneath it.",
+   function (t) { return '<div class="c"><span class="dot"></span><span class="col"><span class="k">Last backup</span><span class="v">' + t.abs + '</span></span></div>'; }],
+
+  ["D", "Age leads, time under it", "The question is how old this is, so the age goes first and the timestamp confirms it. Both facts, no hover, two lines.",
+   function (t) { return '<div class="d"><span class="dot"></span><span class="col"><span class="v">' + t.rel + '</span><span class="k">' + t.full + '</span></span></div>'; }],
+
+  ["E", "Ghost line", "No box at all. Disappears completely into the rail, which is either the point or the problem.",
+   function (t) { return '<div class="e"><span class="dot"></span><span>Backed up ' + t.relShort + '</span></div>'; }],
+
+  ["F", "With a freshness bar", "The bar fills as the backup ages towards a day old. The most informative, and the busiest thing in a rail that is otherwise very quiet.",
+   function (t) { return '<div class="f"><div class="top"><span class="dot"></span><span>Last backup</span><span class="when">' + t.relShort + '</span></div><div class="track"><div class="fill"></div></div></div>'; }]
+];
+
+var MARK = '<svg viewBox="0 0 1024 1024" width="100%" height="100%" aria-hidden="true">' +
+  '<path fill="currentColor" d="M112 110 H912 V336 H112 Z M112 398 H338 A226 226 0 0 1 112 624 Z' +
+  ' M400 398 H912 V624 H626 A226 226 0 0 1 400 398 Z M112 686 A226 226 0 0 1 338 912 H112 Z' +
+  ' M400 912 A226 226 0 0 1 626 686 H912 V912 Z"/></svg>';
+
+var NAV = '<div class="dsec">Feed</div>' +
+  '<div class="drow on"><span>Ask</span></div>' +
+  '<div class="drow"><span>Alerts</span><span class="dn">7</span></div>' +
+  '<div class="drow"><span>Saved</span><span class="dn">4</span></div>' +
+  '<div class="dsec">Reporting</div>' +
+  '<div class="drow"><span>Published</span><span class="dn">12</span></div>';
+
+function draw() {
+  var stale = document.body.classList.contains("stale");
+  var t = stale ? STALE : FRESH;
+  document.getElementById("grid").innerHTML = OPTIONS.map(function (o) {
+    return '<div class="opt">' +
+      '<div class="ohead"><span class="okey">' + o[0] + '</span><span class="oname">' + o[1] + '</span></div>' +
+      '<p class="owhy">' + o[2] + '</p>' +
+      '<div class="rail">' +
+        '<div class="rhead"><span class="rmark">' + MARK + '</span><span class="rnm">Echo</span></div>' +
+        '<div class="rnav">' + NAV + '</div>' +
+        '<div class="rsync" title="' + t.full + '">' + o[3](t) + '</div>' +
+        '<div class="rfoot"><div class="profrow">' +
+          '<span class="avatar">V</span><span class="profname">Settings</span>' +
+          '<span class="profchev">›</span>' +
+        '</div></div>' +
+      '</div></div>';
+  }).join("");
+}
+
+function setTheme(d) {
+  document.documentElement.setAttribute("data-theme", d ? "dark" : "light");
+  document.getElementById("tDark").classList.toggle("on", d);
+  document.getElementById("tLight").classList.toggle("on", !d);
+}
+function setStale(s) {
+  document.body.classList.toggle("stale", s);
+  document.getElementById("tStale").classList.toggle("on", s);
+  document.getElementById("tFresh").classList.toggle("on", !s);
+  draw();
+}
+document.getElementById("tLight").onclick = function () { setTheme(false); };
+document.getElementById("tDark").onclick  = function () { setTheme(true); };
+document.getElementById("tFresh").onclick = function () { setStale(false); };
+document.getElementById("tStale").onclick = function () { setStale(true); };
+
+setTheme(matchMedia("(prefers-color-scheme: dark)").matches);
+draw();
+</script>
+</body>
+</html>
