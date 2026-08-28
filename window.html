@@ -65,8 +65,21 @@
      quietly sitting under the 4.5:1 gate. Measured, not eyeballed. Fills keep the brand
      blue; text gets a legible one at the same hue, 224 degrees, lifted until it cleared. */
   --accent-ink:#1F57F5;
+  /* The three news-source colours, matched to NewsSourcePill on the phone: green costs
+     nothing, amber spends, blue is the hybrid of the two. These are the FILL and the dot.
+     As LABEL text on their own 12% tint they measure 1.9:1 in light, which is why the pill
+     used to fall back to flat grey; the -ink pair below is the same split as --accent-ink,
+     darkened for light only and left as the phone's own colour in dark, where it already
+     clears 6.5:1. */
   --free:#34C759;       /* the free feed */
   --paid:#E5A33B;       /* anything that spends */
+  --hybrid:#60A5FA;     /* free RSS plus a paid competitor pass */
+  --free-soft:rgba(52,199,89,.12);
+  --paid-soft:rgba(229,163,59,.12);
+  --hybrid-soft:rgba(96,165,250,.12);
+  --free-ink:#12782C;
+  --paid-ink:#8E5F15;
+  --hybrid-ink:#2B69B5;
   --danger:#F0616D;
   --sh-2:0 2px 6px rgba(0,0,0,.06),0 14px 34px rgba(0,0,0,.09);
   --r-card:18px;       /* Sightline's radius — the softer corner is most of its calm */
@@ -150,6 +163,11 @@
     --line-2:#242427;
     --accent-soft:rgba(31,87,245,.20);
     --accent-ink:#5982F8;
+    /* On a dark ground the phone's own colours are legible as text, so the label is the
+       same colour as the dot and the two screens match exactly. */
+    --free-ink:#34C759;
+    --paid-ink:#E5A33B;
+    --hybrid-ink:#60A5FA;
     --sh-1:0 1px 2px rgba(0,0,0,.5),0 6px 20px rgba(0,0,0,.4);
     --sh-2:0 2px 6px rgba(0,0,0,.55),0 14px 34px rgba(0,0,0,.5);
     --heat-0:#20222A; --heat-1:#0E4429; --heat-2:#006D32; --heat-3:#26A641; --heat-4:#39D353;
@@ -170,6 +188,9 @@
   --line-2:#242427;
   --accent-soft:rgba(31,87,245,.20);
   --accent-ink:#5982F8;
+  --free-ink:#34C759;
+  --paid-ink:#E5A33B;
+  --hybrid-ink:#60A5FA;
   --sh-1:0 1px 2px rgba(0,0,0,.5),0 6px 20px rgba(0,0,0,.4);
   --sh-2:0 2px 6px rgba(0,0,0,.55),0 14px 34px rgba(0,0,0,.5);
   --heat-0:#20222A; --heat-1:#0E4429; --heat-2:#006D32; --heat-3:#26A641; --heat-4:#39D353;
@@ -238,10 +259,21 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
 /* Source chip — squarish, neutral, colour only in the dot. Mirrors the phone. */
 /* Uses --track, the segmented-control colour, not --surface-2: in light mode surface-2 sits two
    steps from the page and the chip reads as no chip at all. */
-.srcchip{display:inline-flex;align-items:center;gap:7px;background:var(--track);
+/* Tinted in the mode's own colour rather than flat grey, which is how the phone draws it:
+   a 12% wash of the colour, the dot solid in it, the label in its readable pair. An unknown
+   mode keeps the old grey, so a value this page has never heard of still renders. */
+.srcchip{display:inline-flex;align-items:center;gap:7px;
+  --sc:var(--ink-3);--sc-ink:var(--ink-2);--sc-soft:var(--track);
+  background:var(--sc-soft);color:var(--sc-ink);font-weight:600;letter-spacing:.2px;
   border-radius:var(--r-box);padding:7px 11px;margin-top:6px;font-size:13px;flex:0 0 auto}
+.srcchip.m-rss{--sc:var(--free);--sc-ink:var(--free-ink);--sc-soft:var(--free-soft)}
+.srcchip.m-grounded{--sc:var(--paid);--sc-ink:var(--paid-ink);--sc-soft:var(--paid-soft)}
+.srcchip.m-hybrid{--sc:var(--hybrid);--sc-ink:var(--hybrid-ink);--sc-soft:var(--hybrid-soft)}
+.srcchip .dot{background:var(--sc)}
 .dot{width:7px;height:7px;border-radius:50%;flex:0 0 7px}
-.srcchip .cv{color:var(--ink-3);font-size:12px}
+/* Grey, not a faded tint of the label: at opacity .7 the sub-label measured 2.8:1 in light.
+   --ink-3 clears 5.4 on every tint and still reads as secondary against a coloured label. */
+.srcchip .cv{color:var(--ink-3);font-weight:400;font-size:12px}
 
 /* ---------- drawer ---------- */
 /* Slides over the page rather than pushing it, so the article you were reading does
@@ -925,7 +957,10 @@ button.nstate:active{transform:scale(.97)}
 #shell.chat #scroll > .wrap{min-height:100%;display:flex;flex-direction:column}
 #shell.chat #app{flex:1 1 auto;display:flex;flex-direction:column;padding-top:0}
 
-.chpane{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
+/* The conversation is a reading column, not a full-bleed pane. It takes the width it is
+   given up to a comfortable measure, then centres and lets the rest become margin. */
+.chpane{flex:1 1 auto;display:flex;flex-direction:column;min-height:0;
+  width:100%;max-width:900px;margin-left:auto;margin-right:auto}
 /* Few messages sit ON the composer rather than stranded at the top of an empty page. */
 .chflow{flex:1 1 auto;display:flex;flex-direction:column;justify-content:flex-end;gap:18px;padding:10px 0 4px}
 .chflow.start{justify-content:flex-start;padding-top:16px}
@@ -1795,16 +1830,13 @@ function renderTitle() {
      fetches, so this is information, not a control. */
   var chip = $("#srcChip"), v = newsSourceOf();
   if (!v) { chip.hidden = true; return; }
-  var map = {
-    rss: ["Free RSS", "var(--free)"],
-    grounded: ["Grounded", "var(--paid)"],
-    hybrid: ["Hybrid", "var(--paid)"]
-  };
-  var m = map[v] || [v, "var(--ink-3)"];
+  /* Hybrid is BLUE, not amber. It was reading as "paid" here while the phone drew it blue,
+   which made one mode look like two different things on the two screens. */
+  var map = { rss: "Free RSS", grounded: "Grounded", hybrid: "Hybrid" };
   chip.hidden = false; chip.innerHTML = "";
-  var d = el("span", "dot"); d.style.background = m[1];
-  chip.appendChild(d);
-  chip.appendChild(el("span", null, m[0]));
+  chip.className = "srcchip" + (map[v] ? " m-" + v : "");
+  chip.appendChild(el("span", "dot"));
+  chip.appendChild(el("span", null, map[v] || v));
   chip.appendChild(el("span", "cv", "on phone"));
 }
 
@@ -3976,8 +4008,13 @@ function renderAsk(app) {
   }
 }
 
+/* Ask is in here so the tab uses the whole monitor rather than sitting in an 820px column
+   pinned to the left with the other half of a wide screen empty. The conversation itself is
+   capped and centred inside it by .chpane: filling 1680px with a chat line would trade one
+   bad layout for another, since a 1600px line of body text is unreadable however much room
+   there is. Capped and centred is what the reference does too. */
 var WIDE_TABS = ["dashboard", "alerts", "saved", "published", "liked", "disliked",
-                 "database", "restorepoints"];
+                 "database", "restorepoints", "ask"];
 
 function render() {
   renderDrawerNav(); renderSyncRow(); renderDrawerSettings(); renderTitle();
