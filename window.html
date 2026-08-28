@@ -894,9 +894,14 @@ button.nstate:active{transform:scale(.97)}
 
 /* Cost card: three figures across, the phone's Today / This month / Daily cap. */
 .costrow{display:flex;gap:18px;flex-wrap:wrap}
-.costcol{flex:1;min-width:96px}
+/* Wide enough to hold a rupee figure at the shared 29px without wrapping mid-number. */
+.costcol{flex:1;min-width:118px}
 .costk{font-size:11.5px;color:var(--ink-3)}
-.costv{font-family:var(--fs-title);font-size:20px;font-weight:500;letter-spacing:-.4px;margin-top:3px}
+/* The same figure size as .triov in News overview. Both cards are three columns of a value
+   over a label, so the cost card reading nine pixels smaller made it look like a footnote
+   to the wall rather than a card in it. */
+.costv{font-family:var(--fs-title);font-size:29px;font-weight:400;letter-spacing:-1.1px;
+  line-height:1;margin-top:5px}
 .costc{font-size:11px;color:var(--ink-3);line-height:1.5;margin-top:2px}
 
 @media (max-width:620px){
@@ -906,8 +911,29 @@ button.nstate:active{transform:scale(.97)}
   .triov{font-size:24px}
 }
 
-.skel{background:var(--surface);border-radius:var(--r-card);height:104px;margin-bottom:10px;
-  animation:pulse 1.4s ease-in-out infinite}
+/* ---------- skeletons ----------
+   One grey block per real element, at the real element's size and in the real element's shell,
+   so the page does not reflow when the data lands. A single full-width rectangle per card said
+   nothing about what was coming and then jumped when it arrived.
+
+   .sk is the block. The shells below repeat the padding, radius and border of the thing they
+   stand in for, which is the only part that has to stay in step with the real styles. */
+.sk{background:var(--track);border-radius:6px;animation:pulse 1.4s ease-in-out infinite}
+.skrow{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.skcard{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-card);
+  box-shadow:var(--sh-1);padding:15px 17px 13px;margin-bottom:10px;
+  display:flex;flex-direction:column}
+.skwidget{flex:0 0 auto;width:calc(155 * 1.55px);height:calc(155 * 1.55px);
+  border-radius:calc(22 * 1.55px);background:var(--surface);box-shadow:var(--widget-shadow);
+  padding:calc(14 * 1.55px);display:flex;flex-direction:column;justify-content:space-between}
+.skbento{display:flex;align-items:flex-start;gap:var(--bento-gap)}
+.skbcol{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:var(--bento-gap)}
+.skpane{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-card);
+  box-shadow:var(--sh-1);padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+.sksug{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.sksg{background:var(--surface);border:1px solid var(--line);border-radius:14px;
+  box-shadow:var(--sh-1);padding:14px 16px;display:flex;flex-direction:column;gap:9px}
+@media (max-width:640px){ .sksug{grid-template-columns:1fr} }
 @keyframes pulse{0%,100%{opacity:.5}50%{opacity:.85}}
 
 /* ---------- gate ---------- */
@@ -4187,6 +4213,176 @@ function renderAsk(app) {
 var WIDE_TABS = ["dashboard", "alerts", "saved", "published", "liked", "disliked",
                  "database", "restorepoints", "ask"];
 
+/* ============================================================
+   SKELETONS
+   ------------------------------------------------------------
+   Every screen gets the shape of its own content. The tab is known before the data is, because
+   S.tab is restored from localStorage, so the page can hold the right shape open while Drive
+   answers rather than showing a generic block and rearranging itself afterwards.
+   ============================================================ */
+var SK_N = 0;
+/* Blocks pulse on a short stagger, so a card reads as one object settling rather than as
+   eight rectangles blinking in lockstep. */
+function sk(w, h, r) {
+  var n = el("div", "sk");
+  n.style.width = typeof w === "number" ? w + "px" : w;
+  n.style.height = (h || 12) + "px";
+  if (r) n.style.borderRadius = r + "px";
+  n.style.animationDelay = ((SK_N++ % 7) * 90) + "ms";
+  return n;
+}
+function skGap(h) { var n = el("div"); n.style.height = h + "px"; n.style.flex = "0 0 auto"; return n; }
+function skRow(a, b) {
+  var r = el("div", "skrow"); r.appendChild(a); r.appendChild(b); return r;
+}
+
+/* A news card: channel and date, a two-line headline, three lines of summary, source and state. */
+function skNewsCard() {
+  var c = el("div", "skcard");
+  c.appendChild(skRow(sk(76, 11), sk(56, 11)));
+  c.appendChild(skGap(12));
+  c.appendChild(sk("94%", 13));
+  c.appendChild(skGap(7));
+  c.appendChild(sk("61%", 13));
+  c.appendChild(skGap(14));
+  c.appendChild(sk("100%", 10));
+  c.appendChild(skGap(7));
+  c.appendChild(sk("97%", 10));
+  c.appendChild(skGap(7));
+  c.appendChild(sk("72%", 10));
+  c.appendChild(skGap(16));
+  c.appendChild(skRow(sk(84, 11), sk(74, 20, 10)));
+  return c;
+}
+/* A report edition: title, date, and the two download buttons. */
+function skReportCard() {
+  var c = el("div", "skcard");
+  c.appendChild(sk("57%", 14));
+  c.appendChild(skGap(9));
+  c.appendChild(sk("34%", 10));
+  c.appendChild(skGap(16));
+  var row = el("div", "skrow");
+  row.style.justifyContent = "flex-start";
+  row.appendChild(sk(76, 30, 15));
+  row.appendChild(sk(112, 30, 15));
+  c.appendChild(row);
+  return c;
+}
+/* A database entry: name, then a couple of key and value rows. */
+function skEntryCard(rows) {
+  var c = el("div", "skcard");
+  c.appendChild(sk("52%", 14));
+  for (var i = 0; i < rows; i++) {
+    c.appendChild(skGap(12));
+    c.appendChild(skRow(sk(88, 10), sk("34%", 10)));
+  }
+  return c;
+}
+/* A restore point: name and timestamp, nothing else is listed. */
+function skSlimCard() {
+  var c = el("div", "skcard");
+  c.appendChild(skRow(sk("44%", 13), sk(64, 10)));
+  return c;
+}
+function skLabel() { var n = sk(96, 12); n.style.margin = "22px 0 10px"; return n; }
+
+function skList(make, n) {
+  var f = document.createDocumentFragment();
+  for (var i = 0; i < n; i++) f.appendChild(make());
+  return f;
+}
+
+/* The dashboard: the phone's widget strip, then the analytics wall in two columns. */
+function skDashboard() {
+  var f = document.createDocumentFragment();
+  var strip = el("div", "wstrip");
+  for (var i = 0; i < 5; i++) {
+    var t = el("div", "skwidget");
+    t.appendChild(sk(78, 10));
+    t.appendChild(sk(104, 30));
+    t.appendChild(sk(118, 10));
+    strip.appendChild(t);
+  }
+  f.appendChild(strip);
+
+  var head = el("div", "skrow");
+  head.style.margin = "4px 0 16px";
+  head.appendChild(sk(132, 20));
+  head.appendChild(sk(112, 28, 14));
+  f.appendChild(head);
+
+  var bento = el("div", "skbento");
+  [[168, 236], [222, 150]].forEach(function (heights) {
+    var col = el("div", "skbcol");
+    heights.forEach(function (h) {
+      var p = el("div", "skpane");
+      p.appendChild(sk("46%", 14));
+      p.appendChild(sk("62%", 10));
+      var body = el("div");
+      body.style.height = (h - 96) + "px";
+      body.style.marginTop = "6px";
+      body.appendChild(sk("100%", h - 96, 8));
+      p.appendChild(body);
+      col.appendChild(p);
+    });
+    bento.appendChild(col);
+  });
+  f.appendChild(bento);
+  return f;
+}
+
+/* Ask: the greeting block, the opening paragraph, then the four openers. The composer is not
+   drawn — it is the one thing on that screen that needs no data, so it arrives with the page. */
+function skAsk() {
+  var pane = el("div", "chpane");
+  var flow = el("div", "chflow start");
+  flow.appendChild(sk("46%", 40));
+  flow.appendChild(skGap(10));
+  flow.appendChild(sk("62%", 40));
+  flow.appendChild(skGap(24));
+  flow.appendChild(sk("100%", 11));
+  flow.appendChild(skGap(9));
+  flow.appendChild(sk("96%", 11));
+  flow.appendChild(skGap(9));
+  flow.appendChild(sk("64%", 11));
+  flow.appendChild(skGap(26));
+  var grid = el("div", "sksug");
+  for (var i = 0; i < 4; i++) {
+    var g = el("div", "sksg");
+    g.appendChild(sk(62, 10));
+    g.appendChild(sk("92%", 11));
+    g.appendChild(sk("58%", 11));
+    grid.appendChild(g);
+  }
+  flow.appendChild(grid);
+  pane.appendChild(flow);
+  return pane;
+}
+
+function skDatabase() {
+  var f = document.createDocumentFragment();
+  f.appendChild(skLabel());
+  f.appendChild(skEntryCard(2));
+  f.appendChild(skEntryCard(2));
+  f.appendChild(skEntryCard(1));
+  f.appendChild(skLabel());
+  f.appendChild(skEntryCard(2));
+  f.appendChild(skLabel());
+  f.appendChild(skEntryCard(1));
+  return f;
+}
+
+function skeletonFor(tab) {
+  SK_N = 0;
+  if (tab === "dashboard") return skDashboard();
+  if (tab === "ask") return skAsk();
+  if (tab === "reports") return skList(skReportCard, 3);
+  if (tab === "database") return skDatabase();
+  if (tab === "restorepoints") { var f = document.createDocumentFragment();
+    f.appendChild(skLabel()); f.appendChild(skList(skSlimCard, 5)); return f; }
+  return skList(skNewsCard, 4);   // every feed list draws the same card
+}
+
 function render() {
   renderDrawerNav(); renderSyncRow(); renderDrawerSettings(); renderTitle();
   /* Wide is for pages whose content is a grid and genuinely gets better with room. Reports
@@ -4200,7 +4396,7 @@ function render() {
   var d = S.data, i;
 
   if (S.loading) {
-    for (i = 0; i < 4; i++) app.appendChild(el("div", "skel"));
+    app.appendChild(skeletonFor(S.tab));
     refreshReportBar(); return;
   }
   if (!d) { app.appendChild(emptyState("Nothing loaded yet.")); refreshReportBar(); return; }
