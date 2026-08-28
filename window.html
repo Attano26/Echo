@@ -288,7 +288,12 @@ a:hover{text-decoration:underline}
    measure because long headlines are read left-to-right and a 1600px line is punishing; a bento
    grid is scanned, not read, so starving it of width just makes the tiles small and the page
    look empty. #shell gets the wide class so the header and the grid stay aligned. */
-#shell.wide .wrap{max-width:1680px}
+/* No cap. 1680px left 590px of dead space on a 2560px monitor, all of it on the right
+   because of the margin-left:0 below — the wider the screen, the more it wasted. The feed
+   is an auto-fit card grid, so extra width becomes extra columns rather than longer lines,
+   and the screens where measure DOES matter cap themselves: Ask at 900px, the report
+   preview inside its own pane, the settings sheet at its own width. */
+#shell.wide .wrap{max-width:none}
 #top{flex:0 0 auto;padding-top:max(14px,env(safe-area-inset-top))}
 /* overflow-x:hidden is NOT redundant beside overflow-y:auto. Setting one axis to auto makes
    the other compute to auto as well, so anything a few pixels too wide gave the content
@@ -373,7 +378,7 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
   /* The reading column stops widening past a comfortable measure; the rest becomes margin.
      A 1600px-wide line of body text is unreadable however much room there is. */
   .wrap{max-width:820px;margin-left:0}
-  #shell.wide .wrap{max-width:1680px;margin-left:0}
+  #shell.wide .wrap{max-width:none;margin-left:0}
 }
 /* The rail is the navigation on a wide screen, so the drawer's own close button is noise there. */
 @media (min-width:1000px){ #btnClose{display:none} }
