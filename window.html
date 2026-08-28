@@ -1817,9 +1817,11 @@ function askConfirm(opts) {
    RENDER
    ============================================================ */
 var TABS = [
-  ["dashboard", "Dashboard", function () { return ""; }],
+  /* Ids stay "dashboard" and "alerts": S.tab is restored from localStorage and both are
+     named in WIDE_TABS, so only the labels move. */
+  ["dashboard", "Analytics",   function () { return ""; }],
   ["ask",       "Ask",       function () { return ""; }],
-  ["alerts",    "Alerts",    function () { return alerts().length; }],
+  ["alerts",    "News alerts", function () { return alerts().length; }],
   ["saved",     "Saved",     function () { return arr(S.data && S.data.savedNews).length; }],
   ["published", "Published", function () { return published().length; }],
   ["reports",   "Reports",   function () { return editions().length; }],
@@ -1829,9 +1831,9 @@ var TABS = [
   ["restorepoints", "Restore points", function () { return arr(S.data && S.data.restorePoints).length; }]
 ];
 var TAB_TITLE = {
-  dashboard: ["Dashboard", "Everything the phone is tracking"],
+  dashboard: ["Analytics",   "What the feed has been doing"],
   ask:       ["Ask",       "Answers from what your phone has fetched"],
-  alerts:    ["News",      "Window market intelligence"],
+  alerts:    ["News alerts", "Window market intelligence"],
   saved:     ["Saved",     "Bookmarked stories"],
   published: ["Published", "Stories already in a report"],
   reports:   ["Reports",   "Download a past edition"],
@@ -2362,7 +2364,9 @@ var ICON_TICK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
    query you were part way through typing on Alerts. */
 var WALL = {};
 function wallState() {
-  if (!WALL[S.tab]) WALL[S.tab] = { q: "", open: false, comp: [], land: [], chan: [] };
+  if (!WALL[S.tab]) WALL[S.tab] = { q: "", open: false, comp: [], land: [], chan: [], state: [] };
+  /* Older sessions restored a wall state from before this filter existed. */
+  if (!WALL[S.tab].state) WALL[S.tab].state = [];
   return WALL[S.tab];
 }
 function toggleIn(list, v) {
@@ -2468,8 +2472,26 @@ function newsWall(app, list, opts) {
   var lands = Object.keys(landSet).sort();
 
   var q = st.q.trim().toLowerCase();
+  /* Published and verified are computed the same way the cards are, so a chip can never
+     disagree with the badge on the card it filters. OR inside the group, AND across groups,
+     which is how every other chip here already behaves. */
+  var pubKeys = publishedSet(), verKeys = verifiedSet();
+  var stateOf = function (a) {
+    var k = key(a.title);
+    return { published: pubKeys.has(k), verified: verKeys.has(k) };
+  };
   var byChips = list.filter(function (a) {
     var hay = articleHaystack(a);
+    if (st.state.length) {
+      var sv = stateOf(a);
+      var hit = st.state.some(function (f) {
+        return f === "published"   ? sv.published
+             : f === "unpublished" ? !sv.published
+             : f === "verified"    ? sv.verified
+             : !sv.verified;
+      });
+      if (!hit) return false;
+    }
     if (st.chan.length && st.chan.indexOf(a.category) < 0) return false;
     if (st.comp.length && !st.comp.some(function (n) { return hay.indexOf(n.toLowerCase()) >= 0; })) return false;
     if (st.land.length && !st.land.some(function (n) { return hay.indexOf(n.toLowerCase()) >= 0; })) return false;
@@ -2479,7 +2501,7 @@ function newsWall(app, list, opts) {
     ? byChips.filter(function (a) { return articleHaystack(a).indexOf(q) >= 0; })
     : byChips;
 
-  var active = st.comp.length + st.land.length + st.chan.length;
+  var active = st.comp.length + st.land.length + st.chan.length + st.state.length;
 
   var box = el("div", "nsearch");
 
@@ -2518,6 +2540,38 @@ function newsWall(app, list, opts) {
 
   if (st.open) {
     var panel = el("div", "nfilters");
+    /* State first: it is the one group whose options are fixed, and the one most reached for on
+       a feed you are working through.
+
+       A state only earns a chip if it would actually divide THIS list. On News alerts every story
+       is unpublished, because alerts() filters published ones out by definition — so "Published"
+       would always return nothing and "Not published" would always return everything. Both are
+       dead controls. The vocabularies below already follow this rule; so does this. */
+    (function () {
+      var n = list.length, c = { published: 0, unpublished: 0, verified: 0, unverified: 0 };
+      list.forEach(function (a) {
+        var sv = stateOf(a);
+        if (sv.published) c.published++; else c.unpublished++;
+        if (sv.verified) c.verified++; else c.unverified++;
+      });
+      var opts = [["published", "Published"], ["unpublished", "Not published"],
+                  ["verified", "Verified"], ["unverified", "Not verified"]]
+        .filter(function (o) { return c[o[0]] > 0 && c[o[0]] < n; });
+      if (!opts.length) return;
+      var g = el("div", "nfgroup");
+      g.appendChild(el("h4", null, "By state"));
+      var chips = el("div", "nchips");
+      var all = el("button", "nchip" + (st.state.length ? "" : " on"), "All");
+      all.onclick = function () { st.state.length = 0; render(); };
+      chips.appendChild(all);
+      opts.forEach(function (o) {
+        var b = el("button", "nchip" + (st.state.indexOf(o[0]) >= 0 ? " on" : ""), o[1]);
+        b.onclick = function () { toggleIn(st.state, o[0]); render(); };
+        chips.appendChild(b);
+      });
+      g.appendChild(chips);
+      panel.appendChild(g);
+    })();
     [["By channel", chans, st.chan],
      ["By competitor", comps, st.comp],
      ["By market", lands, st.land]
@@ -3715,7 +3769,9 @@ function renderDashboard(app, d) {
   var an = d.analytics || null;
 
   /* ---------- the glance strip: the eight home-screen widgets ---------- */
-  if (Object.keys(w).length) wrap.appendChild(renderWidgetStrip(w));
+  /* The glance strip lives on News alerts now. This tab is the analytics wall and nothing
+     else: a strip of eight summary tiles above it was answering a different question from
+     the one the page is for. */
 
   /* If the phone has not shipped its analytics yet, say so plainly rather than compute a
      lookalike here — a lookalike is exactly how the two screens would start disagreeing. */
@@ -4772,6 +4828,10 @@ function render() {
     renderAsk(app);
   }
   else if (S.tab === "alerts") {
+    /* The glance strip, moved here from Analytics. Same tiles, same horizontal scroll, same
+       drag-to-push: it is the overview OF this feed, so it belongs above it. */
+    var wg = d.widgets || {};
+    if (Object.keys(wg).length) app.appendChild(renderWidgetStrip(wg));
     newsWall(app, alerts(), { verifiable: true, placeholder: "Search alerts",
       empty: "No alerts. Everything here has been published, or your phone has not backed up yet." });
   }
