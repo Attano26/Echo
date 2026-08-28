@@ -65,6 +65,12 @@
      quietly sitting under the 4.5:1 gate. Measured, not eyeballed. Fills keep the brand
      blue; text gets a legible one at the same hue, 224 degrees, lifted until it cleared. */
   --accent-ink:#1F57F5;
+  /* The selected rail row. On a white ground the accent on its own soft tint is 4.63:1 and
+     reads as the one selected thing, so light keeps it. On a dark ground the same pairing is
+     blue text on a blue row at 4.38:1, under the gate and hard to pick out, so dark takes the
+     ink instead: 14.15:1, and the accent still marks the row through the left border and the
+     tint behind it. */
+  --nav-on:var(--accent-ink);
   /* The three news-source colours, matched to NewsSourcePill on the phone. They colour the
      DOT and nothing else: the pill itself stays a neutral surface in both themes, so the
      status reads as one calm object with a coloured marker rather than a tinted badge. */
@@ -154,6 +160,7 @@
     --line-2:#242427;
     --accent-soft:rgba(31,87,245,.20);
     --accent-ink:#5982F8;
+    --nav-on:var(--ink);
     --sh-1:0 1px 2px rgba(0,0,0,.5),0 6px 20px rgba(0,0,0,.4);
     --sh-2:0 2px 6px rgba(0,0,0,.55),0 14px 34px rgba(0,0,0,.5);
     --heat-0:#20222A; --heat-1:#0E4429; --heat-2:#006D32; --heat-3:#26A641; --heat-4:#39D353;
@@ -174,6 +181,7 @@
   --line-2:#242427;
   --accent-soft:rgba(31,87,245,.20);
   --accent-ink:#5982F8;
+  --nav-on:var(--ink);
   --sh-1:0 1px 2px rgba(0,0,0,.5),0 6px 20px rgba(0,0,0,.4);
   --sh-2:0 2px 6px rgba(0,0,0,.55),0 14px 34px rgba(0,0,0,.5);
   --heat-0:#20222A; --heat-1:#0E4429; --heat-2:#006D32; --heat-3:#26A641; --heat-4:#39D353;
@@ -338,10 +346,10 @@ body.in .dhead .mark{ animation:railsweep 14s linear infinite }
 .drow{display:flex;align-items:center;gap:11px;width:100%;text-align:left;
   padding:10px 18px;font-size:14.5px;color:var(--ink-2);border-left:2.5px solid transparent}
 .drow:hover{background:var(--surface-2);color:var(--ink)}
-.drow.on{color:var(--accent-ink);font-weight:600;border-left-color:var(--accent);
+.drow.on{color:var(--nav-on);font-weight:600;border-left-color:var(--accent);
   background:var(--accent-soft)}
 .drow .dn{margin-left:auto;font-size:12.5px;color:var(--ink-3);font-weight:400}
-.drow.on .dn{color:var(--accent-ink);opacity:.8}
+.drow.on .dn{color:var(--nav-on);opacity:.8}
 /* Read-only settings rows: the phone owns these values, so they are stated, not offered. */
 .srow{display:flex;align-items:baseline;gap:12px;padding:8px 18px;font-size:13.5px}
 .srow .sk{color:var(--ink-3);flex:1}
