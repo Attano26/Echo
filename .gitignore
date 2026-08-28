@@ -29,3 +29,13 @@ README-full.md
 _preview.html
 _fixture.json
 _chk.js
+
+# Layout studies. Useful while choosing a direction, dead weight once it is chosen, and nothing
+# in the app ever links to them — so they stay on the machine and out of the published site.
+mockups.html
+sync-mockups.html
+
+# Source art. The shipped icons are generated FROM these; the originals are not served, and
+# logo.svg is the only mark the app or the worker actually asks for.
+logo.png
+Echo logo.png
