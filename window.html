@@ -518,7 +518,12 @@ body.in .dhead .mark{ animation:railsweep 14s linear infinite }
 .wstrip{
   display:flex;gap:18px;overflow-x:auto;padding:6px 2px 20px;
   scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+  cursor:grab;
 }
+/* While a drag is in flight the snap has to stand down, or it pulls the strip back under the
+   pointer and the row appears to fight you. It comes back on release, which is what makes the
+   strip settle on a tile instead of stopping half way across one. */
+.wstrip.dragging{cursor:grabbing;scroll-snap-type:none;user-select:none}
 .wstrip::-webkit-scrollbar{display:none}
 
 .widget{
@@ -3336,7 +3341,60 @@ function renderWidgetStrip(w) {
     add(g);
   })();
 
+  dragScroll(strip);
   return strip;
+}
+
+/* Push the row of tiles sideways with the mouse, the way you would with a thumb on the phone.
+   MOUSE AND PEN ONLY: touch already scrolls this natively, with momentum, and taking it over
+   would replace a good gesture with a worse one.
+
+   The pointer is captured only after it has actually travelled a few pixels, so a plain click
+   still reaches whatever is underneath; and a drag that happens to end over a tile is stopped
+   from also reading as a click on it. Nothing in the strip is clickable today, but the strip
+   mirrors the phone's home-screen widgets and that is exactly the kind of thing that becomes
+   clickable later. */
+function dragScroll(strip) {
+  var down = false, startX = 0, startLeft = 0, moved = 0, id = null;
+
+  strip.addEventListener("pointerdown", function (e) {
+    if (e.pointerType === "touch" || e.button !== 0) return;
+    down = true; moved = 0; id = e.pointerId;
+    startX = e.clientX; startLeft = strip.scrollLeft;
+    strip.classList.add("dragging");
+  });
+
+  strip.addEventListener("pointermove", function (e) {
+    if (!down || e.pointerId !== id) return;
+    var dx = e.clientX - startX;
+    if (Math.abs(dx) > moved) moved = Math.abs(dx);
+    if (moved > 3) {
+      /* Capture keeps the drag alive when the pointer leaves the strip. It throws if the
+         browser no longer considers this pointer active, and an exception here would abandon
+         the drag mid-gesture, so the scroll below must not depend on it succeeding. */
+      try { if (!strip.hasPointerCapture(id)) strip.setPointerCapture(id); } catch (err) {}
+      e.preventDefault();
+    }
+    strip.scrollLeft = startLeft - dx;
+  });
+
+  var end = function () {
+    if (!down) return;
+    down = false;
+    try { if (id !== null && strip.hasPointerCapture(id)) strip.releasePointerCapture(id); }
+    catch (err) {}
+    id = null;
+    strip.classList.remove("dragging");
+  };
+  strip.addEventListener("pointerup", end);
+  strip.addEventListener("pointercancel", end);
+  strip.addEventListener("lostpointercapture", end);
+
+  strip.addEventListener("click", function (e) {
+    if (moved > 3) { e.stopPropagation(); e.preventDefault(); }
+  }, true);
+  /* Without this the browser's own image drag starts instead, and the strip stops following. */
+  strip.addEventListener("dragstart", function (e) { e.preventDefault(); });
 }
 
 /* The phone's formatRupees, ported exactly: no decimals above a thousand, one decimal above a
