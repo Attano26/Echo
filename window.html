@@ -103,6 +103,11 @@
      pill that has since been replaced, while every live surface on the phone used #2BAFF2. Both
      read as "blue", which is exactly why it went unnoticed — keep these three in step with the
      Status* values in AluDashboard.kt, which is the one place they are defined on that side. */
+  /* The Smart segment's shimmer. Two values rather than one alpha on a shared colour: the sheen
+     has to lift OFF a white pill on the light theme and off a near-black one in the dark, and a
+     single value reads as dirt on one of them. */
+  --sheen:rgba(154,166,240,.50);
+  --spark:rgba(124,58,237,.70);
   --free:#34C759;       /* the free feed */
   --paid:#E5A33B;       /* anything that spends */
   --hybrid:#2BAFF2;     /* free RSS plus a paid competitor pass */
@@ -199,7 +204,8 @@
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
 
-    --paper:#0E0E0E; --surface:#161618; --surface-2:#1F1F22;
+
+    --sheen:rgba(245,215,255,.20); --spark:rgba(245,215,255,.85);    --paper:#0E0E0E; --surface:#161618; --surface-2:#1F1F22;
     --track:#232329; --track-on:#43434E;
     --ink:#F5F5F7; --ink-2:#C9CAD3; --ink-3:#9A9CAB;
     --line:#2A2A2F;
@@ -229,6 +235,7 @@
 }
 /* An explicit choice wins over the system, in both directions. Same list as above. */
 :root[data-theme="dark"]{
+  --sheen:rgba(245,215,255,.20); --spark:rgba(245,215,255,.85);
   --paper:#0E0E0E; --surface:#161618; --surface-2:#1F1F22;
   --track:#232329; --track-on:#43434E;
   --ink:#F5F5F7; --ink-2:#C9CAD3; --ink-3:#9A9CAB;
@@ -1202,6 +1209,51 @@ button.nstate:active{transform:scale(.97)}
 .chctx .chseg button.on{background:var(--surface);color:var(--ink);
   box-shadow:var(--sh-1);font-weight:500}
 .chctx .chseg button.on:hover{color:var(--ink)}
+
+/* ---- Smart, switched on ----
+   This is the one control in the app that turns on something which leaves the device, so it earns
+   a moment when you pick it. A burst on the click, then a glint every few seconds so the pill
+   reads as live rather than merely selected.
+
+   THE GLINT RESTS FOR MOST OF ITS CYCLE. The sweep runs in the first third of chsheen and the
+   rest of the keyframe holds it off the far edge, so what you see is an occasional pass rather
+   than something travelling continuously beside the text you are typing. That distinction is the
+   difference between alive and distracting, and the composer is the worst place to get it wrong.
+
+   The label is left solid on purpose. The brand ramp is five pastels: legible as 46px display
+   type on the Ask heading, invisible at 11.5px. The shimmer goes behind the word, never through
+   it. */
+.chctx .chseg button.smartseg{position:relative;overflow:hidden}
+.chsegl{position:relative;z-index:1}
+.chctx .chseg button.smartseg.on::before{
+  content:"";position:absolute;top:0;bottom:0;left:0;width:42%;pointer-events:none;
+  background:linear-gradient(90deg,transparent,var(--sheen),transparent);
+  animation:chsheen 4.6s ease-in-out infinite}
+@keyframes chsheen{
+  0%{transform:translateX(-150%) skewX(-18deg)}
+  38%,100%{transform:translateX(360%) skewX(-18deg)}
+}
+/* Three specks, drawn as one layer and twinkled together. Separate elements would let them
+   stagger, which is prettier and is four more nodes per render for a 60px pill. */
+.chctx .chseg button.smartseg.on::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(circle 1.5px at 21% 30%,var(--spark) 0 99%,transparent 100%),
+    radial-gradient(circle 1.1px at 67% 71%,var(--spark) 0 99%,transparent 100%),
+    radial-gradient(circle 1.3px at 85% 27%,var(--spark) 0 99%,transparent 100%);
+  animation:chtwinkle 3.4s ease-in-out infinite}
+@keyframes chtwinkle{
+  0%,100%{opacity:0}
+  16%{opacity:.9}
+  33%{opacity:.15}
+  50%{opacity:.75}
+  70%{opacity:0}
+}
+/* The burst: two fast passes and a small swell, then it settles into the idle glint above. */
+.chctx .chseg button.smartseg.spark{animation:chpop .44s var(--ease)}
+.chctx .chseg button.smartseg.spark::before{animation:chsheen .8s cubic-bezier(.3,0,.2,1) 2}
+.chctx .chseg button.smartseg.spark::after{animation:chtwinkle .95s ease-in-out 1}
+@keyframes chpop{0%{transform:scale(1)}40%{transform:scale(1.08)}100%{transform:scale(1)}}
 .chkey{padding:0 4px 9px}
 .chkn{margin:0 0 7px;font-size:12px;line-height:1.5;color:var(--ink-3)}
 .chkl{font-size:12.5px;color:var(--accent-ink);text-decoration:none;flex:0 0 auto}
@@ -4791,6 +4843,7 @@ function chAnsFind(q, d, ix, ents, wantCount) {
    costs nothing and is always there. Running out degrades the wording, never the answer. */
 var CH_KEY_LS = "echo.gemini.key";
 var CH_MODE_LS = "echo.ask.mode";
+var CH_SPARK = false;   // one burst, consumed by the next render
 
 /* MODE IS A CHOICE, NOT A CONSEQUENCE. Before this, holding a key silently meant every question
    went to the model. Now Basic and Smart are picked explicitly and remembered, so a key can sit
@@ -5372,11 +5425,28 @@ function renderAsk(app) {
      screen and a mode switch is a small thing to say. */
   var mode = chMode(), seg = el("div", "chseg");
   [["basic", "Basic"], ["smart", "Smart"]].forEach(function (o) {
-    var b = el("button", mode === o[0] ? "on" : null, o[1]);
+    /* The label is a span so it can sit ABOVE the shimmer. The sheen and the sparkles are
+       pseudo-elements on the button, which paint over its background; without a positioned child
+       to raise, they would wash across the word as well as behind it. */
+    var b = el("button", (mode === o[0] ? "on" : "") + (o[0] === "smart" ? " smartseg" : ""));
+    b.appendChild(el("span", "chsegl", o[1]));
     b.title = o[0] === "basic"
       ? "Answers composed here from your own stories. Free, instant, works offline."
       : "Same stories, phrased by " + CH_MODEL + " with your own key.";
-    b.onclick = function () { chSetMode(o[0]); render(); };
+    /* The burst fires on SWITCHING TO Smart, not on every render. render() rebuilds this button,
+       so the class cannot simply be added here and left — the flag survives the rebuild and is
+       spent by the builder on the far side of it. */
+    b.onclick = function () {
+      var was = chMode();
+      chSetMode(o[0]);
+      CH_SPARK = (o[0] === "smart" && was !== "smart");
+      render();
+    };
+    if (o[0] === "smart" && mode === "smart" && CH_SPARK) {
+      CH_SPARK = false;
+      b.classList.add("spark");
+      (function (btn) { setTimeout(function () { btn.classList.remove("spark"); }, 950); })(b);
+    }
     seg.appendChild(b);
   });
   ctx.appendChild(seg);
