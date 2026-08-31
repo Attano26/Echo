@@ -75,6 +75,11 @@
   --surface:#FFFFFF;    /* cards, sheets */
   --surface-2:#F7F7F9;  /* inset panels, quiet chips */
   --track:#EAEAEF;      /* segmented-control track */
+  /* Storage breakdown: nine categorical hues, one per section, in the SAME slot order the phone
+     uses (News, Saved, Published, Reports, Competitors, Countries and norms, News ledger, Metrics,
+     Metal prices) so a section is the same colour on both. Validated, not eyeballed. */
+  --st1:#2A78D6; --st2:#EB6834; --st3:#1BAF7A; --st4:#EDA100; --st5:#E87BA4;
+  --st6:#008300; --st7:#4A3AA7; --st8:#E34948; --st9:#1198AD;
   --track-on:#FFFFFF;   /* selected segment */
   --ink:#1D1D1F;
   --ink-2:#3F4048;
@@ -203,6 +208,12 @@
    So: never add a token to one of these blocks without adding it to the other. */
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
+  /* Storage hues, dark steps. This is the THIRD theme state and it is easy to miss: the OS is
+     dark but no data-theme attribute is set, so a token defined only on :root and
+     :root[data-theme="dark"] falls back to its LIGHT value here -- which is exactly what happened
+     the first time these were added. All three states or none. */
+  --st1:#3987E5; --st2:#D95926; --st3:#199E70; --st4:#C98500; --st5:#D55181;
+  --st6:#008300; --st7:#9085E9; --st8:#E66767; --st9:#1596A8;
 
 
     --sheen:rgba(245,215,255,.20); --spark:rgba(245,215,255,.85);    --paper:#0E0E0E; --surface:#161618; --surface-2:#1F1F22;
@@ -235,6 +246,10 @@
 }
 /* An explicit choice wins over the system, in both directions. Same list as above. */
 :root[data-theme="dark"]{
+  /* The same nine hues re-stepped for the dark surface -- not a mechanical lightening of the
+     light row; each was chosen against #0E0E0E and re-validated there. */
+  --st1:#3987E5; --st2:#D95926; --st3:#199E70; --st4:#C98500; --st5:#D55181;
+  --st6:#008300; --st7:#9085E9; --st8:#E66767; --st9:#1596A8;
   --sheen:rgba(245,215,255,.20); --spark:rgba(245,215,255,.85);
   --paper:#0E0E0E; --surface:#161618; --surface-2:#1F1F22;
   --track:#232329; --track-on:#43434E;
@@ -497,8 +512,9 @@ body.in .dhead .mark{ animation:railsweep 9s linear infinite }
 .syncpill .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* ---- the storage breakdown, drawn the way the phone's Settings > Storage draws it ----
-   One hue stepping down into neutral rather than nine unrelated colours: the segments are a
-   single object read by proportion, not nine things to tell apart. Matches StorageUsageBlock. */
+   Nine distinct hues, one per section. This used to be the accent at four falling opacities into a
+   neutral, indexed `(i % 6) + 1` -- which WRAPPED across nine sections, so three pairs shared a
+   colour and the four blues blurred into one band. Matches StorageUsageBlock. */
 /* Beats .askbox's 380px, which is defined later in the sheet at the same specificity.
    Nine rows of label plus count plus size need the extra room. */
 .askbox.stbox{max-width:460px}
@@ -507,19 +523,19 @@ body.in .dhead .mark{ animation:railsweep 9s linear infinite }
 .stbig{font-family:var(--fs-title);font-size:30px;font-weight:600;letter-spacing:-.03em;
   line-height:1;color:var(--ink)}
 .stcap{font-size:14px;color:var(--ink-3)}
-.stbar{display:flex;height:9px;border-radius:5px;overflow:hidden;margin:16px 0 6px;
+.stbar{display:flex;gap:2px;height:9px;border-radius:5px;overflow:hidden;margin:16px 0 6px;
   background:var(--track)}
-.stbar span{display:block;height:100%;min-width:1px}
+/* flex-grow, not width% -- the 2px gaps are taken out first and the remainder shared by byte
+   count, so the segments cannot overflow the bar the way summed percentages would. */
+.stbar span{display:block;height:100%;min-width:1px;flex-basis:0}
 .stlist{margin-top:10px}
 .strow{display:flex;align-items:center;gap:12px;padding:7px 0;font-size:14px}
 .strow .n{flex:1;min-width:0;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .strow .m{flex:0 0 auto;font-size:13px;color:var(--ink-3)}
 .stkey{width:9px;height:9px;border-radius:5px;flex:0 0 9px}
-.r1{background:var(--accent)}
-.r2{background:var(--accent);opacity:.72}
-.r3{background:var(--accent);opacity:.52}
-.r4{background:var(--accent);opacity:.36}
-.r5{background:var(--ink-3);opacity:.55}
+.s1{background:var(--st1)} .s2{background:var(--st2)} .s3{background:var(--st3)}
+.s4{background:var(--st4)} .s5{background:var(--st5)} .s6{background:var(--st6)}
+.s7{background:var(--st7)} .s8{background:var(--st8)} .s9{background:var(--st9)}
 .r6{background:var(--ink-3);opacity:.32}
 .stnote{margin-top:16px;padding-top:14px;border-top:1px solid var(--line-2);
   font-size:12.5px;line-height:1.6;color:var(--ink-3)}
@@ -1730,10 +1746,10 @@ var S = {
     schema: 1, updatedAtMillis: 0,
     verifiedTitles: [], publishedTitles: [], publishedNews: [], reportEditions: []
   },
-  // News alerts is the landing page. It was Analytics, on the argument that the glance strip
-  // answers "anything to look at?" before the feed asks you to read anything — but the strip
-  // moved to News alerts, so that argument now lands on this tab, and it is the feed itself.
-  // Only NEW arrivals see it: load() restores a returning reader's last tab over this.
+  // News alerts is the landing page, on EVERY visit. It used to be the landing page for new
+  // arrivals only, because load() restored a returning reader's last tab over it — so anyone who
+  // had once opened Analytics kept arriving there. The tab is no longer persisted at all: this is
+  // the page you come here to read, so it is where every visit starts.
   tab: "alerts", loading: false
 };
 
@@ -1741,7 +1757,7 @@ function save() {
   try {
     localStorage.setItem(K, JSON.stringify({
       token: S.token, tokenExp: S.tokenExp, email: S.email, name: S.name,
-      theme: S.theme, actions: S.actions, tab: S.tab
+      theme: S.theme, actions: S.actions
     }));
   } catch (e) { /* private mode: still works, it just forgets on reload */ }
 }
@@ -1753,7 +1769,8 @@ function load() {
     if (o.name) S.name = o.name;
     if (o.theme) S.theme = o.theme;
     if (o.actions) S.actions = Object.assign(S.actions, o.actions);
-    if (o.tab) S.tab = o.tab;
+    // Deliberately NOT restoring o.tab — see the note on S.tab above. Older saved state may still
+    // carry a `tab` key; it is simply ignored rather than migrated.
   } catch (e) {}
 }
 
@@ -2147,7 +2164,9 @@ function drawerOpen() { return $("#drawer").classList.contains("on"); }
  * reader nothing. These four DO say something, which is the difference.
  */
 var NAV_GROUPS = [
-  ["Feed",      ["dashboard", "ask", "alerts", "saved"]],
+  // Order is reading order: the feed first, then what you kept from it, then the numbers about
+  // it, then the tool that queries it. Ask sits last in Feed because it acts ON these stories.
+  ["Feed",      ["alerts", "saved", "dashboard", "ask"]],
   ["Reporting", ["published", "reports"]],
   ["Signals",   ["liked", "disliked"]],
   ["Data",      ["database", "restorepoints"]]
@@ -2443,6 +2462,9 @@ function storageSlices() {
   var seen = String(d.seenStoryTitles || "");
   /* One line per story ever seen, so the line count IS the item count. */
   var ledger = seen.split("\n").filter(function (l) { return l.trim(); }).length;
+  /* r[3] is the CANONICAL SLOT, stamped before the filter below drops empty sections. Colour is
+     keyed to it, so a section keeps its hue when some other section empties or when the rows are
+     re-sorted -- colour follows the section, never its position. */
   return [
     ["News", arr(d.newsArticles).length, jsonBytes(arr(d.newsArticles))],
     ["Saved", arr(d.savedNews).length, jsonBytes(arr(d.savedNews))],
@@ -2457,7 +2479,9 @@ function storageSlices() {
       jsonBytes(String(d.deletedStoryRecords || ""))],
     ["Metrics", 3, jsonBytes(d.analytics || {}) + jsonBytes(d.widgets || {})],
     ["Metal prices", arr(d.nalcoPrices).length, jsonBytes(arr(d.nalcoPrices))]
-  ].filter(function (r) { return r[2] > 2; });   // an empty table is "[]" and earns no segment
+  ].map(function (r, i) { r[3] = i; return r; })
+   .filter(function (r) { return r[2] > 2; })     // an empty table is "[]" and earns no segment
+   .sort(function (a, b) { return b[2] - a[2]; }); // biggest first: you read this looking for what to cut
 }
 
 /* Settings > Storage, as a dialog: total on top, one stacked bar, then the breakdown. */
@@ -2494,8 +2518,8 @@ function openStorage() {
       /* Widths come straight from the byte counts, so the bar reads as true proportion. */
       var bar = el("div", "stbar");
       slices.forEach(function (r, i) {
-        var seg = el("span", "r" + ((i % 6) + 1));
-        seg.style.width = (r[2] / total) * 100 + "%";
+        var seg = el("span", "s" + (r[3] + 1));
+        seg.style.flexGrow = r[2];
         seg.title = r[0] + " · " + fmtBytes(r[2]);
         bar.appendChild(seg);
       });
@@ -2504,7 +2528,7 @@ function openStorage() {
       var list = el("div", "stlist");
       slices.forEach(function (r, i) {
         var row = el("div", "strow");
-        row.appendChild(el("span", "stkey r" + ((i % 6) + 1)));
+        row.appendChild(el("span", "stkey s" + (r[3] + 1)));
         row.appendChild(el("span", "n", r[0]));
         row.appendChild(el("span", "m", r[1].toLocaleString("en-IN") + " \u00b7 " + fmtBytes(r[2])));
         list.appendChild(row);
