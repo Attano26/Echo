@@ -5316,6 +5316,33 @@ function smartWash() {
   });
 }
 
+/* A rotating hint for the Smart composer, built from what the reader actually holds.
+   Advanced by chAsk, never by render: a hint that changed while someone was reading it would be
+   worse than a fixed one, and render() fires for reasons that have nothing to do with them. */
+var CH_PH_I = 0;
+function chPlaceholder() {
+  var plain = "Ask about your news, competitors, markets or spend";
+  if (!chSmart()) return plain;                 /* Basic stays terse, as it is meant to. */
+  var d = S.data || {}, w = d.widgets || {};
+  var ix, comps = [], lands = [];
+  try { ix = chIndex(); comps = arr(ix.comps); lands = arr(ix.lands); } catch (e) { return plain; }
+  if (!ix || !ix.docs.length) return plain;     /* Nothing backed up yet: do not promise answers. */
+
+  var hot = String(w.risingTrend || "").trim();
+  var cool = String(w.coolingTrend || "").trim();
+  var mover = String(w.moverName || "").trim();
+  var pool = [];
+  /* Each of these names something real, so none of them can send the reader into a shrug. */
+  if (hot) pool.push("What is driving " + hot + "?");
+  if (mover) pool.push("Why is " + mover + " the top mover?");
+  if (comps.length) pool.push("What has " + comps[CH_PH_I % comps.length].name + " been doing?");
+  if (cool) pool.push("Why is " + cool + " cooling down?");
+  if (lands.length) pool.push("What changed in " + lands[CH_PH_I % lands.length].name + "?");
+  pool.push("Who has been loudest this month?");
+  pool.push("What is worth putting in the next report?");
+  return pool[CH_PH_I % pool.length];
+}
+
 function chMode() {
   try { return localStorage.getItem(CH_MODE_LS) === "smart" ? "smart" : "basic"; } catch (e) { return "basic"; }
 }
@@ -5793,6 +5820,7 @@ function chHello() {
 function chAsk(q) {
   q = String(q || "").trim();
   if (!q) return;
+  CH_PH_I++;                 /* next question gets a different hint */
   CH_DRAFT = "";
   var m = chAnswer(q);        // oldest first: the conversation grows DOWN into the composer
   /* The composed reply is kept whatever happens next. It is the fallback if the call fails, and
@@ -6115,7 +6143,7 @@ function renderAsk(app) {
   var input = el("input", "chin");
   input.id = "chIn";
   input.type = "text";
-  input.placeholder = "Ask about your news, competitors, markets or spend";
+  input.placeholder = chPlaceholder();
   input.autocomplete = "off";
   input.setAttribute("enterkeyhint", "send");
   input.value = CH_DRAFT;
