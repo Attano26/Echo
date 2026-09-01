@@ -4677,6 +4677,11 @@ function chAnswer(q) {
   var buckets = chBucket(q);
   if (buckets) return chAnsBucket(q, d, ix, buckets);
 
+  /* Then: the reader asking about themselves. Their name is in the app from the Google sign-in,
+     so answering "nothing on Vineeth in your data" to Vineeth was never the right reply. */
+  var me = chAsksAboutMe(q);
+  if (me) return chAnsMe(q, ix, d, me);
+
   /* Then: a subject the corpus has never seen. "I like KTM" used to match the word "like" in 22
      stories and answer about Indian trade, never once mentioning KTM. */
   var subject = chUnknownSubject(q);
@@ -4695,6 +4700,41 @@ function chAnswer(q) {
   return chAnsFind(q, d, ix, ents, kind === "count");
 }
 
+/* ---------- who is signed in ----------
+   FIRST NAME ONLY is ever put in a prompt. The email is not needed to address someone and there
+   is no reason to hand an account address to a model. */
+function chMe() {
+  var n = String((S && S.name) || "").trim();
+  if (!n) return null;
+  var first = n.split(/\s+/)[0];
+  return { full: n, first: first };
+}
+
+/* Did the reader name themselves? Guards on length so a two-letter name cannot match half the
+   vocabulary. */
+function chAsksAboutMe(q) {
+  var me = chMe();
+  if (!me) return null;
+  var t = " " + key(q).replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ") + " ";
+  var names = [me.full.toLowerCase(), me.first.toLowerCase()];
+  var hit = names.some(function (n) { return n.length >= 3 && t.indexOf(" " + n + " ") >= 0; });
+  return hit ? me : null;
+}
+
+function chAnsMe(q, ix, d, me) {
+  var n = ix.docs.length, comps = arr(ix.comps).length;
+  return {
+    q: q, kind: "none",
+    lead: "That is you — you are signed in as <b>" + esc(me.full) + "</b>.",
+    stats: [], items: [], why: "",
+    social: "me",
+    subject: me.first,
+    note: n ? "I read your data, not you: " + chPl(n, "story", "stories") +
+              (comps ? " across " + chPl(comps, "competitor", "competitors") : "") + "."
+            : ""
+  };
+}
+
 /* ---------- a subject the corpus has never heard of ----------
    Returns the words the vocabulary does not know, or null when it knows them all. Those words are
    what the reader is actually talking about; retrieval will otherwise answer from whatever common
@@ -4705,6 +4745,8 @@ function chUnknownSubject(q) {
   if (!toks.length) return null;
   var unknown = toks.filter(function (t) { return ix.vocab[t] === undefined; });
   if (!unknown.length) return null;
+  /* The reader's own name is not an unknown subject -- it is the reader. */
+  if (chAsksAboutMe(q)) return null;
   /* Mentions the beat, or names something onboarded -> a real question, however it is worded. */
   var t = " " + key(q).replace(/[^a-z0-9 ]+/g, " ") + " ";
   if (CH_ONBEAT.test(t)) return null;
@@ -5236,6 +5278,10 @@ var CH_RULES = [
    says how they sound. */
 var CH_VOICE = [
   "",
+  "THE READER HAS A NAME and you are told it. Use it the way a colleague would — occasionally, at",
+  "a natural moment, never in every message and never in the same place twice. You know it because",
+  "they are signed in; you know nothing else about them, so do not imply that you do.",
+  "",
   "ANSWER THE QUESTION THAT WAS ASKED, IN ITS OWN SHAPE. A yes/no question — \"do you know X\",",
   "\"is X in here\", \"have you got anything on X\" — is answered yes or no in the first few words,",
   "and only then with what you hold. Launching into a report the reader did not ask for reads as",
@@ -5401,11 +5447,31 @@ function chPrompt(m) {
     return lines.join("\n");
   }
 
+  /* Every prompt shape gets the reader's first name, so the model can be personal without being
+     told twice. Name only -- never the email. */
+  var meP = chMe();
+  var whoLine = meP ? "YOU ARE TALKING TO: " + meP.first : "";
+
+  if (m.social === "me") {
+    return [
+      "THE READER SAID", m.q, "",
+      whoLine,
+      "They have just named THEMSELVES. Confirm warmly that you know who they are, in one line,",
+      "then offer something worth asking. Do not look them up in the data and do not invent any",
+      "detail about them -- you know their name because they are signed in, and nothing else.",
+      "",
+      "WHAT THEY HOLD",
+      "- Stories: " + chIndex().docs.length,
+      "- Competitors: " + arr(chIndex().comps).length
+    ].filter(function (x) { return x !== ""; }).join("\n");
+  }
+
   if (m.social === "offtopic") {
     var ixo = chIndex(), do0 = S.data || {}, wo = do0.widgets || {};
     var hot2 = String(wo.risingTrend || "").trim();
     return [
       "THE READER SAID", m.q, "",
+      whoLine,
       "THE SUBJECT THEY RAISED: " + (m.subject || m.q),
       "Nothing in their data mentions it.",
       "",
@@ -5434,6 +5500,7 @@ function chPrompt(m) {
     var hot0 = String(w0.risingTrend || "").trim();
     return [
       "QUESTION", m.q, "",
+      whoLine,
       m.social === "offbeat"
         ? "THIS IS NOT A DATA QUESTION. It is outside this app's subject entirely."
         : "THIS IS NOT A DATA QUESTION. It is a greeting or an acknowledgement.",
@@ -5454,6 +5521,7 @@ function chPrompt(m) {
   }
 
   var out = ["QUESTION", m.q, ""];
+  if (whoLine) { out.push(whoLine, ""); }
 
   if (m.stats && m.stats.length) {
     out.push("FIGURES ALREADY COMPUTED FROM THE READER'S DATA");
