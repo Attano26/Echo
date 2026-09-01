@@ -4671,6 +4671,12 @@ function chAnswer(q) {
      being run through retrieval so it can come back with a shrug. */
   if (chOffbeat(q)) return chAnsOffbeat(q, ix, d);
 
+  /* Then: "how many saved", "how many competitors". These are questions about the app's own
+     collections and are answered by COUNTING them. Retrieval used to take them, search story text
+     for the word "saved", and report however many stories happened to contain it. */
+  var buckets = chBucket(q);
+  if (buckets) return chAnsBucket(q, d, ix, buckets);
+
   if (kind === "help") return chAnsHelp(q, ix);
   if (kind === "metric") return chAnsMetric(q, d, ix);
   if (kind === "trend") return chAnsTrend(q, d);
@@ -4682,6 +4688,60 @@ function chAnswer(q) {
   if (kind === "count" && !named && !body.length) return chAnsMetric(q, d, ix);
 
   return chAnsFind(q, d, ix, ents, kind === "count");
+}
+
+/* ---------- the app's own collections ----------
+   Each entry is a thing the reader can point at in the UI, the words they might call it, and how
+   to count it. Counting these by searching story text does not work: "saved" is not a word in the
+   stories, it is a word about what the reader did with them. */
+var CH_BUCKETS = [
+  { k: "saved",     re: /\b(saved|bookmark(ed|s)?|kept)\b/,                     n: function (d) { return arr(d.savedNews).length; },      one: "saved story",     many: "saved stories",     where: "the Saved tab" },
+  { k: "published", re: /\b(published|publish|shipped|sent out)\b/,             n: function ()  { return published().length; },           one: "published story", many: "published stories", where: "the Published tab" },
+  { k: "alerts",    re: /\b(alert|alerts|feed|inbox|unread|incoming)\b/,        n: function ()  { return alerts().length; },              one: "story in alerts", many: "stories in alerts", where: "News alerts" },
+  { k: "liked",     re: /\b(liked|likes|thumbs up|favourite[sd]?|favorite[sd]?)\b/, n: function (d) { return arr(d.likedTitles).length; }, one: "liked story",     many: "liked stories",     where: "the Liked tab" },
+  { k: "disliked",  re: /\b(disliked|dislikes|thumbs down|hidden|rejected)\b/,  n: function (d) { return arr(d.dislikedTitles).length; }, one: "disliked story",  many: "disliked stories",  where: "the Disliked tab" },
+  { k: "reports",   re: /\b(report|reports|edition|editions|dossier)\b/,        n: function ()  { return editions().length; },            one: "report",          many: "reports",           where: "the Reports tab" },
+  { k: "comps",     re: /\b(competitor|competitors|compan(y|ies)|brand|brands|rival|rivals)\b/, n: function (d) { return arr(d.competitors).length; }, one: "competitor", many: "competitors", where: "the Database tab" },
+  { k: "lands",     re: /\b(market|markets|countr(y|ies)|region|regions|geograph\w*)\b/, n: function (d) { return arr(d.countries).length; }, one: "market",     many: "markets",           where: "the Database tab" },
+  { k: "norms",     re: /\b(norm|norms|standard|standards|code|codes|regulation[s]?)\b/, n: function (d) { return arr(d.normCodes).length; }, one: "norm or code", many: "norms and codes",  where: "the Database tab" },
+  { k: "restore",   re: /\b(restore point[s]?|backup[s]?|snapshot[s]?)\b/,      n: function (d) { return arr(d.restorePoints).length; },  one: "restore point",   many: "restore points",    where: "Restore points" }
+];
+
+/* Is this a question ABOUT a collection rather than about what is in the stories? */
+var CH_ASKS_COUNT = /\b(how many|how much|count|counts|number of|total|totals|do i have|have i got|are there|is there|show me|list|what is in|whats in|give me)\b/;
+
+function chBucket(q) {
+  var t = " " + key(q).replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim() + " ";
+  if (!CH_ASKS_COUNT.test(t)) return null;
+  var hits = CH_BUCKETS.filter(function (b) { return b.re.test(t); });
+  return hits.length ? hits : null;
+}
+
+/* Answer from the collection, and hand the figures over as stats so the Smart call cannot
+   recompute them into something else. */
+function chAnsBucket(q, d, ix, hits) {
+  var stats = hits.map(function (b) {
+    var n = b.n(d) || 0;
+    return [chCap(b.many), String(n), b.where];
+  });
+  var lead;
+  if (hits.length === 1) {
+    var b = hits[0], n = b.n(d) || 0;
+    lead = n
+      ? "You have <b>" + n + "</b> " + (n === 1 ? b.one : b.many) + ", in " + b.where + "."
+      : "Nothing in " + b.where + " yet.";
+  } else {
+    lead = "You have " + chList(hits.map(function (x) {
+      var n = x.n(d) || 0;
+      return "<b>" + n + "</b> " + (n === 1 ? x.one : x.many);
+    })) + ".";
+  }
+  return {
+    q: q, kind: "count", lead: lead, stats: stats, items: [], why: "",
+    /* Counted from the collections themselves, not from a search over story text -- which is what
+       reported 5 saved stories when there were 191. */
+    note: "Counted from the lists themselves, so these match what the tabs show."
+  };
 }
 
 /* ---------- social ----------
