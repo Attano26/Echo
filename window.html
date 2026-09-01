@@ -75,6 +75,10 @@
   --surface:#FFFFFF;    /* cards, sheets */
   --surface-2:#F7F7F9;  /* inset panels, quiet chips */
   --track:#EAEAEF;      /* segmented-control track */
+  /* The segmented controls, taken from the phone so the two products match exactly:
+     AnalyticsPane uses #E9E9EE / #232329 for the track and White / #3D3D47 for the thumb.
+     A dedicated pair because --track is redeclared further down and cannot be trusted. */
+  --seg-track:#E9E9EE; --seg-thumb:#FFFFFF;
   /* Storage breakdown: nine categorical hues, one per section, in the SAME slot order the phone
      uses (News, Saved, Published, Reports, Competitors, Countries and norms, News ledger, Metrics,
      Metal prices) so a section is the same colour on both. Validated, not eyeballed. */
@@ -218,6 +222,7 @@
 
     --sheen:rgba(245,215,255,.20); --spark:rgba(245,215,255,.85);    --paper:#0E0E0E; --surface:#161618; --surface-2:#1F1F22;
     --track:#232329; --track-on:#43434E;
+    --seg-track:#232329; --seg-thumb:#3D3D47;
     --ink:#F5F5F7; --ink-2:#C9CAD3; --ink-3:#9A9CAB;
     --line:#2A2A2F;
     --line-2:#242427;
@@ -253,6 +258,7 @@
   --sheen:rgba(245,215,255,.20); --spark:rgba(245,215,255,.85);
   --paper:#0E0E0E; --surface:#161618; --surface-2:#1F1F22;
   --track:#232329; --track-on:#43434E;
+  --seg-track:#232329; --seg-thumb:#3D3D47;
   --ink:#F5F5F7; --ink-2:#C9CAD3; --ink-3:#9A9CAB;
   --line:#2A2A2F;
   --line-2:#242427;
@@ -310,7 +316,10 @@ a:hover{text-decoration:underline}
 ::-webkit-scrollbar-thumb{background:var(--line);border-radius:10px;border:4px solid transparent;background-clip:content-box}
 
 /* ---------- shell ---------- */
-#shell{height:var(--apph);display:flex;flex-direction:column;overflow:hidden}
+/* position:relative so the Smart wash can be absolute INSIDE it. That containment is what keeps
+   the colour off the sidebar: the drawer is a SIBLING of #shell, not a child. overflow:hidden was
+   already here and now also clips the wash. */
+#shell{height:var(--apph);display:flex;flex-direction:column;overflow:hidden;position:relative}
 /* The gap to the left of the first card and the gap to the right of the last one must match.
    A scrollbar takes its width out of the content box, so a symmetric 20px padding renders as
    20 on the left and 20 + scrollbar on the right — 12px wider here, and a different number on
@@ -337,8 +346,10 @@ a:hover{text-decoration:underline}
    Wide things scroll inside their OWN container instead: the widget strip already does,
    and anything else that needs to must do the same. The page itself never scrolls
    sideways, which is the rule this app already states for its own layouts. */
+/* Lifted above the Smart wash (z-index 0) so every word and control sits in FRONT of the colour
+   rather than under it. */
 #scroll{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;
-  scrollbar-gutter:stable;padding-bottom:40px}
+  scrollbar-gutter:stable;padding-bottom:40px;position:relative;z-index:1}
 
 /* ---------- top bar ---------- */
 .bar{display:flex;align-items:center;gap:12px;padding:2px 0 14px}
@@ -953,7 +964,9 @@ button.nstate:active{transform:scale(.97)}
 .anhead h2{font-family:var(--fs-title);font-size:20px;font-weight:400;letter-spacing:-.3px}
 .anhead .sub{font-size:12.5px;color:var(--ink-3)}
 /* Window selector: the phone's 1M / 3M / 6M segmented control. */
-.anseg{display:inline-flex;background:var(--surface-2);border-radius:999px;padding:3px;gap:2px}
+/* Same grey as the phone and as the Basic/Smart switch. It used to be --surface-2, which reads on
+   a white card but disappears anywhere the ground is --paper. */
+.anseg{display:inline-flex;background:var(--seg-track);border-radius:999px;padding:3px;gap:2px}
 .anseg button{border:0;background:transparent;color:var(--ink-3);font:inherit;font-size:12.5px;
   padding:6px 15px;border-radius:999px;cursor:pointer;
   transition:background var(--t-hover) var(--ease),color var(--t-hover) var(--ease)}
@@ -1221,14 +1234,10 @@ button.nstate:active{transform:scale(.97)}
   padding:0 8px 7px;font-size:12.5px;color:var(--ink-3)}
 /* The mode switch: the analytics segmented control, one size down. Same material, so the two
    read as the same kind of object rather than two designers' idea of a toggle. */
-/* SAME MATERIAL AS .anseg, PLUS A HAIRLINE, because it sits on a different ground.
-   .anseg uses --surface-2 and reads fine because it sits inside a white card. This control sits on
-   --paper (#F5F5F7 light), where --surface-2 (#F7F7F9) is two points away and vanishes — that was
-   the original complaint. --track was too far the other way: in light it resolves to
-   rgba(60,60,67,.12), which reads as a dark slab against paper.
-   So: the page's fill, defined by the page's hairline. Visible on paper, still quiet, and made of
-   the tokens every other quiet element here is made of. */
-.chseg{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);
+/* The phone's segmented-control grey, no border. A plain light grey one step down from the page
+   is all this needs; --surface-2 was invisible against paper and --track resolved to a dark slab,
+   and a hairline was only ever a workaround for a track you could not see. */
+.chseg{display:inline-flex;background:var(--seg-track);
   border-radius:var(--r-pill);padding:2px;gap:2px;flex:0 0 auto;margin-right:4px}
 /* Scoped through .chctx deliberately. `.chctx button` styles the Clear link and carries the same
    specificity as a bare `.chseg button`, so on equal weight the later rule won and stripped the
@@ -1239,7 +1248,7 @@ button.nstate:active{transform:scale(.97)}
   letter-spacing:-.01em;
   transition:background var(--t-hover) var(--ease),color var(--t-hover) var(--ease)}
 .chctx .chseg button:hover{text-decoration:none;color:var(--ink-2)}
-.chctx .chseg button.on{background:var(--surface);color:var(--ink);
+.chctx .chseg button.on{background:var(--seg-thumb);color:var(--ink);
   box-shadow:var(--sh-1);font-weight:500}
 .chctx .chseg button.on:hover{color:var(--ink)}
 
@@ -1249,17 +1258,20 @@ button.nstate:active{transform:scale(.97)}
    before it reaches the edges. Fixed and pointer-events:none — an overlay that swallowed clicks
    for a second and a half would be a worse bug than no animation. */
 #smartwash{
-  position:fixed;inset:0;z-index:60;pointer-events:none;opacity:0;
+  position:absolute;inset:0;z-index:0;pointer-events:none;opacity:0;
   background:linear-gradient(100deg,var(--brand-ramp));
   background-size:220% 100%;
-  -webkit-mask:radial-gradient(125% 90% at 50% 100%,#000 0%,rgba(0,0,0,.6) 42%,transparent 76%);
-  mask:radial-gradient(125% 90% at 50% 100%,#000 0%,rgba(0,0,0,.6) 42%,transparent 76%)}
-#smartwash.go{animation:smartwash 1500ms cubic-bezier(.22,.61,.36,1) forwards}
+  /* Centred just BELOW the bottom edge, so the colour is born at the composer rather than in the
+     middle of the page, and thins out well before the top. */
+  -webkit-mask:radial-gradient(85% 52% at 50% 104%,#000 0%,rgba(0,0,0,.55) 38%,transparent 76%);
+  mask:radial-gradient(85% 52% at 50% 104%,#000 0%,rgba(0,0,0,.55) 38%,transparent 76%)}
+#smartwash.go{animation:smartwash 1900ms cubic-bezier(.22,.61,.36,1) forwards}
+/* Up and away: it starts at the input field, drifts toward the top and fades out on the way. */
 @keyframes smartwash{
-  0%{opacity:0;background-position:0% 50%}
-  20%{opacity:.5}
-  55%{opacity:.28}
-  100%{opacity:0;background-position:100% 50%}
+  0%{opacity:0;transform:translateY(12%);background-position:0% 50%}
+  16%{opacity:.5}
+  60%{opacity:.26}
+  100%{opacity:0;transform:translateY(-46%);background-position:100% 50%}
 }
 /* A viewer who asked for less motion meant this too. */
 @media (prefers-reduced-motion: reduce){ #smartwash{display:none} }
@@ -5276,7 +5288,9 @@ function smartWash() {
     el0 = document.createElement("div");
     el0.id = "smartwash";
     el0.setAttribute("aria-hidden", "true");
-    document.body.appendChild(el0);
+    /* Into #shell, never the body: the drawer sits outside #shell, so this is what keeps the wash
+       off the sidebar. Falls back to the body only if the shell is somehow absent. */
+    ($("#shell") || document.body).appendChild(el0);
   }
   el0.classList.remove("go");
   void el0.offsetWidth;            // reflow, so the animation restarts rather than being ignored
