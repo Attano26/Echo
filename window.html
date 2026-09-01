@@ -1261,10 +1261,10 @@ button.nstate:active{transform:scale(.97)}
    before it reaches the edges. Fixed and pointer-events:none — an overlay that swallowed clicks
    for a second and a half would be a worse bug than no animation. */
 #smartwash{
-  /* Anchored to the BOTTOM and staying there. Nothing translates any more, which is also what
-     removes the sharp line: that line was this element's own bottom edge sliding into view
-     partway through the old upward travel. A soft mask inside a hard box still has a hard box. */
-  position:absolute;left:0;right:0;bottom:0;height:48%;
+  /* Lives INSIDE .chdock now: above the bar's own background, below everything the bar contains.
+     That is the only place a colour can be both visible and harmless — behind the bar it was
+     hidden, and clearing the bar to reveal it let the conversation read through the composer. */
+  position:absolute;inset:0;
   z-index:0;pointer-events:none;opacity:0;
   /* TWO copies of the ramp at different widths, slid in OPPOSITE directions by the keyframes.
      Where they overlap they reinforce and cancel as they pass, so the colour swells and thins
@@ -1275,10 +1275,9 @@ button.nstate:active{transform:scale(.97)}
     linear-gradient(76deg,var(--brand-ramp));
   background-size:230% 100%, 290% 100%;
   background-position:0% 50%, 100% 50%;
-  /* Centred below the bottom edge so the glow hugs the composer, and fully transparent well inside
-     the box, so the element's own top edge never shows. */
-  -webkit-mask:radial-gradient(135% 105% at 50% 116%,#000 0%,rgba(0,0,0,.55) 40%,transparent 76%);
-  mask:radial-gradient(135% 105% at 50% 116%,#000 0%,rgba(0,0,0,.55) 40%,transparent 76%)}
+  /* Softened at the top so the band does not read as a painted rectangle inside the bar. */
+  -webkit-mask:radial-gradient(120% 150% at 50% 120%,#000 0%,rgba(0,0,0,.6) 45%,transparent 88%);
+  mask:radial-gradient(120% 150% at 50% 120%,#000 0%,rgba(0,0,0,.6) 45%,transparent 88%)}
 #smartwash.go{animation:smartwash 2400ms ease-out forwards}
 /* Swells, moves like water, and dies where it stands. No vertical travel. */
 @keyframes smartwash{
@@ -1288,27 +1287,12 @@ button.nstate:active{transform:scale(.97)}
   72%{opacity:.18}
   100%{opacity:0;background-position:128% 50%, -28% 50%}
 }
-/* WHILE THE WAVE RUNS, THE DOCK STOPS PAINTING.
-   .chdock is an opaque --paper slab at z-index 4 with a 26px fade on top, which is right for
-   scrolling — content needs somewhere to disappear — but it sat as a hard-edged block of page
-   colour over the wave, in both themes. For the length of the animation the slab and its fade are
-   removed, so the colour runs unbroken behind the controls. The controls keep their OWN
-   backgrounds, so the composer and the pill stay perfectly legible on top of it.
-   Removing the paint rather than recolouring it means this needs no per-theme value. */
-#shell.washing .chdock{
-  /* NOT transparent. Fully clearing it let the conversation read straight through the composer —
-     on a short viewport a suggestion card sat directly under the dock and collided with the
-     controls. Translucent + blur instead: the wave tints through, and anything behind is smeared
-     past legibility so nothing collides with the pill or the input.
-     The opaque paper stays as the first declaration, so a browser without color-mix keeps today's
-     behaviour rather than inheriting a bug. */
-  background:var(--paper);
-  background:color-mix(in srgb, var(--paper) 62%, transparent);
-  -webkit-backdrop-filter:blur(14px) saturate(1.15);
-  backdrop-filter:blur(14px) saturate(1.15)}
-/* The fade stays, at half strength: it is what stops the conversation ending on a hard edge, and
-   at 0 the text under it simply stopped dead. */
-#shell.washing .chdock::before{opacity:.45}
+/* THE DOCK IS ALWAYS OPAQUE AGAIN. It was made transparent, then translucent, to let a wash that
+   sat BEHIND it show through; both let the conversation read through the composer. The wash is
+   now a child of this bar instead, so the bar never has to stop doing its job.
+   Everything the bar contains is lifted above the wash — the wash itself is excluded by id, so it
+   stays on the floor of the bar rather than over the controls. */
+.chdock > *:not(#smartwash){position:relative;z-index:1}
 
 /* A viewer who asked for less motion meant this too. */
 @media (prefers-reduced-motion: reduce){ #smartwash{display:none} }
@@ -5321,24 +5305,28 @@ var CH_SPARK = false;   // one burst, consumed by the next render
    animation that only plays once per page load reads as broken the second time. */
 function smartWash() {
   var el0 = document.getElementById("smartwash");
+  /* render() rebuilds the dock on every turn, so a wash left over from a previous dock is attached
+     to a node that is no longer on screen. Drop it and rebuild rather than animating an orphan. */
+  if (el0 && !document.body.contains(el0.parentNode)) { el0.remove(); el0 = null; }
+  if (el0 && el0.parentNode && !el0.parentNode.classList.contains("chdock")) { el0.remove(); el0 = null; }
   if (!el0) {
     el0 = document.createElement("div");
     el0.id = "smartwash";
     el0.setAttribute("aria-hidden", "true");
-    /* Into #shell, never the body: the drawer sits outside #shell, so this is what keeps the wash
-       off the sidebar. Falls back to the body only if the shell is somehow absent. */
-    ($("#shell") || document.body).appendChild(el0);
+    /* Into the DOCK, as its first child: after the bar's own background, before its controls.
+       The dock is inside #shell and the drawer is a sibling of #shell, so this still cannot reach
+       the sidebar. Falls back to the shell if the dock is not on screen (any non-Ask tab). */
+    var host = $(".chdock") || $("#shell") || document.body;
+    if (host.firstChild) host.insertBefore(el0, host.firstChild);
+    else host.appendChild(el0);
   }
-  var shell = $("#shell");
   el0.classList.remove("go");
   void el0.offsetWidth;            // reflow, so the animation restarts rather than being ignored
   el0.classList.add("go");
-  if (shell) shell.classList.add("washing");
+  /* No class on the shell any more: nothing has to be switched off to make room for the colour,
+     because the colour is no longer behind anything. */
   el0.addEventListener("animationend", function once() {
     el0.classList.remove("go");
-    /* Put the dock's slab back the moment the colour is gone: it is what stops the conversation
-       showing through the composer while scrolling, so it must not stay off. */
-    if (shell) shell.classList.remove("washing");
     el0.removeEventListener("animationend", once);
   });
 }
