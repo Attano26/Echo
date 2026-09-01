@@ -4647,6 +4647,10 @@ function chAnswer(q) {
   var kind = chRoute(q);
   var ents = chEntities(q);
 
+  /* Before anything else: a question that is not about this beat gets a straight answer with a
+     voice, rather than being run through retrieval so it can come back with a shrug. */
+  if (chOffbeat(q)) return chAnsOffbeat(q, ix, d);
+
   if (kind === "help") return chAnsHelp(q, ix);
   if (kind === "metric") return chAnsMetric(q, d, ix);
   if (kind === "trend") return chAnsTrend(q, d);
@@ -4658,6 +4662,89 @@ function chAnswer(q) {
   if (kind === "count" && !named && !body.length) return chAnsMetric(q, d, ix);
 
   return chAnsFind(q, d, ix, ents, kind === "count");
+}
+
+/* ---------- out of scope ----------
+   Questions that are not about this beat at all. Deliberately NARROW: it must be cheaper to miss
+   one than to hijack a fair question about windows. Every pattern here is a subject this app has
+   no business answering, and the domain guard below means a question that also mentions the beat
+   ("write a report on Fenesta") never lands here. */
+var CH_OFFBEAT = [
+  /* "story" and "essay" are deliberately NOT here: "story" is this app's own word for a news
+     item ("197 stories"), so including it would classify a core question as creative writing the
+     moment it did not also mention windows. */
+  { k: "make",    re: /\b(poem|poetry|haiku|song|lyrics|joke|novel|screenplay|limerick)\b/ },
+  { k: "predict", re: /\b(world cup|ballon d\u2019?or|election|who will win|lottery|horoscope|zodiac|astrology|stock tip|crypto|bitcoin)\b/ },
+  { k: "trivia",  re: /\b(capital of|who is the (president|prime minister|king|queen)|how tall|how old is|weather|temperature outside|football|cricket score|movie|netflix)\b/ },
+  { k: "self",    re: /\b(are you (conscious|alive|real|human|sentient)|do you (love|like|hate)|meaning of life|are you chatgpt|what model are you|do you dream)\b/ },
+  { k: "advice",  re: /\b(recipe|cook|medical|diagnos|symptom|prescri|legal advice|sue|divorce|tax return|write code|python|javascript)\b/ }
+];
+
+/* The beat. If any of this shows up, it is a real question and the normal path handles it. */
+var CH_ONBEAT = /\b(window|windows|glaz|glass|alumini?um|facade|fa\u00e7ade|fenestrat|extrus|profile|mullion|casement|awning|thermal|u-value|competitor|market|norm|code|report|alert|saved|publish|spend|cost|trend|price|ingot|billet|nalco|schuco|sch\u00fcco)\b/;
+
+/* Never a feature of this app, whatever else the sentence mentions. "Write a poem about
+   aluminium extrusion" is still a poem, and the domain guard below would otherwise rescue it into
+   retrieval and answer with a shrug. "report" and "summary" are deliberately NOT here: those ARE
+   the product working, and must never be hijacked just by being named. */
+var CH_NEVER = /\b(poem|poetry|haiku|song|lyrics|joke|limerick|horoscope|zodiac|recipe)\b/;
+
+function chOffbeat(q) {
+  var t = " " + key(q).replace(/[^a-z0-9\u2019 ]+/g, " ") + " ";
+  if (CH_NEVER.test(t)) {
+    for (var j = 0; j < CH_OFFBEAT.length; j++) if (CH_OFFBEAT[j].re.test(t)) return CH_OFFBEAT[j].k;
+    return "make";
+  }
+  if (CH_ONBEAT.test(t)) return null;          // mentions the beat -> not off-beat
+  for (var i = 0; i < CH_OFFBEAT.length; i++) {
+    if (CH_OFFBEAT[i].re.test(t)) return CH_OFFBEAT[i].k;
+  }
+  return null;
+}
+
+/* Decline with a straight face, then spend the sentence on something real.
+   The pivot is built from the reader's OWN figures, so the charm never costs a fact. */
+function chAnsOffbeat(q, ix, d) {
+  var n = ix.docs.length;
+  var comps = arr(ix.comps).length, lands = arr(ix.lands).length;
+  var lead = {
+    make: [
+      "I could, and it would be the worst poem ever written about extruded aluminium. I read your market instead \u2014 that part I am good at.",
+      "Not my beat. I have exactly one subject and I am tediously enthusiastic about it."
+    ],
+    predict: [
+      "I do not forecast. I read what has already been published and tell you what it adds up to \u2014 which is duller and considerably more useful.",
+      "No crystal ball here. Everything I say has a source with a date on it, which rules out most of the interesting guesses."
+    ],
+    trivia: [
+      "That is a question for the whole internet. I only read the fenestration desk \u2014 and I never leave it.",
+      "Outside my window, so to speak. I know what your phone has fetched about this industry and nothing else at all."
+    ],
+    self: [
+      "I am a reading desk with opinions about window profiles. That is the whole of it \u2014 no inner life, excellent recall.",
+      "Less than you are hoping and more than a search box: I read your corpus, and I refuse to make anything up."
+    ],
+    advice: [
+      "Wrong desk, and genuinely so \u2014 you should not take that from something that only reads window-industry news.",
+      "Not something I should answer. My competence stops at the frame of a window, and I would rather say so than improvise."
+    ]
+  }[chOffbeat(q) || "trivia"];
+
+  /* The pivot names real holdings and a real question worth asking of them. Nothing invented:
+     every number here is counted from the corpus already in memory. */
+  var pivot = n
+    ? "What I do have: " + chPl(n, "story", "stories") +
+      (comps ? " across " + chPl(comps, "competitor", "competitors") : "") +
+      (lands ? " in " + chPl(lands, "market", "markets") : "") +
+      ". Ask me who has been loudest this month, what is heating up, or what a competitor has been saying."
+    : "Once your phone backs up, I will have your stories, competitors and markets to read \u2014 then ask me who has been loudest this month.";
+
+  return {
+    q: q, kind: "none",
+    lead: chPick(q, lead),
+    stats: [], items: [], why: "",
+    note: pivot
+  };
 }
 
 function chAnsHelp(q, ix) {
