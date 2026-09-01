@@ -5236,6 +5236,11 @@ var CH_RULES = [
    says how they sound. */
 var CH_VOICE = [
   "",
+  "ANSWER THE QUESTION THAT WAS ASKED, IN ITS OWN SHAPE. A yes/no question — \"do you know X\",",
+  "\"is X in here\", \"have you got anything on X\" — is answered yes or no in the first few words,",
+  "and only then with what you hold. Launching into a report the reader did not ask for reads as",
+  "not having listened. Put any heading on its own line, never mid-sentence.",
+  "",
   "VOICE. Write the way a well-briefed colleague speaks: answer first, plain British English,",
   "contractions welcome, no preamble and no sign-off. Never open by restating the question. Use",
   "only the headings and bullets your shape asks for — '## ' for a heading, '- ' for a bullet,",
@@ -5577,6 +5582,13 @@ function chCallModel(m, done) {
 function chProse(t) {
   var raw = String(t || "").replace(/\r/g, "").trim();
   if (!raw) return "";
+  /* A HEADING THE MODEL PUT MID-LINE STILL GETS TO BE A HEADING.
+     The heading rule below is anchored to the start of a line, so when the model wrote
+     "...architect support. ## What they have been doing" as one line, it fell through to the
+     paragraph branch and "##" was shown to the reader as literal text. Break before a heading
+     marker that follows other text. Only "#" is treated this way: a stray "-" mid-sentence is a
+     hyphen far more often than it is a bullet, so bullets stay anchored. */
+  raw = raw.replace(/([^\n])[ \t]+(#{1,6}[ \t]+)/g, "$1\n$2");
   var lines = esc(raw).split(/\n/);
   var html = [], list = null;
 
