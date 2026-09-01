@@ -1295,8 +1295,20 @@ button.nstate:active{transform:scale(.97)}
    removed, so the colour runs unbroken behind the controls. The controls keep their OWN
    backgrounds, so the composer and the pill stay perfectly legible on top of it.
    Removing the paint rather than recolouring it means this needs no per-theme value. */
-#shell.washing .chdock{background:transparent}
-#shell.washing .chdock::before{opacity:0}
+#shell.washing .chdock{
+  /* NOT transparent. Fully clearing it let the conversation read straight through the composer —
+     on a short viewport a suggestion card sat directly under the dock and collided with the
+     controls. Translucent + blur instead: the wave tints through, and anything behind is smeared
+     past legibility so nothing collides with the pill or the input.
+     The opaque paper stays as the first declaration, so a browser without color-mix keeps today's
+     behaviour rather than inheriting a bug. */
+  background:var(--paper);
+  background:color-mix(in srgb, var(--paper) 62%, transparent);
+  -webkit-backdrop-filter:blur(14px) saturate(1.15);
+  backdrop-filter:blur(14px) saturate(1.15)}
+/* The fade stays, at half strength: it is what stops the conversation ending on a hard edge, and
+   at 0 the text under it simply stopped dead. */
+#shell.washing .chdock::before{opacity:.45}
 
 /* A viewer who asked for less motion meant this too. */
 @media (prefers-reduced-motion: reduce){ #smartwash{display:none} }
