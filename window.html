@@ -1288,6 +1288,16 @@ button.nstate:active{transform:scale(.97)}
   72%{opacity:.18}
   100%{opacity:0;background-position:128% 50%, -28% 50%}
 }
+/* WHILE THE WAVE RUNS, THE DOCK STOPS PAINTING.
+   .chdock is an opaque --paper slab at z-index 4 with a 26px fade on top, which is right for
+   scrolling — content needs somewhere to disappear — but it sat as a hard-edged block of page
+   colour over the wave, in both themes. For the length of the animation the slab and its fade are
+   removed, so the colour runs unbroken behind the controls. The controls keep their OWN
+   backgrounds, so the composer and the pill stay perfectly legible on top of it.
+   Removing the paint rather than recolouring it means this needs no per-theme value. */
+#shell.washing .chdock{background:transparent}
+#shell.washing .chdock::before{opacity:0}
+
 /* A viewer who asked for less motion meant this too. */
 @media (prefers-reduced-motion: reduce){ #smartwash{display:none} }
 
@@ -5307,11 +5317,16 @@ function smartWash() {
        off the sidebar. Falls back to the body only if the shell is somehow absent. */
     ($("#shell") || document.body).appendChild(el0);
   }
+  var shell = $("#shell");
   el0.classList.remove("go");
   void el0.offsetWidth;            // reflow, so the animation restarts rather than being ignored
   el0.classList.add("go");
+  if (shell) shell.classList.add("washing");
   el0.addEventListener("animationend", function once() {
     el0.classList.remove("go");
+    /* Put the dock's slab back the moment the colour is gone: it is what stops the conversation
+       showing through the composer while scrolling, so it must not stay off. */
+    if (shell) shell.classList.remove("washing");
     el0.removeEventListener("animationend", once);
   });
 }
