@@ -1140,11 +1140,14 @@ button.nstate:active{transform:scale(.97)}
 .askrow{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
 
 /* ---------- toast ---------- */
-#toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);z-index:70;
+/* TOP, not bottom. At the bottom it sat on the composer, and on a phone the keyboard covers that
+   corner outright — a notice you cannot see is not a notice. */
+#toast{position:fixed;left:50%;top:18px;transform:translate(-50%,-14px);z-index:70;
   background:var(--ink);color:var(--paper);padding:11px 18px;border-radius:var(--r-pill);
   font-size:13.5px;font-weight:500;box-shadow:var(--sh-2);opacity:0;pointer-events:none;
   transition:opacity var(--t-hover) var(--ease),transform var(--t-hover) var(--ease);max-width:80vw;text-align:center}
 #toast.on{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion: reduce){ #toast{transition:opacity .01s linear} }
 
 /* ---------- update bar ---------- */
 #upd{flex:0 0 auto;background:var(--accent);color:#fff;display:none;padding:11px 0;font-size:13.5px}
@@ -5369,6 +5372,22 @@ function chPlaceholder() {
   return pool[CH_PH_I % pool.length];
 }
 
+/* Set when the reader TAPS Smart without a key: they get the key field instead of being bounced
+   back, which is the only way the field can ever be reached. */
+var CH_WANTKEY = false;
+
+/* Smart cannot run without a key, so do not pretend. Falls back to Basic and says so once.
+   Self-limiting: it flips the stored mode, so the next render no longer matches and the toast
+   cannot repeat. */
+function chGuardMode() {
+  if (chMode() === "smart" && !chKey() && !CH_WANTKEY) {
+    chSetMode("basic");
+    toast("No API key. Back to Basic.");
+    return true;
+  }
+  return false;
+}
+
 function chMode() {
   try { return localStorage.getItem(CH_MODE_LS) === "smart" ? "smart" : "basic"; } catch (e) { return "basic"; }
 }
@@ -6114,6 +6133,7 @@ function renderAsk(app) {
   /* Basic / Smart, in the same segmented control the analytics window uses. It leads the context
      line rather than taking a row of its own — the dock is already the densest part of this
      screen and a mode switch is a small thing to say. */
+  chGuardMode();                     /* before anything reads the mode */
   var mode = chMode(), seg = el("div", "chseg");
   [["basic", "Basic"], ["smart", "Smart"]].forEach(function (o) {
     /* The label is a span so it can sit ABOVE the shimmer. The sheen and the sparkles are
@@ -6130,7 +6150,10 @@ function renderAsk(app) {
     b.onclick = function () {
       var was = chMode();
       chSetMode(o[0]);
-      CH_SPARK = (o[0] === "smart" && was !== "smart");
+      /* An explicit tap on Smart with no key opens the key field rather than bouncing back. */
+      CH_WANTKEY = (o[0] === "smart" && !chKey());
+      /* Nothing to celebrate when Smart cannot actually run. */
+      CH_SPARK = (o[0] === "smart" && was !== "smart" && !!chKey());
       render();
     };
     if (o[0] === "smart" && mode === "smart" && CH_SPARK) {
@@ -6175,7 +6198,7 @@ function renderAsk(app) {
     var commit = function () {
       var v = kin.value.trim();
       if (!v) { toast("Paste a key first"); return; }
-      chSetKey(v); render(); toast("Smart mode is on");
+      chSetKey(v); CH_WANTKEY = false; render(); toast("Smart mode is on");
     };
     ksave.onclick = commit;
     kin.onkeydown = function (e) { if (e.key === "Enter") { e.preventDefault(); commit(); } };
