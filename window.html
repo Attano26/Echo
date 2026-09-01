@@ -4733,6 +4733,9 @@ function chAnsSocial(q, ix, d) {
 
   return {
     q: q, kind: "none", lead: lead, stats: [], items: [], why: "",
+    /* Marks this as a NON-DATA turn. chPrompt uses it to send the compact prompt instead of the
+       whole inventory — see the note there on what a greeting used to cost. */
+    social: kind,
     note: (kind === "hello" && n)
       ? "Answers come only from what your phone has fetched. Every figure has a story behind it you can open."
       : ""
@@ -4804,6 +4807,7 @@ function chAnsOffbeat(q, ix, d) {
     q: q, kind: "none",
     lead: chPick(q, lead),
     stats: [], items: [], why: "",
+    social: "offbeat",          // non-data turn: compact prompt, see chPrompt
     note: pivot
   };
 }
@@ -5256,6 +5260,37 @@ var CH_DETAIL_MAX = 14;
 
 function chPrompt(m) {
   var ix = chIndex();
+
+  /* A GREETING DOES NOT NEED THE CORPUS.
+     Every turn used to ship the whole inventory, so "hey" cost the same ~10,000 input tokens as a
+     real analytical question — measured on a live reply, and paid for on the reader's own key.
+     A non-data turn needs the persona, a few counts to be concrete with, and the plain answer the
+     app already composed. That is a few hundred characters instead of nineteen thousand.
+     The counts are still real; nothing here invites the model to invent. */
+  if (m.social) {
+    var d0 = S.data || {}, w0 = d0.widgets || {};
+    var hot0 = String(w0.risingTrend || "").trim();
+    return [
+      "QUESTION", m.q, "",
+      m.social === "offbeat"
+        ? "THIS IS NOT A DATA QUESTION. It is outside this app's subject entirely."
+        : "THIS IS NOT A DATA QUESTION. It is a greeting or an acknowledgement.",
+      "Do NOT list stories. Do NOT state any figure that is not below. Answer briefly, in your own",
+      "voice, and point the reader at something they could actually ask.",
+      "",
+      "WHAT THE READER HOLDS",
+      "- Stories: " + ix.docs.length,
+      "- Competitors: " + arr(ix.comps).length,
+      "- Markets: " + arr(ix.lands).length,
+      hot0 ? "- Trend rising fastest: " + hot0 : "",
+      "",
+      "THE APP ALREADY COMPOSED THIS PLAIN ANSWER. Keep its facts, give it your voice:",
+      /* Tags stripped: the composed line carries <b> for the screen, and sending markup into the
+         prompt invites the model to echo it back into prose that is then escaped as text. */
+      String(m.composed || m.lead || "").replace(/<[^>]+>/g, "")
+    ].filter(function (x) { return x !== ""; }).join("\n");
+  }
+
   var out = ["QUESTION", m.q, ""];
 
   if (m.stats && m.stats.length) {
