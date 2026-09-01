@@ -1227,12 +1227,19 @@ button.nstate:active{transform:scale(.97)}
   border-radius:var(--r-box);color:var(--ink);font:inherit;font-size:13px;
   font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;padding:8px 11px}
 .keyin:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-.chdock{position:sticky;bottom:0;z-index:4;background:var(--paper);
-  padding:8px 0 max(10px,env(safe-area-inset-bottom))}
-/* Without this the conversation appears to be sliced off by a hard edge as it
-   scrolls under the dock. */
-.chdock::before{content:"";position:absolute;left:0;right:0;top:-26px;height:26px;
-  background:linear-gradient(to top,var(--paper),transparent);pointer-events:none}
+.chdock{position:sticky;bottom:0;z-index:4;
+  /* FULL BLEED. It was 900px inside a 990px pane, so it read as a black panel pasted over the
+     page with a visible edge down each side. The negative margins let the background run past the
+     shell (which clips it) while the matching padding keeps the controls exactly where they were.
+     No side edges left to see. */
+  margin-left:-50vw;margin-right:-50vw;
+  padding:34px 50vw max(10px,env(safe-area-inset-bottom));
+  /* AND NO HARD TOP EDGE. A flat fill ended in a straight line across the page. This fades up into
+     the conversation instead, so the bar stops being a rectangle and becomes the point where the
+     page quietly runs out. */
+  background:linear-gradient(to top,var(--paper) 0,var(--paper) 58%,transparent 100%)}
+/* The 26px strip above the bar is gone: the bar's own background is now a gradient that does the
+   same job over a taller distance, and the two stacked read as a visible band. */
 .chctx{display:flex;flex-wrap:wrap;align-items:center;gap:5px;
   padding:0 8px 7px;font-size:12.5px;color:var(--ink-3)}
 /* The mode switch: the analytics segmented control, one size down. Same material, so the two
