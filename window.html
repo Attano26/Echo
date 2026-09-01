@@ -1836,6 +1836,16 @@ function verifiedArticles() {
   return alerts().filter(function (a) { return v.has(key(a.title)); });
 }
 
+/* Ready to publish, by the PHONE's definition: subscribed AND verified AND still in Alerts.
+   AluViewModel writes alerts_feed_ready as `feed.count { it.isSubscribed && title in verified }`.
+   This page used verifiedArticles() alone, with no subscription filter, so the two formulas
+   agreed only while every alert happened to be subscribed — true on the measured device, false
+   the moment one unsubscribed-but-verified story exists. isSubscribed rides along in the alerts
+   array already; nothing new has to be published for this. */
+function readyArticles() {
+  return verifiedArticles().filter(function (a) { return a.isSubscribed !== false; });
+}
+
 /* ============================================================
    THEME
    ============================================================
@@ -3829,6 +3839,16 @@ function renderWidgetStrip(w) {
   var names = function (list) {
     return arr(list).slice(0, 2).map(function (r) { return r.n; }).join(", ");
   };
+  /* The phone's shortTheme(), ported verbatim. The page had its own rule
+     (`r.n.toLowerCase().split(" ")[0]`) which lower-cased the label AND collided whenever two
+     themes shared a first word — "Materials & finishes" and "Manufacturing & digital" both
+     rendered as one word. Two shortening rules for one set of names is how the labels drifted. */
+  var shortTheme = function (g) {
+    g = String(g || "");
+    if (g.indexOf("Advanced") === 0) return "Glazing";
+    if (g.indexOf("Regulation") === 0) return "Regulation";
+    return g.split(" &")[0].split(" ")[0].trim();
+  };
 
   /* 1. Ready to publish. The only widget that nags: verified stories go stale quietly. */
   (function () {
@@ -3836,7 +3856,7 @@ function renderWidgetStrip(w) {
     /* This page's own list, like the Unverified tile: verified AND still in Alerts. The report
        bar at the bottom of Alerts counts exactly this, and a tile that disagreed with the bar
        two clicks away is worse than one that lags the phone by a backup. */
-    var ready = verifiedArticles().length;
+    var ready = readyArticles().length;
     /* readyOldestDays is -1 when the stored dates cannot give an age. That is a sentinel, not
        a duration, and the phone's own widget guards on >= 1 before printing it. Do the same
        here rather than rendering "waited -1 days", which is what an unguarded read produces. */
@@ -3909,7 +3929,9 @@ function renderWidgetStrip(w) {
     var g = el("div", "widget");
     var mode = String(w.sourceMode || "");
     var free = /free/i.test(mode);
-    g.appendChild(wTop("Spend", monthStamp(w)));
+    /* Stamp is the SOURCE MODE, as on the phone (Eyebrow("Monthly spend", stamp = sourceMode)).
+       It used to stamp the month, which the calendar tile two along already says. */
+    g.appendChild(wTop("Spend", mode || null));
     // Full size, like every other hero on the strip. It was the small variant so a string like
     // 1234.56 would fit; with the phone's rounding rule that string cannot occur.
     //
@@ -3920,7 +3942,11 @@ function renderWidgetStrip(w) {
       ? "The free feed costs nothing to run."
       : "Grounded search is billed for every query."));
     var f = wFoot();
-    f.appendChild(wPill(free ? "good" : "warn", mode || "unknown"));
+    /* The phone puts the next briefing here. The page put a source pill, which now duplicates the
+       stamp above, and left nextBriefing unrendered anywhere on the strip. An "unknown" pill for a
+       missing mode is also gone: the phone simply drops the stamp. */
+    f.appendChild(el("span", null, String(w.nextBriefing || "").trim()
+      ? "Next briefing " + String(w.nextBriefing) : "No briefing scheduled"));
     g.appendChild(f);
     add(g);
   })();
@@ -3929,7 +3955,10 @@ function renderWidgetStrip(w) {
   (function () {
     var g = el("div", "widget");
     var top = arr(w.trendTop);
-    g.appendChild(wTop("Industry trends", (w.trendWindowDays || 30) + "d"));
+    /* "30d · 13", matching the phone's stamp (EchoWidgets: "${trendWindowDays}d · ${trendTotal}").
+       The web showed only the window, so the two stamps read differently side by side. */
+    g.appendChild(wTop("Industry trends", (w.trendWindowDays || 30) + "d" +
+      (w.trendTotal ? " \u00b7 " + w.trendTotal : "")));
     g.appendChild(wHead(el("p", "w-topic", top.length ? top[0].n : "Nothing yet")));
     g.appendChild(wSay(top.length
       ? top[0].c + " of the " + (w.trendTotal || 0) + " stories in this window are on this theme."
@@ -3960,7 +3989,7 @@ function renderWidgetStrip(w) {
         var d = el("i");
         d.style.background = cols[i + 1];
         it.appendChild(d);
-        it.appendChild(document.createTextNode(r.c + " " + r.n.toLowerCase().split(" ")[0]));
+        it.appendChild(document.createTextNode(r.c + " " + shortTheme(r.n)));
         lg.appendChild(it);
       });
       if (lg.children.length) f.appendChild(lg);
@@ -4685,7 +4714,7 @@ function chAnsMetric(q, d, ix) {
       return alerts().filter(function (a) { return !vs.has(key(a.title)); }).length + " unverified";
     })()],
     ["Published", String(published().length), chPl(editions().length, "edition", "editions")],
-    ["Ready to publish", String(w.readyCount || 0),
+    ["Ready to publish", String(readyArticles().length),
      w.readyOldestDays ? "oldest waiting " + w.readyOldestDays + "d" : "verified, not yet in a report"]
   ];
   lead = "You are holding <b>" + chPl(ix.docs.length, "story", "stories") + "</b> in total: " +
@@ -4713,7 +4742,7 @@ function chAnsTrend(q, d) {
   if (cooling.length) lead.push("Cooling down: <b>" + chList(cooling.map(function (k) { return esc(k.n); })) + "</b>.");
   if (w.moverName) {
     lead.push("Your top mover is <b>" + esc(w.moverName) + "</b>, " +
-      (w.moverDelta > 0 ? "+" : "") + (w.moverDelta || 0) + " stories at " +
+      (w.moverDelta > 0 ? "+" : "") + (w.moverDelta || 0) + " pts at " +
       (w.moverSharePct || 0) + "% share of voice.");
   } else if (sov.length) {
     lead.push("<b>" + esc(sov[0].n) + "</b> leads share of voice with " + chPl(sov[0].c, "story", "stories") + ".");
