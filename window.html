@@ -1261,26 +1261,32 @@ button.nstate:active{transform:scale(.97)}
    before it reaches the edges. Fixed and pointer-events:none — an overlay that swallowed clicks
    for a second and a half would be a worse bug than no animation. */
 #smartwash{
-  /* DELIBERATELY BIGGER THAN THE SHELL. The keyframes slide this up by 46%; at inset:0 its own
-     bottom edge crossed into view partway through and read as a sharp line travelling up the
-     screen. A soft mask inside a hard box still has a hard box, so the box is pushed outside the
-     visible area at both ends and the mask is left to do all the shaping. #shell clips it. */
-  position:absolute;inset:-70% 0 -30% 0;z-index:0;pointer-events:none;opacity:0;
-  background:linear-gradient(100deg,var(--brand-ramp));
-  background-size:220% 100%;
-  /* Centred just BELOW the bottom edge, so the colour is born at the composer rather than in the
-     middle of the page, and thins out well before the top. */
-  /* 77% down the taller box is where the composer actually is. Aimed there so the colour is still
-     born at the input field rather than at the element's midpoint. */
-  -webkit-mask:radial-gradient(70% 30% at 50% 77%,#000 0%,rgba(0,0,0,.5) 40%,transparent 74%);
-  mask:radial-gradient(70% 30% at 50% 77%,#000 0%,rgba(0,0,0,.5) 40%,transparent 74%)}
-#smartwash.go{animation:smartwash 1900ms cubic-bezier(.22,.61,.36,1) forwards}
-/* Up and away: it starts at the input field, drifts toward the top and fades out on the way. */
+  /* Anchored to the BOTTOM and staying there. Nothing translates any more, which is also what
+     removes the sharp line: that line was this element's own bottom edge sliding into view
+     partway through the old upward travel. A soft mask inside a hard box still has a hard box. */
+  position:absolute;left:0;right:0;bottom:0;height:48%;
+  z-index:0;pointer-events:none;opacity:0;
+  /* TWO copies of the ramp at different widths, slid in OPPOSITE directions by the keyframes.
+     Where they overlap they reinforce and cancel as they pass, so the colour swells and thins
+     across the width — that interference is what reads as water. One layer alone only slides,
+     which looks like a wipe. */
+  background:
+    linear-gradient(100deg,var(--brand-ramp)),
+    linear-gradient(76deg,var(--brand-ramp));
+  background-size:230% 100%, 290% 100%;
+  background-position:0% 50%, 100% 50%;
+  /* Centred below the bottom edge so the glow hugs the composer, and fully transparent well inside
+     the box, so the element's own top edge never shows. */
+  -webkit-mask:radial-gradient(135% 105% at 50% 116%,#000 0%,rgba(0,0,0,.55) 40%,transparent 76%);
+  mask:radial-gradient(135% 105% at 50% 116%,#000 0%,rgba(0,0,0,.55) 40%,transparent 76%)}
+#smartwash.go{animation:smartwash 2400ms ease-out forwards}
+/* Swells, moves like water, and dies where it stands. No vertical travel. */
 @keyframes smartwash{
-  0%{opacity:0;transform:translateY(12%);background-position:0% 50%}
-  16%{opacity:.5}
-  60%{opacity:.26}
-  100%{opacity:0;transform:translateY(-46%);background-position:100% 50%}
+  0%{opacity:0;background-position:0% 50%, 100% 50%}
+  14%{opacity:.5}
+  46%{opacity:.34}
+  72%{opacity:.18}
+  100%{opacity:0;background-position:128% 50%, -28% 50%}
 }
 /* A viewer who asked for less motion meant this too. */
 @media (prefers-reduced-motion: reduce){ #smartwash{display:none} }
