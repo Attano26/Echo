@@ -4677,6 +4677,11 @@ function chAnswer(q) {
   var buckets = chBucket(q);
   if (buckets) return chAnsBucket(q, d, ix, buckets);
 
+  /* Then: a subject the corpus has never seen. "I like KTM" used to match the word "like" in 22
+     stories and answer about Indian trade, never once mentioning KTM. */
+  var subject = chUnknownSubject(q);
+  if (subject) return chAnsOffCorpus(q, ix, d, subject);
+
   if (kind === "help") return chAnsHelp(q, ix);
   if (kind === "metric") return chAnsMetric(q, d, ix);
   if (kind === "trend") return chAnsTrend(q, d);
@@ -4688,6 +4693,50 @@ function chAnswer(q) {
   if (kind === "count" && !named && !body.length) return chAnsMetric(q, d, ix);
 
   return chAnsFind(q, d, ix, ents, kind === "count");
+}
+
+/* ---------- a subject the corpus has never heard of ----------
+   Returns the words the vocabulary does not know, or null when it knows them all. Those words are
+   what the reader is actually talking about; retrieval will otherwise answer from whatever common
+   word happened to come along with them. */
+function chUnknownSubject(q) {
+  var ix = chIndex();
+  var toks = chTokens(q);
+  if (!toks.length) return null;
+  var unknown = toks.filter(function (t) { return ix.vocab[t] === undefined; });
+  if (!unknown.length) return null;
+  /* Mentions the beat, or names something onboarded -> a real question, however it is worded. */
+  var t = " " + key(q).replace(/[^a-z0-9 ]+/g, " ") + " ";
+  if (CH_ONBEAT.test(t)) return null;
+  var e = chEntities(q);
+  if (e.comps.length || e.lands.length || e.norms.length) return null;
+  /* The raw words, not the stems, so the model is handed "KTM" rather than "ktm". */
+  var raw = String(q).split(/[^A-Za-z0-9À-ɏ]+/).filter(function (w) {
+    if (w.length < 3) return false;
+    var st = chStem(w.toLowerCase());
+    return unknown.indexOf(st) >= 0;
+  });
+  return raw.length ? raw : unknown;
+}
+
+function chAnsOffCorpus(q, ix, d, subject) {
+  var n = ix.docs.length, comps = arr(ix.comps).length;
+  var w = (d && d.widgets) || {};
+  var hot = String(w.risingTrend || "").trim();
+  var invite = hot ? "Ask what is driving <b>" + esc(hot) + "</b>."
+                   : (comps ? "Ask who has been loudest this month." : "Ask what is in here.");
+  /* Basic says the plain, true thing: it has no world knowledge to comment with. Smart rewrites
+     this and DOES comment -- see the offtopic branch in chPrompt. */
+  return {
+    q: q, kind: "none",
+    lead: "Nothing on " + esc(subject.join(" ")) + " in your data.",
+    stats: [], items: [], why: "",
+    social: "offtopic",
+    subject: subject.join(" "),
+    note: n ? "Held here: " + chPl(n, "story", "stories") +
+              (comps ? " across " + chPl(comps, "competitor", "competitors") : "") + ". " + invite
+            : ""
+  };
 }
 
 /* ---------- the app's own collections ----------
@@ -5206,7 +5255,10 @@ var CH_VOICE = [
   "the worst thing you can produce. When the data does not support an answer, say so plainly —",
   "with a straight face, not an apology, and not a hedge dressed up as one.",
   "",
-  "OFF THE BEAT. If asked for a poem, a forecast, trivia, or anything outside this industry,",
+  "OFF THE BEAT. Answer the subject the reader actually raised BEFORE steering back — one line",
+  "engaging with it, then the turn. Saying nothing about it and continuing the previous topic is",
+  "the one thing that makes this feel like a machine. If asked for a poem, a forecast, trivia, or",
+  "anything outside this industry,",
   "decline in ONE line with some wit, then spend the rest on something real you can do — named",
   "from the inventory, so the reader has an obvious next move. Do not lecture about being an AI,",
   "do not apologise twice, and never pretend the question was interesting when it was not.",
@@ -5342,6 +5394,34 @@ function chPrompt(m) {
     lines.push("", "THE APP ALREADY COMPOSED THIS PLAIN ANSWER. Keep its figures, give it your voice:",
       String(m.composed || m.lead || "").replace(/<[^>]+>/g, ""));
     return lines.join("\n");
+  }
+
+  if (m.social === "offtopic") {
+    var ixo = chIndex(), do0 = S.data || {}, wo = do0.widgets || {};
+    var hot2 = String(wo.risingTrend || "").trim();
+    return [
+      "THE READER SAID", m.q, "",
+      "THE SUBJECT THEY RAISED: " + (m.subject || m.q),
+      "Nothing in their data mentions it.",
+      "",
+      "ANSWER THE SUBJECT FIRST. Open by engaging with it directly, in ONE short sentence, from",
+      "your own general knowledge — what it is, or a remark a person would actually make about it.",
+      "Do not ignore it and do not answer about the previous topic. THEN steer back to this beat in",
+      "a second sentence, and give them something worth asking.",
+      "",
+      "IF THE SUBJECT IS ACTUALLY PART OF THE ALUMINIUM WINDOW / FACADE INDUSTRY (a maker, a system,",
+      "a standard), do NOT treat it as small talk: say plainly that nothing in their data mentions",
+      "it yet, and suggest what they could ask about instead.",
+      "",
+      "YOUR GENERAL KNOWLEDGE IS FOR THAT OPENING LINE ONLY. Never use it for a claim about their",
+      "market, their competitors, or any figure. Those come from the data below and nowhere else.",
+      "",
+      "WHAT THE READER HOLDS",
+      "- Stories: " + ixo.docs.length,
+      "- Competitors: " + arr(ixo.comps).length,
+      "- Markets: " + arr(ixo.lands).length,
+      hot2 ? "- Trend rising fastest: " + hot2 : ""
+    ].filter(function (x) { return x !== ""; }).join("\n");
   }
 
   if (m.social) {
