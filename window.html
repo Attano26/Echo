@@ -1205,8 +1205,11 @@ button.nstate:active{transform:scale(.97)}
 /* Few messages sit ON the composer rather than stranded at the top of an empty page. */
 /* The bottom padding CLEARS THE DOCK'S FADE. .chdock::before is a 26px gradient sitting over the
    end of the conversation; with only 4px reserved here the last reply was under it and its final
-   line read as washed out. 30px is the fade plus a little air. */
-.chflow{flex:1 1 auto;display:flex;flex-direction:column;justify-content:flex-end;gap:18px;padding:10px 0 30px}
+   line read as washed out.
+   44px, not 30: 30 left four pixels of margin over a 26px fade, which held in Basic and did not in
+   Smart. A Smart turn is taller — it appends a .chfu row of follow-up chips that Basic never
+   renders — so the resting position of the last element differs between the two modes. */
+.chflow{flex:1 1 auto;display:flex;flex-direction:column;justify-content:flex-end;gap:18px;padding:10px 0 44px}
 .chflow.start{justify-content:flex-start;padding-top:16px}
 
 /* ---- the dock ---- */
@@ -1258,13 +1261,19 @@ button.nstate:active{transform:scale(.97)}
    before it reaches the edges. Fixed and pointer-events:none — an overlay that swallowed clicks
    for a second and a half would be a worse bug than no animation. */
 #smartwash{
-  position:absolute;inset:0;z-index:0;pointer-events:none;opacity:0;
+  /* DELIBERATELY BIGGER THAN THE SHELL. The keyframes slide this up by 46%; at inset:0 its own
+     bottom edge crossed into view partway through and read as a sharp line travelling up the
+     screen. A soft mask inside a hard box still has a hard box, so the box is pushed outside the
+     visible area at both ends and the mask is left to do all the shaping. #shell clips it. */
+  position:absolute;inset:-70% 0 -30% 0;z-index:0;pointer-events:none;opacity:0;
   background:linear-gradient(100deg,var(--brand-ramp));
   background-size:220% 100%;
   /* Centred just BELOW the bottom edge, so the colour is born at the composer rather than in the
      middle of the page, and thins out well before the top. */
-  -webkit-mask:radial-gradient(85% 52% at 50% 104%,#000 0%,rgba(0,0,0,.55) 38%,transparent 76%);
-  mask:radial-gradient(85% 52% at 50% 104%,#000 0%,rgba(0,0,0,.55) 38%,transparent 76%)}
+  /* 77% down the taller box is where the composer actually is. Aimed there so the colour is still
+     born at the input field rather than at the element's midpoint. */
+  -webkit-mask:radial-gradient(70% 30% at 50% 77%,#000 0%,rgba(0,0,0,.5) 40%,transparent 74%);
+  mask:radial-gradient(70% 30% at 50% 77%,#000 0%,rgba(0,0,0,.5) 40%,transparent 74%)}
 #smartwash.go{animation:smartwash 1900ms cubic-bezier(.22,.61,.36,1) forwards}
 /* Up and away: it starts at the input field, drifts toward the top and fades out on the way. */
 @keyframes smartwash{
