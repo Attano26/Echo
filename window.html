@@ -1221,12 +1221,15 @@ button.nstate:active{transform:scale(.97)}
   padding:0 8px 7px;font-size:12.5px;color:var(--ink-3)}
 /* The mode switch: the analytics segmented control, one size down. Same material, so the two
    read as the same kind of object rather than two designers' idea of a toggle. */
-/* --track, not --surface-2. In LIGHT the page is #F5F5F7 and --surface-2 is #F7F7F9 — a two-point
-   difference, so the unselected half of the control was invisible and the switch read as one
-   floating word. --track (#EAEAEF light / #232329 dark) is the token the analytics segmented
-   control already uses for exactly this, and it separates from the page in both themes. */
-.chseg{display:inline-flex;background:var(--track);border-radius:var(--r-pill);
-  padding:2px;gap:2px;flex:0 0 auto;margin-right:4px}
+/* SAME MATERIAL AS .anseg, PLUS A HAIRLINE, because it sits on a different ground.
+   .anseg uses --surface-2 and reads fine because it sits inside a white card. This control sits on
+   --paper (#F5F5F7 light), where --surface-2 (#F7F7F9) is two points away and vanishes — that was
+   the original complaint. --track was too far the other way: in light it resolves to
+   rgba(60,60,67,.12), which reads as a dark slab against paper.
+   So: the page's fill, defined by the page's hairline. Visible on paper, still quiet, and made of
+   the tokens every other quiet element here is made of. */
+.chseg{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);
+  border-radius:var(--r-pill);padding:2px;gap:2px;flex:0 0 auto;margin-right:4px}
 /* Scoped through .chctx deliberately. `.chctx button` styles the Clear link and carries the same
    specificity as a bare `.chseg button`, so on equal weight the later rule won and stripped the
    padding and colour off both segments. Winning by specificity rather than by source order keeps
@@ -1239,6 +1242,27 @@ button.nstate:active{transform:scale(.97)}
 .chctx .chseg button.on{background:var(--surface);color:var(--ink);
   box-shadow:var(--sh-1);font-weight:500}
 .chctx .chseg button.on:hover{color:var(--ink)}
+
+/* ---- Smart, switched on: one wash of the brand ramp over the whole page ----
+   The ramp is a linear colour list (it is shared with the sidebar mark), so it paints as a linear
+   sweep; the radial mask is what makes it bloom from the toggle at the bottom centre and fall away
+   before it reaches the edges. Fixed and pointer-events:none — an overlay that swallowed clicks
+   for a second and a half would be a worse bug than no animation. */
+#smartwash{
+  position:fixed;inset:0;z-index:60;pointer-events:none;opacity:0;
+  background:linear-gradient(100deg,var(--brand-ramp));
+  background-size:220% 100%;
+  -webkit-mask:radial-gradient(125% 90% at 50% 100%,#000 0%,rgba(0,0,0,.6) 42%,transparent 76%);
+  mask:radial-gradient(125% 90% at 50% 100%,#000 0%,rgba(0,0,0,.6) 42%,transparent 76%)}
+#smartwash.go{animation:smartwash 1500ms cubic-bezier(.22,.61,.36,1) forwards}
+@keyframes smartwash{
+  0%{opacity:0;background-position:0% 50%}
+  20%{opacity:.5}
+  55%{opacity:.28}
+  100%{opacity:0;background-position:100% 50%}
+}
+/* A viewer who asked for less motion meant this too. */
+@media (prefers-reduced-motion: reduce){ #smartwash{display:none} }
 
 /* ---- Smart, switched on ----
    This is the one control in the app that turns on something which leaves the device, so it earns
@@ -5243,6 +5267,26 @@ var CH_SPARK = false;   // one burst, consumed by the next render
    went to the model. Now Basic and Smart are picked explicitly and remembered, so a key can sit
    saved while you deliberately stay on the free path — and Smart with no key asks for one rather
    than quietly behaving like Basic. */
+/* One pass of the brand ramp over the page, then the element is taken away again. Reused rather
+   than recreated, and the class is removed on animationend so a second switch re-runs it — an
+   animation that only plays once per page load reads as broken the second time. */
+function smartWash() {
+  var el0 = document.getElementById("smartwash");
+  if (!el0) {
+    el0 = document.createElement("div");
+    el0.id = "smartwash";
+    el0.setAttribute("aria-hidden", "true");
+    document.body.appendChild(el0);
+  }
+  el0.classList.remove("go");
+  void el0.offsetWidth;            // reflow, so the animation restarts rather than being ignored
+  el0.classList.add("go");
+  el0.addEventListener("animationend", function once() {
+    el0.classList.remove("go");
+    el0.removeEventListener("animationend", once);
+  });
+}
+
 function chMode() {
   try { return localStorage.getItem(CH_MODE_LS) === "smart" ? "smart" : "basic"; } catch (e) { return "basic"; }
 }
@@ -5988,6 +6032,7 @@ function renderAsk(app) {
       CH_SPARK = false;
       b.classList.add("spark");
       (function (btn) { setTimeout(function () { btn.classList.remove("spark"); }, 950); })(b);
+      smartWash();
     }
     seg.appendChild(b);
   });
