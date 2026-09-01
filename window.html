@@ -5359,14 +5359,18 @@ function chPlaceholder() {
   var cool = String(w.coolingTrend || "").trim();
   var mover = String(w.moverName || "").trim();
   var pool = [];
-  /* Each of these names something real, so none of them can send the reader into a shrug. */
-  if (hot) pool.push("What is driving " + hot + "?");
-  if (mover) pool.push("Why is " + mover + " the top mover?");
-  if (comps.length) pool.push("What has " + comps[CH_PH_I % comps.length].name + " been doing?");
-  if (cool) pool.push("Why is " + cool + " cooling down?");
-  if (lands.length) pool.push("What changed in " + lands[CH_PH_I % lands.length].name + "?");
-  pool.push("Who has been loudest this month?");
-  pool.push("What is worth putting in the next report?");
+  /* The same split as the cards: Smart's hints ask for a reading, not a lookup. Each still names
+     something real, so none of them can send the reader into a shrug. */
+  if (hot) pool.push("Why is " + hot + " heating up, and who benefits?");
+  if (mover && comps.length > 1) {
+    var rival = comps.filter(function (c) { return c.name !== mover; })[0];
+    if (rival) pool.push("How does " + mover + " compare with " + rival.name + "?");
+  }
+  if (mover) pool.push("What does " + mover + "'s month tell me?");
+  if (cool) pool.push("Why has " + cool + " gone quiet?");
+  if (lands.length) pool.push("What is shifting in " + lands[CH_PH_I % lands.length].name + "?");
+  pool.push("What is worth putting in the next report, and why?");
+  pool.push("What have I been missing this month?");
   return pool[CH_PH_I % pool.length];
 }
 
@@ -5822,12 +5826,34 @@ var ICON_SEND = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" str
    hold. The label says which KIND of question it is, which is how you learn what can be asked. */
 function chSuggestions() {
   var d = S.data || {}, w = d.widgets || {}, ix = chIndex(), out = [];
-  var who = w.moverName || (ix.comps[0] && ix.comps[0].name);
+  var comps = arr(ix.comps);
+  var who = w.moverName || (comps[0] && comps[0].name);
+  var other = comps.filter(function (c) { return c.name !== who; })[0];
+  var hot = String(w.risingTrend || "").trim();
+  var cool = String(w.coolingTrend || "").trim();
+  var land = ix.lands.length ? ix.lands[0].name : "";
+
+  /* SMART REASONS over the stories, so it opens on questions that need them weighed against each
+     other — comparison, cause, judgement. These are exactly the questions Basic would have to
+     refuse, which is what makes the toggle worth having. Still built from real entities, so none
+     of them can open on something the app does not hold. */
+  if (chSmart()) {
+    if (who && other) out.push(["Compare", "How does " + who + " compare with " + other.name + " this month?"]);
+    else if (who) out.push(["Read", "What is " + who + " doing, and what does it signal?"]);
+    if (hot) out.push(["Why", "Why is " + hot + " heating up, and who is positioned for it?"]);
+    out.push(["Judgement", "What is worth putting in the next report, and why?"]);
+    if (land) out.push(["Watch", "What is shifting in " + land + " that I should act on?"]);
+    else if (cool) out.push(["Why", "Why has " + cool + " gone quiet?"]);
+    else out.push(["Read", "What have I been missing this month?"]);
+    return out.slice(0, 4);
+  }
+
+  /* BASIC RETRIEVES. One answer, already sitting in the data: find, count, list. */
   if (who) out.push(["Competitor", "What is happening with " + who + "?"]);
   out.push(["Spend", "How much have I spent this month?"]);
-  if (w.risingTrend) out.push(["Trend", "Why is " + w.risingTrend + " heating up?"]);
+  if (hot) out.push(["Trend", "Why is " + hot + " heating up?"]);
   else out.push(["Trend", "What is trending?"]);
-  if (ix.lands.length) out.push(["Market", "Any news from " + ix.lands[0].name + "?"]);
+  if (land) out.push(["Market", "Any news from " + land + "?"]);
   else out.push(["About", "What can you do?"]);
   return out.slice(0, 4);
 }
