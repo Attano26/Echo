@@ -4738,6 +4738,10 @@ function chAnsBucket(q, d, ix, hits) {
   }
   return {
     q: q, kind: "count", lead: lead, stats: stats, items: [], why: "",
+    /* Compact prompt: answering "how many saved" cost 10,384 input tokens because the whole
+       inventory went along for the ride. The figure is already in stats; the corpus adds nothing
+       a count can use. */
+    compact: true,
     /* Counted from the collections themselves, not from a search over story text -- which is what
        reported 5 saved stories when there were 191. */
     note: "Counted from the lists themselves, so these match what the tabs show."
@@ -5327,6 +5331,19 @@ function chPrompt(m) {
      A non-data turn needs the persona, a few counts to be concrete with, and the plain answer the
      app already composed. That is a few hundred characters instead of nineteen thousand.
      The counts are still real; nothing here invites the model to invent. */
+  if (m.compact) {
+    var lines = ["QUESTION", m.q, "",
+      "This is a question about the reader's own collections. The figures below are AUTHORITATIVE:",
+      "they were counted from the lists themselves. State them as they are. Do NOT recount, do NOT",
+      "estimate, and do NOT mention any figure that is not listed here.", ""];
+    (m.stats || []).forEach(function (r) {
+      lines.push("- " + r[0] + ": " + r[1] + (r[2] ? " (" + r[2] + ")" : ""));
+    });
+    lines.push("", "THE APP ALREADY COMPOSED THIS PLAIN ANSWER. Keep its figures, give it your voice:",
+      String(m.composed || m.lead || "").replace(/<[^>]+>/g, ""));
+    return lines.join("\n");
+  }
+
   if (m.social) {
     var d0 = S.data || {}, w0 = d0.widgets || {};
     var hot0 = String(w0.risingTrend || "").trim();
@@ -6643,6 +6660,14 @@ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", app
 if ("serviceWorker" in navigator && location.protocol === "https:") {
   window.addEventListener("load", function () {
     navigator.serviceWorker.register("./sw.js").then(function (reg) {
+      /* A worker that finished installing on a PREVIOUS visit is already waiting now, and fires no
+         updatefound event for this page to hear. Without this check the banner never appeared and
+         the reader stayed on the old version through reload after reload — the only escape was
+         closing every tab. Observed in the wild: a fix was live on the server, the browser had
+         downloaded it, and the page kept running the previous build. */
+      if (reg.waiting && navigator.serviceWorker.controller) $("#upd").classList.add("on");
+      /* And keep checking, so a long-lived tab still learns about a deploy. */
+      setInterval(function () { reg.update().catch(function () {}); }, 300000);
       reg.addEventListener("updatefound", function () {
         var w = reg.installing;
         if (!w) return;
