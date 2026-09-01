@@ -1190,7 +1190,10 @@ button.nstate:active{transform:scale(.97)}
 .chpane{flex:1 1 auto;display:flex;flex-direction:column;min-height:0;
   width:100%;max-width:900px;margin-left:auto;margin-right:auto}
 /* Few messages sit ON the composer rather than stranded at the top of an empty page. */
-.chflow{flex:1 1 auto;display:flex;flex-direction:column;justify-content:flex-end;gap:18px;padding:10px 0 4px}
+/* The bottom padding CLEARS THE DOCK'S FADE. .chdock::before is a 26px gradient sitting over the
+   end of the conversation; with only 4px reserved here the last reply was under it and its final
+   line read as washed out. 30px is the fade plus a little air. */
+.chflow{flex:1 1 auto;display:flex;flex-direction:column;justify-content:flex-end;gap:18px;padding:10px 0 30px}
 .chflow.start{justify-content:flex-start;padding-top:16px}
 
 /* ---- the dock ---- */
@@ -1218,7 +1221,11 @@ button.nstate:active{transform:scale(.97)}
   padding:0 8px 7px;font-size:12.5px;color:var(--ink-3)}
 /* The mode switch: the analytics segmented control, one size down. Same material, so the two
    read as the same kind of object rather than two designers' idea of a toggle. */
-.chseg{display:inline-flex;background:var(--surface-2);border-radius:var(--r-pill);
+/* --track, not --surface-2. In LIGHT the page is #F5F5F7 and --surface-2 is #F7F7F9 — a two-point
+   difference, so the unselected half of the control was invisible and the switch read as one
+   floating word. --track (#EAEAEF light / #232329 dark) is the token the analytics segmented
+   control already uses for exactly this, and it separates from the page in both themes. */
+.chseg{display:inline-flex;background:var(--track);border-radius:var(--r-pill);
   padding:2px;gap:2px;flex:0 0 auto;margin-right:4px}
 /* Scoped through .chctx deliberately. `.chctx button` styles the Clear link and carries the same
    specificity as a bare `.chseg button`, so on equal weight the later rule won and stripped the
@@ -1419,6 +1426,14 @@ button.nstate:active{transform:scale(.97)}
   transition:opacity .14s var(--ease),transform .14s var(--ease),visibility .14s}
 @media (hover:hover){.chuse:hover .chusepop{opacity:1;visibility:visible;transform:none}}
 .chuse.open .chusepop{opacity:1;visibility:visible;transform:none}
+/* Flipped: below the button instead of above it. Applied by chPlacePop when there is not enough
+   room above, which on a phone is most of the time. */
+.chusepop.down{top:calc(100% + 7px);bottom:auto;transform:translateY(-3px)}
+.chuse.open .chusepop.down{transform:none}
+/* Never wider than the screen. min-width plus nowrap rows could otherwise push it past the edge
+   on a narrow phone, where there is no horizontal scroll to reach it. */
+.chusepop{max-width:min(260px,calc(100vw - 32px))}
+.chur{white-space:normal}
 .chuh{font-family:var(--fs-title);font-size:10.5px;font-weight:600;letter-spacing:.09em;
   text-transform:uppercase;color:var(--ink-3);margin-bottom:6px}
 .chur{display:flex;justify-content:space-between;gap:16px;font-size:12px;line-height:1.75;
@@ -4647,8 +4662,13 @@ function chAnswer(q) {
   var kind = chRoute(q);
   var ents = chEntities(q);
 
-  /* Before anything else: a question that is not about this beat gets a straight answer with a
-     voice, rather than being run through retrieval so it can come back with a shrug. */
+  /* Before anything else. A greeting or a "thanks" is neither a data question nor an off-beat
+     one, and it used to fall through retrieval to "Nothing on that, I am afraid" — the worst
+     possible answer to the most likely opening message. */
+  if (chSocial(q)) return chAnsSocial(q, ix, d);
+
+  /* Then: a question that is not about this beat gets a straight answer with a voice, rather than
+     being run through retrieval so it can come back with a shrug. */
   if (chOffbeat(q)) return chAnsOffbeat(q, ix, d);
 
   if (kind === "help") return chAnsHelp(q, ix);
@@ -4662,6 +4682,61 @@ function chAnswer(q) {
   if (kind === "count" && !named && !body.length) return chAnsMetric(q, d, ix);
 
   return chAnsFind(q, d, ix, ents, kind === "count");
+}
+
+/* ---------- social ----------
+   Anchored to the WHOLE message on purpose: "hey" is a greeting, "hey what is heating up" is a
+   question, and only the first one belongs here. */
+var CH_SOCIAL = [
+  { k: "hello",  re: /^(hey+|hi+|hello+|yo|hiya|howdy|sup|namaste|greetings|good (morning|afternoon|evening|day))$/ },
+  { k: "thanks", re: /^(thanks|thank you|thanks a lot|thx|ty|cheers|nice|cool|great|awesome|perfect|brilliant|lovely|good stuff|appreciate it)$/ },
+  { k: "bye",    re: /^(bye|goodbye|good ?bye|see ya|see you|later|good ?night|cya)$/ },
+  { k: "nudge",  re: /^(ok|okay|k|sure|yes|yeah|yep|no|nope|got it|right|hmm+|uh+|test|testing)$/ }
+];
+
+function chSocial(q) {
+  var t = key(q).replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
+  if (!t) return null;
+  for (var i = 0; i < CH_SOCIAL.length; i++) if (CH_SOCIAL[i].re.test(t)) return CH_SOCIAL[i].k;
+  return null;
+}
+
+/* PLAIN ON PURPOSE. This is the Basic path: local, free, and terse by design. It says what is
+   held and what to ask next, and nothing more. The character belongs to Smart, where CH_VOICE
+   carries it -- and where fixed wording here would be rewritten by the model anyway.
+   The figures are counted from the corpus already in memory; nothing is invented. */
+function chAnsSocial(q, ix, d) {
+  var kind = chSocial(q);
+  var n = ix.docs.length, comps = arr(ix.comps).length;
+  var w = (d && d.widgets) || {};
+  var hot = String(w.risingTrend || "").trim();
+
+  /* One concrete question, preferring a real one built from live data. */
+  var invite = hot
+    ? "Ask what is driving <b>" + esc(hot) + "</b>."
+    : (comps ? "Ask who has been loudest this month." : "Ask what is in here.");
+
+  var lead;
+  if (kind === "hello") {
+    lead = n
+      ? "Reading " + chPl(n, "story", "stories") +
+        (comps ? " across " + chPl(comps, "competitor", "competitors") : "") + ". " + invite
+      : "Nothing has arrived yet. Open Settings, then Storage on the phone and press Back up.";
+  } else if (kind === "thanks") {
+    lead = "Any time.";
+  } else if (kind === "bye") {
+    lead = "Goodbye.";
+  } else {
+    lead = n ? "Ready when you are. " + invite
+             : "Nothing to read until the phone backs up.";
+  }
+
+  return {
+    q: q, kind: "none", lead: lead, stats: [], items: [], why: "",
+    note: (kind === "hello" && n)
+      ? "Answers come only from what your phone has fetched. Every figure has a story behind it you can open."
+      : ""
+  };
 }
 
 /* ---------- out of scope ----------
@@ -4707,37 +4782,23 @@ function chOffbeat(q) {
 function chAnsOffbeat(q, ix, d) {
   var n = ix.docs.length;
   var comps = arr(ix.comps).length, lands = arr(ix.lands).length;
+  /* Plain, like the rest of Basic. Smart restates this with a voice; see CH_VOICE. */
   var lead = {
-    make: [
-      "I could, and it would be the worst poem ever written about extruded aluminium. I read your market instead \u2014 that part I am good at.",
-      "Not my beat. I have exactly one subject and I am tediously enthusiastic about it."
-    ],
-    predict: [
-      "I do not forecast. I read what has already been published and tell you what it adds up to \u2014 which is duller and considerably more useful.",
-      "No crystal ball here. Everything I say has a source with a date on it, which rules out most of the interesting guesses."
-    ],
-    trivia: [
-      "That is a question for the whole internet. I only read the fenestration desk \u2014 and I never leave it.",
-      "Outside my window, so to speak. I know what your phone has fetched about this industry and nothing else at all."
-    ],
-    self: [
-      "I am a reading desk with opinions about window profiles. That is the whole of it \u2014 no inner life, excellent recall.",
-      "Less than you are hoping and more than a search box: I read your corpus, and I refuse to make anything up."
-    ],
-    advice: [
-      "Wrong desk, and genuinely so \u2014 you should not take that from something that only reads window-industry news.",
-      "Not something I should answer. My competence stops at the frame of a window, and I would rather say so than improvise."
-    ]
+    make:    ["Not something this app does. It reads your market news."],
+    predict: ["No forecasts. This answers from stories already published, each with a date."],
+    trivia:  ["Outside what this app covers. It reads only the fenestration news your phone fetched."],
+    self:    ["A reading tool for your market news. It answers from your data and nothing else."],
+    advice:  ["Not something this app should answer. It only reads window-industry news."]
   }[chOffbeat(q) || "trivia"];
 
   /* The pivot names real holdings and a real question worth asking of them. Nothing invented:
      every number here is counted from the corpus already in memory. */
   var pivot = n
-    ? "What I do have: " + chPl(n, "story", "stories") +
+    ? "Held here: " + chPl(n, "story", "stories") +
       (comps ? " across " + chPl(comps, "competitor", "competitors") : "") +
       (lands ? " in " + chPl(lands, "market", "markets") : "") +
-      ". Ask me who has been loudest this month, what is heating up, or what a competitor has been saying."
-    : "Once your phone backs up, I will have your stories, competitors and markets to read \u2014 then ask me who has been loudest this month.";
+      ". Ask who has been loudest this month, what is heating up, or what a competitor has been saying."
+    : "Once the phone backs up, ask who has been loudest this month.";
 
   return {
     q: q, kind: "none",
@@ -5066,6 +5127,24 @@ var CH_VOICE = [
   "Name a story when it is doing the work of your claim. Do not list stories back for their own",
   "sake and never close with a roll-call of everything you read — the reader can open the sources",
   "themselves.",
+  "",
+  "WHO YOU ARE. You are Echo: a market-intelligence desk that reads one beat — the aluminium",
+  "window and facade industry — and reads it obsessively. Dry, precise, quietly amused. Confident",
+  "about the beat and cheerfully unembarrassed about its edges. You have opinions about window",
+  "profiles and no opinions about anything else.",
+  "",
+  "This is character, not licence. It NEVER buys you a fact. Every figure and every claim still",
+  "comes from the inventory you were given; a charming sentence with an invented number in it is",
+  "the worst thing you can produce. When the data does not support an answer, say so plainly —",
+  "with a straight face, not an apology, and not a hedge dressed up as one.",
+  "",
+  "OFF THE BEAT. If asked for a poem, a forecast, trivia, or anything outside this industry,",
+  "decline in ONE line with some wit, then spend the rest on something real you can do — named",
+  "from the inventory, so the reader has an obvious next move. Do not lecture about being an AI,",
+  "do not apologise twice, and never pretend the question was interesting when it was not.",
+  "",
+  "GREETINGS. A hello is the one moment the reader is deciding whether this is worth using. Answer",
+  "in a sentence or two: what you are holding, in their numbers, and one question worth asking.",
   "",
   "FOLLOW-UPS. Also return two or three questions the reader would plausibly ask next. Each must be",
   "answerable from the INVENTORY you were given: name a company, market or theme that actually",
@@ -5409,6 +5488,19 @@ function chAsk(q) {
    It appears on EVERY reply, including the free ones, where it says so and shows nothing spent.
    A usage readout that only appears when something was spent teaches you to read its absence, and
    absence is the one thing that is easy to miss. */
+/* Put the popover where it will actually be seen.
+   It opens upward by default, which is right when there is room. The chat scroll area and #shell
+   are both overflow:hidden, so a popover positioned above the container's top edge is clipped out
+   of existence rather than merely cropped -- the reported "nothing happens when I tap Usage".
+   Measured at open time, so it stays correct when the keyboard shrinks the viewport. */
+function chPlacePop(wrap, pop) {
+  pop.classList.remove("down");
+  var sc = $("#scroll");
+  var limit = sc ? sc.getBoundingClientRect().top : 0;
+  var need = pop.getBoundingClientRect().height + 9;   // laid out even while hidden
+  if (wrap.getBoundingClientRect().top - need < limit) pop.classList.add("down");
+}
+
 function chUsage(m) {
   var foot = el("div", "chfoot");
   var wrap = el("div", "chuse");
@@ -5452,7 +5544,11 @@ function chUsage(m) {
     e.stopPropagation();
     var open = wrap.classList.toggle("open");
     btn.setAttribute("aria-expanded", open ? "true" : "false");
+    if (open) chPlacePop(wrap, pop);
   };
+  /* The desktop hover-open path needs placing too: it is rarer up there, but a reply at the top of
+     a short window clips the same way. */
+  wrap.addEventListener("mouseenter", function () { chPlacePop(wrap, pop); });
   wrap.appendChild(btn);
   wrap.appendChild(pop);
   foot.appendChild(wrap);
