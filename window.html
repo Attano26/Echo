@@ -1870,7 +1870,11 @@ var S = {
   token: "", tokenExp: 0, email: "", name: "", theme: "",
   data: null,
   actions: {
-    schema: 1, updatedAtMillis: 0,
+    schema: 2, updatedAtMillis: 0,
+    /* What this page has ASKED the phone to do, one entry per story, newest replacing older.
+       The three arrays below are no longer state — they are a legacy PROJECTION written at push
+       time so a phone too old to read requests still sees publishes and verifies. */
+    requests: [],
     verifiedTitles: [], publishedTitles: [], publishedNews: [], reportEditions: []
   },
   // News alerts is the landing page, on EVERY visit. It used to be the landing page for new
@@ -1901,6 +1905,68 @@ function load() {
   } catch (e) {}
 }
 
+/* ---------- requests: what this page has asked the phone to do ---------- */
+/* One entry per story. Asking again REPLACES the previous ask for that story with a fresh rid, so
+   verify → unverify → verify is one request, not three, and the phone cannot apply a stale one.
+   The rid is random rather than derived from the title on purpose: the phone remembers every rid
+   it has honoured, and a title-derived id would make it deaf to that story forever after. */
+function newRid() {
+  return "r-" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+}
+function pendingRequests() { return arr(S.actions.requests); }
+/* Rids the phone says it has honoured. The phone ships its WHOLE ledger, not the last sync's
+   delta: this page loads once per visit, so a delta would be missed by any tab that was not open
+   at the right moment and the request would stay pending forever. */
+function ackedRids() {
+  return new Set(arr(S.data && S.data.webAck && S.data.webAck.honoured));
+}
+function pendingFor(title) {
+  var k = key(title);
+  return pendingRequests().filter(function (r) { return key(r.title) === k; })[0] || null;
+}
+/* True when the phone has shipped a receipt block at all — i.e. it is new enough to honour
+   requests. An older build ignores them, so undo controls stay hidden rather than offering an
+   action that would appear to work and do nothing. */
+function phoneHonoursRequests() {
+  return !!(S.data && S.data.webAck && arr(S.data.webAck.honoured));
+}
+/* The Published state control. A dead "Published" label until now — there was no way to undo a
+   publish from this page at all. Against a phone that honours requests it becomes the Unpublish
+   button; against an older one it stays a label, because the request would not be read. */
+function publishedControl(title) {
+  var pend = pendingFor(title);
+  if (pend && pend.op === "unpub") {
+    var w = el("span", "nstate");
+    w.appendChild(el("span", null, "Waiting for your phone"));
+    w.title = "Un-published here. Your phone applies it on the next sync.";
+    return w;
+  }
+  if (!phoneHonoursRequests()) {
+    var lbl = el("span", "nstate pub");
+    lbl.appendChild(el("span", null, "Published"));
+    lbl.title = "Update the phone app to un-publish from here.";
+    return lbl;
+  }
+  var b = el("button", "nstate pub");
+  b.appendChild(el("span", null, "Published"));
+  b.title = "Click to move this back to Alerts";
+  b.onclick = function () { unpublishOnWeb(title); };
+  return b;
+}
+
+function requestOp(title, op, article) {
+  var k = key(title);
+  var out = pendingRequests().filter(function (r) { return key(r.title) !== k; });
+  var entry = { rid: newRid(), op: op, title: title };
+  if (article) entry.article = article;
+  out.push(entry);
+  S.actions.requests = out;
+  save(); render();
+  pushActions().catch(function (e) {
+    setStatus("Saved here, but not sent to your phone yet: " + e.message, true);
+  });
+}
+
 /* ---------- derived views ---------- */
 /* Verified on EITHER side counts as verified.
    The phone ships what it has verified in the data file; this page keeps its own verifications
@@ -1910,27 +1976,51 @@ function load() {
    corner of every card it is the first thing you see, and it was wrong.
    This is a READ of the phone's file. The one-writer rule is untouched: this page still only
    ever writes echo-web-actions.json. */
+/* The PHONE's list is the truth; this page's pending requests are painted on top of it.
+   It used to be `web ∪ phone`, and a union cannot shrink — which is exactly why un-verifying here
+   never survived a sync: the phone's own copy came straight back in. */
 function verifiedSet() {
-  var s = new Set(S.actions.verifiedTitles.map(key));
-  arr(S.data && S.data.verifiedTitles).forEach(function (t) { s.add(key(t)); });
+  var s = new Set(arr(S.data && S.data.verifiedTitles).map(key));
+  pendingRequests().forEach(function (r) {
+    if (r.op === "verify") s.add(key(r.title));
+    else if (r.op === "unverify") s.delete(key(r.title));
+  });
   return s;
 }
 /* Verified BY THE PHONE, which this page can read but must never rewrite. Undoing one here
    would only add it to the web's own list, leaving it verified twice and un-undoable, so the
    card shows it as settled rather than offering an action that cannot work. */
+/* Verified BY THE PHONE and not undoable from here — now true only of a phone too old to honour
+   requests. Against a current phone this returns false and the undo button appears, because the
+   request actually reaches it. Gated on the PHONE's capability (does it ship a receipt?) rather
+   than on this page's version, so a new page against an old phone still hides the control instead
+   of offering one that would silently do nothing. */
 function verifiedOnPhone(title) {
+  if (phoneHonoursRequests()) return false;
   return arr(S.data && S.data.verifiedTitles).map(key).indexOf(key(title)) >= 0;
 }
 function publishedSet() {
-  var s = new Set(S.actions.publishedTitles.map(key));
-  arr(S.data && S.data.publishedTitles).forEach(function (t) { s.add(key(t)); });
+  var s = new Set(arr(S.data && S.data.publishedTitles).map(key));
+  pendingRequests().forEach(function (r) {
+    if (r.op === "pub") s.add(key(r.title));
+    else if (r.op === "unpub") s.delete(key(r.title));
+  });
   return s;
 }
 /* Alerts = what the phone shows, minus anything published on either side.
    Publishing HIDES a story from Alerts; it never deletes it. */
 function alerts() {
   var pub = publishedSet();
-  return arr(S.data && S.data.alerts).filter(function (a) { return !pub.has(key(a.title)); });
+  var out = arr(S.data && S.data.alerts).filter(function (a) { return !pub.has(key(a.title)); });
+  /* A story just un-published HERE is still in the phone's publishedNews and was already stripped
+     out of the alerts it shipped, so without this it would vanish from both lists until the phone
+     synced — "unpublishing returns it to Alerts" would be visibly false on the web. */
+  var have = new Set(out.map(function (a) { return key(a.title); }));
+  arr(S.data && S.data.publishedNews).forEach(function (a) {
+    var k = key(a.title);
+    if (!pub.has(k) && !have.has(k)) { have.add(k); out.push(a); }
+  });
+  return out;
 }
 function published() {
   var seen = new Set(), out = [];
@@ -2180,8 +2270,44 @@ function pushActions(immediate) {
   return new Promise(function (res, rej) {
     pushTimer = setTimeout(async function () {
       try {
-        S.actions.updatedAtMillis = Date.now();
-        await writeJson(ACTIONS_FILE, S.actions);
+        /* READ-MODIFY-WRITE, not a blind overwrite. This used to replace the whole file, so two
+           open tabs clobbered each other's requests. Start from what is in Drive, then apply this
+           session's own asks over it — this tab is authoritative only for stories it touched. */
+        var remote = null;
+        try { remote = await readJson(ACTIONS_FILE); } catch (e2) { remote = null; }
+        var mine = pendingRequests();
+        var mineKeys = new Set(mine.map(function (r) { return key(r.title); }));
+        var merged = arr(remote && remote.requests)
+          .filter(function (r) { return r && r.title && !mineKeys.has(key(r.title)); })
+          .concat(mine);
+
+        /* Drop anything the phone has already receipted, on BOTH sides of the merge. Filtering only
+           our local copy leaves the remote entry to be merged straight back in, and the loop never
+           closes — the file grows forever and the pending pill never clears. */
+        var done = ackedRids();
+        merged = merged.filter(function (r) { return !done.has(r.rid); });
+        S.actions.requests = merged.filter(function (r) { return mineKeys.has(key(r.title)); });
+
+        /* Legacy projection: a phone too old to read `requests` still reads these three arrays, so
+           write what the pending requests MEAN. An `unpub`/`unverify` simply omits the title, which
+           at worst leaves an old phone unchanged — publishing hides, it never deletes. */
+        var pubReqs = merged.filter(function (r) { return r.op === "pub"; });
+        S.actions.publishedTitles = pubReqs.map(function (r) { return key(r.title); });
+        S.actions.publishedNews   = pubReqs.filter(function (r) { return r.article; })
+                                           .map(function (r) { return r.article; });
+        S.actions.verifiedTitles  = merged.filter(function (r) { return r.op === "verify"; })
+                                          .map(function (r) { return key(r.title); });
+
+        var body = {
+          schema: 2, updatedAtMillis: Date.now(), requests: merged,
+          verifiedTitles: S.actions.verifiedTitles,
+          publishedTitles: S.actions.publishedTitles,
+          publishedNews: S.actions.publishedNews,
+          reportEditions: S.actions.reportEditions
+        };
+        S.actions.updatedAtMillis = body.updatedAtMillis;
+        await writeJson(ACTIONS_FILE, body);
+        save();
         res(true);
       } catch (e) { rej(e); }
     }, immediate ? 0 : 1200);
@@ -2893,9 +3019,7 @@ function articleCard(a, opts) {
   /* Bottom right: the state. On a verifiable page an unverified story is a BUTTON, so the
      commonest action costs one click from where the eye already is. */
   if (opts.publishedPill) {
-    var pub = el("span", "nstate pub");
-    pub.appendChild(el("span", null, "Published"));
-    foot.appendChild(pub);
+    foot.appendChild(publishedControl(a.title));
   } else if (opts.verifiable) {
     var on = verifiedSet().has(key(a.title));
     if (on && verifiedOnPhone(a.title)) {
@@ -3192,9 +3316,7 @@ function newsLedger(items, opts) {
 
     var row = [a.date || "", a.category || "", a.title, src];
     if (opts.publishedPill) {
-      var pub = el("span", "nstate pub");
-      pub.appendChild(el("span", null, "Published"));
-      row.push(pub);
+      row.push(publishedControl(a.title));
     } else if (opts.verifiable) {
       var on = verifiedSet().has(key(a.title));
       var st;
@@ -6807,18 +6929,15 @@ function refreshReportBar() {
   $("#vcount").textContent = String(n);
   $("#repbar").classList.toggle("on", n > 0 && S.tab === "alerts");
 }
+/* Verify / un-verify is now an ASK, not a local edit that hopes to survive a merge. Un-ticking
+   writes an explicit `unverify` the phone applies to its own list; the old code just removed the
+   title from this page's array, which the union put straight back on the next sync. */
 function toggleVerify(title) {
-  var k = key(title);
-  var cur = S.actions.verifiedTitles.map(key);
-  var i = cur.indexOf(k);
-  if (i >= 0) S.actions.verifiedTitles.splice(i, 1); else S.actions.verifiedTitles.push(k);
-  save(); render();
-  /* Already saved locally, so a failed upload is not data loss — say so rather than
-     throwing an unhandled rejection into the console. */
-  pushActions().catch(function (e) {
-    setStatus("Verified here, but not saved to Drive yet: " + e.message, true);
-  });
+  requestOp(title, verifiedSet().has(key(title)) ? "unverify" : "verify");
 }
+/* Move a published story back to Alerts, from here. There was no way to do this at all before:
+   the page could only ever ADD to publishedTitles. */
+function unpublishOnWeb(title) { requestOp(title, "unpub"); }
 
 /* ============================================================
    REPORTS
@@ -7042,12 +7161,12 @@ async function publishVerified(kind) {
     competitorsCount: arr(S.data && S.data.competitors).length,
     countriesCount: arr(S.data && S.data.countries).length
   });
-  list.forEach(function (a) {
-    S.actions.publishedNews.push(a);
-    S.actions.publishedTitles.push(key(a.title));
-  });
+  /* Publishing is a request per story, carrying the article so the phone can add one it has never
+     seen. Replaces any pending request for the same story. */
   var gone = new Set(list.map(function (a) { return key(a.title); }));
-  S.actions.verifiedTitles = S.actions.verifiedTitles.filter(function (t) { return !gone.has(key(t)); });
+  var keep = pendingRequests().filter(function (r) { return !gone.has(key(r.title)); });
+  list.forEach(function (a) { keep.push({ rid: newRid(), op: "pub", title: a.title, article: a }); });
+  S.actions.requests = keep;
   save(); render();
   setStatus("Saving to Drive…");
   try {
@@ -7087,13 +7206,27 @@ async function loadEverything() {
       });
       return out;
     };
-    S.actions.verifiedTitles  = merge(S.actions.verifiedTitles,  remote.verifiedTitles,  key);
-    S.actions.publishedTitles = merge(S.actions.publishedTitles, remote.publishedTitles, key);
-    S.actions.publishedNews   = merge(S.actions.publishedNews,   remote.publishedNews,
-      function (a) { return key(a && a.title); });
+    /* Editions are creations, not verdicts — they stay a union. Nobody retracts an edition, and
+       merging them is how a second device sees one this browser made. */
     S.actions.reportEditions  = merge(S.actions.reportEditions,  remote.reportEditions,
       function (e) { return e && e.id; });
+
+    /* Requests merge by STORY, and the receipt filter runs AFTER the merge — filtering only the
+       local copy would let the remote entry back in on every load and the loop would never close. */
+    var mineKeys = new Set(pendingRequests().map(function (r) { return key(r.title); }));
+    var done = ackedRids();
+    S.actions.requests = arr(remote.requests)
+      .filter(function (r) { return r && r.title && !mineKeys.has(key(r.title)); })
+      .concat(pendingRequests())
+      .filter(function (r) { return !done.has(r.rid); });
     save();
+
+    /* If the phone receipted anything, write the shrunken file back — this page is the only writer
+       of it, so the one-writer rule is never bent. AFTER the merge, never before: pushing first
+       would erase an edition another device had just added and this browser had not yet read. */
+    if (arr(remote.requests).length !== S.actions.requests.length) {
+      pushActions(true).catch(function () { /* next action will retry */ });
+    }
   }
   /* The backup time lives in the rail now, where it is one line on every page instead of a
      full-width row under every title. This slot goes back to being the error channel only,
