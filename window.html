@@ -575,6 +575,34 @@ body.in .dhead .mark{ animation:railsweep 9s linear infinite }
 /* ---------- section label ---------- */
 .lbl{font-family:var(--fs-title);font-size:13px;font-weight:600;color:var(--ink-3);margin:22px 0 10px}
 
+/* ---------- ledger: rows for reference data ----------
+   One component for every table on the reference pages, so they cannot drift apart. */
+.ldg{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-card);
+  overflow:hidden;margin-bottom:10px}
+.ldg-h,.ldg-r{display:grid;gap:14px;align-items:baseline;padding:11px 16px}
+.ldg-h{font-family:var(--fs-title);font-size:11.5px;font-weight:600;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--ink-3);background:var(--surface-2);
+  border-bottom:1px solid var(--line-2)}
+.ldg-r{border-top:1px solid var(--line-2);font-size:14px;color:var(--ink-2)}
+.ldg-r:first-of-type{border-top:0}
+.ldg-r:hover{background:var(--surface-2)}
+.ldg-r .p{color:var(--ink);font-weight:500}      /* the primary cell, usually the name */
+.ldg-r .m{color:var(--ink-3);font-size:13px}     /* a quiet cell: counts, dates */
+.ldg-c{min-width:0;overflow-wrap:anywhere}
+/* Numbers line up under each other or the column is pointless. */
+.ldg-c.num{font-variant-numeric:tabular-nums}
+
+/* PHONES GET THEIR LABELS BACK. A table you drag sideways is worse than the cards it replaced, so
+   below 760px each row becomes a block and every cell carries its column name again. */
+@media (max-width:760px){
+  .ldg-h{display:none}
+  .ldg-r{grid-template-columns:1fr!important;gap:4px;padding:13px 15px}
+  .ldg-c[data-l]:not(:empty)::before{content:attr(data-l);display:block;
+    font-family:var(--fs-title);font-size:10.5px;font-weight:600;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--ink-3);margin-bottom:1px}
+  .ldg-c:empty{display:none}
+}
+
 /* ---------- cards ---------- */
 .list{padding-top:12px}
 .card{background:var(--surface);border-radius:var(--r-card);padding:16px;margin-bottom:10px}
@@ -2888,6 +2916,37 @@ function articleHaystack(a) {
 }
 
 /* The wall: search, filters, then the cards that survive both. */
+/* One table, used by every reference section.
+   cols: [{ t:"Name", w:"2fr", cls:"p" }, ...]   rows: [[cell, cell, ...], ...]
+   A cell is a string or a DOM node, so a row can carry a link without this needing to know about
+   links. Column widths become the grid template, set once on the header and every row, so the
+   header can never drift out of alignment with the body. */
+function ledger(cols, rows) {
+  var tpl = cols.map(function (c) { return c.w || "1fr"; }).join(" ");
+  var box = el("div", "ldg");
+  var head = el("div", "ldg-h");
+  head.style.gridTemplateColumns = tpl;
+  cols.forEach(function (c) { head.appendChild(el("div", "ldg-c" + (c.num ? " num" : ""), c.t)); });
+  box.appendChild(head);
+  rows.forEach(function (r) {
+    var row = el("div", "ldg-r");
+    row.style.gridTemplateColumns = tpl;
+    cols.forEach(function (c, i) {
+      var cell = el("div", "ldg-c" + (c.cls ? " " + c.cls : "") + (c.num ? " num" : ""));
+      /* The column name rides along on the cell so the phone layout can put the labels back
+         without a second pass over the data. */
+      cell.setAttribute("data-l", c.t);
+      var v = r[i];
+      if (v == null || v === "") { /* leave empty: the phone rule hides empty cells */ }
+      else if (typeof v === "string" || typeof v === "number") cell.textContent = String(v);
+      else cell.appendChild(v);
+      row.appendChild(cell);
+    });
+    box.appendChild(row);
+  });
+  return box;
+}
+
 function newsWall(app, list, opts) {
   opts = opts || {};
   var st = wallState();
@@ -6515,12 +6574,14 @@ function render() {
   else if (S.tab === "restorepoints") {
     var rps = arr(d.restorePoints).slice().sort(function (a, b) { return (b.timestamp || 0) - (a.timestamp || 0); });
     if (!rps.length) app.appendChild(emptyState("No restore points."));
-    rps.forEach(function (rp) {
-      var card = el("div", "card");
-      card.appendChild(el("p", "ttl", rp.name));
-      card.appendChild(el("p", "sum", rp.timestamp ? new Date(rp.timestamp).toLocaleString("en-GB") : ""));
-      app.appendChild(card);
-    });
+    else app.appendChild(ledger(
+      [{ t: "Restore point", w: "2fr", cls: "p" }, { t: "Created", w: "1fr", cls: "m" }],
+      rps.map(function (rp) {
+        return [rp.name, rp.timestamp
+          ? new Date(rp.timestamp).toLocaleString("en-GB",
+              { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
+          : ""];
+      })));
     if (rps.length) {
       var note = el("div", "info");
       note.appendChild(el("div", "i", "i"));
@@ -6538,43 +6599,47 @@ function render() {
     var comps = arr(d.competitors), prods = arr(d.competitorProducts);
     app.appendChild(el("div", "lbl", "Competitors"));
     if (!comps.length) app.appendChild(emptyState("No competitors onboarded."));
-    comps.forEach(function (c) {
-      var card = el("div", "card");
-      card.appendChild(el("p", "ttl", c.name));
-      if (c.websiteUrl) card.appendChild(linkRow(c.websiteUrl, c.websiteUrl.replace(/^https?:\/\//, "") + " ↗"));
-      if (c.keyProduct) card.appendChild(kv("Key product", c.keyProduct));
-      if (c.markets) card.appendChild(kv("Markets", c.markets));
-      var mine = prods.filter(function (p) { return key(p.competitorName) === key(c.name); });
-      if (mine.length) card.appendChild(kv("Products", mine.map(function (p) { return p.name; }).join(", ")));
-      if (c.insights) card.appendChild(el("p", "sum", c.insights));
-      app.appendChild(card);
-    });
+    else app.appendChild(ledger(
+      [{ t: "Competitor", w: "1.4fr", cls: "p" }, { t: "Markets", w: "1fr", cls: "m" },
+       { t: "Key product", w: "1.2fr", cls: "m" }, { t: "Products", w: ".5fr", cls: "m", num: true },
+       { t: "Site", w: ".6fr", cls: "m" }],
+      comps.map(function (c) {
+        var mine = prods.filter(function (p) { return key(p.competitorName) === key(c.name); });
+        var site = c.websiteUrl
+          ? (function () {
+              var a = el("a", "chkl", "Open ↗");
+              a.href = c.websiteUrl; a.target = "_blank"; a.rel = "noopener noreferrer";
+              return a;
+            })()
+          : "";
+        return [c.name, c.markets || "", c.keyProduct || "", mine.length ? mine.length : "", site];
+      })));
 
     app.appendChild(el("div", "lbl", "Markets"));
     var nations = arr(d.countries);
     if (!nations.length) app.appendChild(emptyState("No markets onboarded."));
-    nations.forEach(function (c) {
-      var card = el("div", "card");
-      card.appendChild(el("p", "ttl", c.name));
-      if (c.constructionGdp) card.appendChild(kv("Construction GDP", c.constructionGdp));
-      if (c.cagr) card.appendChild(kv("CAGR", c.cagr));
-      app.appendChild(card);
-    });
+    else app.appendChild(ledger(
+      [{ t: "Market", w: "1.4fr", cls: "p" }, { t: "Construction GDP", w: "1fr", cls: "m", num: true },
+       { t: "CAGR", w: ".7fr", cls: "m", num: true }],
+      nations.map(function (c) { return [c.name, c.constructionGdp || "", c.cagr || ""]; })));
 
     app.appendChild(el("div", "lbl", "Norms and codes"));
     var norms = arr(d.normCodes);
     if (!norms.length) app.appendChild(emptyState("No norms or codes onboarded."));
-    norms.forEach(function (n) {
-      var card = el("div", "card");
-      var top = el("div", "crow");
-      top.appendChild(el("span", "cat", n.type || "Norm"));
-      top.appendChild(el("span", "meta", n.timeValue || ""));
-      card.appendChild(top);
-      card.appendChild(el("p", "ttl", n.name));
-      card.appendChild(kv("Applies to", (n.countryName || "All") + " · " + (n.competitorName || "All")));
-      if (n.linkUrl) card.appendChild(linkRow(n.linkUrl, "Open ↗"));
-      app.appendChild(card);
-    });
+    else app.appendChild(ledger(
+      [{ t: "Norm or code", w: "1.6fr", cls: "p" }, { t: "Type", w: ".8fr", cls: "m" },
+       { t: "Applies to", w: "1.2fr", cls: "m" }, { t: "Reference", w: ".6fr", cls: "m" }],
+      norms.map(function (n) {
+        var link = n.linkUrl
+          ? (function () {
+              var a = el("a", "chkl", "Open ↗");
+              a.href = n.linkUrl; a.target = "_blank"; a.rel = "noopener noreferrer";
+              return a;
+            })()
+          : "";
+        return [n.name, n.type || "Norm",
+                (n.countryName || "All") + " · " + (n.competitorName || "All"), link];
+      })));
   }
 
   /* The explanatory note lives at the foot of Alerts only — it explains this tab. */
