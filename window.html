@@ -2663,6 +2663,26 @@ function settingsPills(g) {
   return row;
 }
 
+/* How old the backup is, in words.
+   RELATIVE ONLY WHILE IT IS SHORT. "3 min ago" is easier to judge than a clock time when something
+   just happened; past an hour the opposite is true, and an ageing relative phrase is exactly what
+   goes stale on a tab left open. So anything older than an hour prints the actual time, which
+   cannot rot, and matches what the phone's Storage screen shows for the same moment. */
+function backupAgeText(ms) {
+  if (!ms) return "Never backed up";
+  // FLOOR, not round: rounding turned 30 seconds into "1 min ago", so the label never said
+  // "just now" for the first half-minute at all. Floor also makes a clock-skewed future stamp
+  // read "just now" instead of a negative age.
+  var mins = Math.floor((Date.now() - ms) / 60000);
+  if (mins < 1) return "Backed up just now";
+  if (mins < 60) return "Backed up " + mins + " min ago";
+  var d = new Date(ms), now = new Date();
+  var t = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  var sameDay = d.toDateString() === now.toDateString();
+  if (sameDay) return "Backed up " + t;
+  return "Backed up " + d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) + ", " + t;
+}
+
 /* Sync status in the rail — Sightline puts this in the same place, and it is the right place:
    it is ambient information you want visible without asking, not a thing you go and look up. */
 function renderSyncRow() {
@@ -2677,14 +2697,7 @@ function renderSyncRow() {
   }
   var d0 = S.data, label;
   if (!d0) label = "Not loaded";
-  else if (!d0.updatedAtMillis) label = "Never backed up";
-  else {
-    var mins0 = Math.round((Date.now() - d0.updatedAtMillis) / 60000);
-    label = "Phone backed up " + (mins0 < 2 ? "just now"
-      : mins0 < 60 ? mins0 + " min ago"
-      : mins0 < 1440 ? Math.round(mins0 / 60) + " h ago"
-      : Math.round(mins0 / 1440) + " d ago");
-  }
+  else label = "Phone " + backupAgeText(d0.updatedAtMillis).replace(/^Backed/, "backed");
   if (btn) btn.title = label;
 
   /* The pill. Short enough to sit in a 290px rail without truncating, with the exact
@@ -2696,20 +2709,28 @@ function renderSyncRow() {
     var pdot = el("span", "syncdot");
     var text;
     if (!d0) text = "Not loaded";
-    else if (!d0.updatedAtMillis) text = "Never backed up";
     else {
-      var mm = Math.round((Date.now() - d0.updatedAtMillis) / 60000);
-      pdot.className = "syncdot " + (mm > 1440 ? "behind" : "ok");
-      text = "Backed up " + (mm < 2 ? "just now"
-        : mm < 60 ? mm + " min ago"
-        : mm < 1440 ? Math.round(mm / 60) + " h ago"
-        : Math.round(mm / 1440) + " d ago");
+      if (d0.updatedAtMillis) {
+        var mm = Math.round((Date.now() - d0.updatedAtMillis) / 60000);
+        pdot.className = "syncdot " + (mm > 1440 ? "behind" : "ok");
+      }
+      text = backupAgeText(d0.updatedAtMillis);
     }
     b.appendChild(pdot);
     b.appendChild(el("span", "t", text));
     b.title = d0 && d0.updatedAtMillis
       ? new Date(d0.updatedAtMillis).toLocaleString("en-GB") : label;
     b.onclick = function () { openStorage(); };
+
+    /* A RELATIVE TIME NEEDS SOMETHING TO KEEP IT RELATIVE. This was computed once at page load and
+       never again, so a tab left open kept insisting the backup was "just now" hours later —
+       precisely when the label matters and precisely when it was wrong. One interval for the life of
+       the page, guarded so repeated renders cannot stack them up. */
+    if (!window.__syncTick) {
+      window.__syncTick = setInterval(function () {
+        try { renderSyncRow(); } catch (e) {}
+      }, 30000);
+    }
     host.appendChild(b);
   }
   renderSyncDetail(label);
