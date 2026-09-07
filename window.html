@@ -3125,10 +3125,16 @@ function newsWall(app, list, opts) {
     if (panel.children.length) box.appendChild(panel);
   }
 
+  /* The COUNT is conditional and the SWITCH is not. "6 of 268" only means something while a
+     search or a filter is narrowing the list, but the choice between cards and list has to be
+     reachable whenever there are stories — which is nearly always, and was never while I had the
+     switch inside this condition. */
+  var countRow = el("div", "ncountrow");
   if (q || active) {
-    var countRow = el("div", "ncountrow");
     countRow.appendChild(el("div", "ncount",
       shown.length + " of " + list.length + (list.length === 1 ? " story" : " stories")));
+  }
+  if (list.length) {
     var view = el("div", "nview");
     [["cards", "Cards"], ["list", "List"]].forEach(function (o) {
       var b = el("button", newsView() === o[0] ? "on" : "", o[1]);
@@ -3136,8 +3142,8 @@ function newsWall(app, list, opts) {
       view.appendChild(b);
     });
     countRow.appendChild(view);
-    box.appendChild(countRow);
   }
+  if (countRow.children.length) box.appendChild(countRow);
   app.appendChild(box);
 
   var wall = el("div", "wall");
