@@ -68,3 +68,19 @@ Past reports stay under **Reports** and can be downloaded again at any time.
 It reports what was published elsewhere. It does not verify claims for you, and a story appearing
 here is not evidence that it is true. That is what the verify step is for. Check anything before it
 informs a commercial decision.
+
+## A note on this repository
+
+It is **public**, and has to be: GitHub Pages serves the site from it on the free tier.
+
+What that means in practice:
+
+- **No secrets live here.** The page holds no Gemini API key — only the phone fetches news, and it
+  pays for it. Nothing in the history has ever carried a key, a token or a password.
+- **No data lives here either.** Your competitors, news, reports and counts are in *your* Google
+  Drive. This repo is the shell that reads them after you sign in.
+- **The OAuth client ID in `window.html` is public by design.** Browser OAuth client IDs are not
+  credentials. The scope is `drive.file`, so the app can only ever see files it created itself —
+  copying the ID gets someone a consent screen and nothing else.
+- **Commits are authored as `<id>+Attano26@users.noreply.github.com`.** Commits made before
+  2026-09-08 carry a real address, because git records whatever identity was configured at the time.
