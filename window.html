@@ -575,6 +575,23 @@ body.in .dhead .mark{ animation:railsweep 9s linear infinite }
 /* ---------- section label ---------- */
 .lbl{font-family:var(--fs-title);font-size:13px;font-weight:600;color:var(--ink-3);margin:22px 0 10px}
 
+/* The count and the view switch share a line: the switch belongs beside the thing it changes. */
+.ncountrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.ncountrow .ncount{margin:0}
+
+/* The cards/list switch. Same material as every other segmented control in the app. */
+.nview{display:inline-flex;background:var(--seg-track);border-radius:var(--r-pill);
+  padding:2px;gap:2px;flex:0 0 auto;margin-left:auto}
+.nview button{border:0;background:transparent;color:var(--ink-3);font:inherit;font-size:11.5px;
+  padding:4px 11px;border-radius:var(--r-pill);cursor:pointer;letter-spacing:-.01em;
+  transition:background var(--t-hover) var(--ease),color var(--t-hover) var(--ease)}
+.nview button.on{background:var(--seg-thumb);color:var(--ink);box-shadow:var(--sh-1);font-weight:500}
+/* A five-column table on a phone is worse than the cards it replaced, so the choice is not
+   offered there and fillWall forces cards regardless of what is stored. */
+@media (max-width:760px){ .nview{display:none} }
+/* The verify control sits in a row, so it must not carry the card's block spacing. */
+.ldg-r .nstate{margin:0}
+
 /* ---------- ledger: rows for reference data ----------
    One component for every table on the reference pages, so they cannot drift apart. */
 .ldg{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-card);
@@ -2916,6 +2933,23 @@ function articleHaystack(a) {
 }
 
 /* The wall: search, filters, then the cards that survive both. */
+/* Which view the reader picked, per browser. Cards by default: it is the richer one, and a first
+   visit has no reason to prefer density. */
+var NEWS_VIEW_LS = "echo.news.view";
+function newsView() {
+  try { return localStorage.getItem(NEWS_VIEW_LS) === "list" ? "list" : "cards"; }
+  catch (e) { return "cards"; }
+}
+function setNewsView(v) {
+  try { localStorage.setItem(NEWS_VIEW_LS, v === "list" ? "list" : "cards"); } catch (e) {}
+}
+/* The stored choice does not apply on a narrow screen — see the media query above. */
+function newsViewEffective() {
+  var narrow = false;
+  try { narrow = window.matchMedia("(max-width:760px)").matches; } catch (e) {}
+  return narrow ? "cards" : newsView();
+}
+
 /* One table, used by every reference section.
    cols: [{ t:"Name", w:"2fr", cls:"p" }, ...]   rows: [[cell, cell, ...], ...]
    A cell is a string or a DOM node, so a row can carry a link without this needing to know about
@@ -3092,8 +3126,17 @@ function newsWall(app, list, opts) {
   }
 
   if (q || active) {
-    box.appendChild(el("div", "ncount",
+    var countRow = el("div", "ncountrow");
+    countRow.appendChild(el("div", "ncount",
       shown.length + " of " + list.length + (list.length === 1 ? " story" : " stories")));
+    var view = el("div", "nview");
+    [["cards", "Cards"], ["list", "List"]].forEach(function (o) {
+      var b = el("button", newsView() === o[0] ? "on" : "", o[1]);
+      b.onclick = function () { setNewsView(o[0]); render(); };
+      view.appendChild(b);
+    });
+    countRow.appendChild(view);
+    box.appendChild(countRow);
   }
   app.appendChild(box);
 
@@ -3115,7 +3158,61 @@ function wallEmpty(filtering, opts) {
 }
 function fillWall(wall, items, opts) {
   wall.innerHTML = "";
+  if (newsViewEffective() === "list") { wall.appendChild(newsLedger(items, opts)); return; }
   items.forEach(function (a) { wall.appendChild(articleCard(a, opts)); });
+}
+
+/* The list view: the same ledger the reference pages use, with the columns a story has.
+   The state cell reuses the card's own verify logic rather than restating it — three states, and
+   getting them subtly different between the two views is exactly the drift this avoids. */
+function newsLedger(items, opts) {
+  var cols = [
+    { t: "Date", w: ".8fr", cls: "m" },
+    { t: "Category", w: ".9fr", cls: "m" },
+    { t: "Story", w: "2.6fr", cls: "p" },
+    { t: "Source", w: ".9fr", cls: "m" }
+  ];
+  if (opts.publishedPill || opts.verifiable) cols.push({ t: "State", w: ".8fr" });
+
+  return ledger(cols, items.map(function (a) {
+    var src;
+    if (a.sourceUrl) {
+      src = el("a", "nsrc");
+      src.href = a.sourceUrl; src.target = "_blank"; src.rel = "noopener noreferrer";
+      src.title = "Open " + (a.source || "the source") + " in a new tab";
+      src.appendChild(document.createTextNode(a.source || "Source"));
+      src.appendChild(el("span", "ext", "↗"));
+    } else src = a.source || "";
+
+    var row = [a.date || "", a.category || "", a.title, src];
+    if (opts.publishedPill) {
+      var pub = el("span", "nstate pub");
+      pub.appendChild(el("span", null, "Published"));
+      row.push(pub);
+    } else if (opts.verifiable) {
+      var on = verifiedSet().has(key(a.title));
+      var st;
+      if (on && verifiedOnPhone(a.title)) {
+        st = el("span", "nstate on");
+        st.innerHTML = ICON_TICK;
+        st.appendChild(el("span", null, "Verified"));
+        st.title = "Verified on the phone. Change it there.";
+      } else if (on) {
+        st = el("button", "nstate on");
+        st.innerHTML = ICON_TICK;
+        st.appendChild(el("span", null, "Verified"));
+        st.title = "Verified here. Click to undo.";
+        st.onclick = function () { toggleVerify(a.title); };
+      } else {
+        st = el("button", "nstate");
+        st.appendChild(el("span", null, "Not verified"));
+        st.title = "Click to mark this verified";
+        st.onclick = function () { toggleVerify(a.title); };
+      }
+      row.push(st);
+    }
+    return row;
+  }));
 }
 
 /* Rebuild only the cards and the count, so typing never costs the field its focus or caret.
