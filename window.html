@@ -3401,16 +3401,33 @@ function anTrendRow(host, name, vals, delta, colour) {
   host.appendChild(row);
 }
 
-/* ---- API cost. The phone's top card: Today / This month / Daily cap. ---- */
+/* ---- API cost: Today / the selected window / Daily cap. ----
+   The middle column used to print `spendMonth`, a calendar-month counter on the phone that resets
+   on the 1st. That made this the one card on the analytics wall that ignored the 1M/3M/6M switch —
+   all three states showed the same number. It now reads st.spendWindows[AN_WIN], summed on the
+   phone from the per-call log over the SAME .days the charts use.
+
+   The log is a 300-entry ring and its paid rows were once truncated, so it does not necessarily
+   reach back as far as the window asks. anCostFoot states what it really covers instead of letting
+   "6 months" imply six months of records. Today and Daily cap are not window-dependent and are
+   unchanged. */
 function anCost(host, st) {
+  var sw = (st.spendWindows || {})[AN_WIN] || null;
+  var winCol = sw
+    ? [anPhrase(AN_WIN).replace(/^last /, "Last "), "≈ ₹" + (Number(sw.rupees) || 0).toFixed(2),
+       (sw.searches || 0) + " searches · " + (sw.calls || 0) + (sw.calls === 1 ? " call" : " calls"),
+       (Number(sw.tokens) || 0).toLocaleString("en-IN") + " tokens", null]
+    /* An older phone build that predates spendWindows. Fall back to the month figure and say so,
+       rather than silently showing a month total under a "last 6 months" heading. */
+    : ["This month", "≈ ₹" + (Number(st.spendMonth) || 0).toFixed(2),
+       (st.searchesMonth || 0) + " searches",
+       (Number(st.tokensMonth) || 0).toLocaleString("en-IN") + " tokens", null];
   var cols = [
     ["Today", "≈ ₹" + (Number(st.spendToday) || 0).toFixed(2),
      (st.searchesToday || 0) + " searches · " + (st.callsToday || 0) +
        (st.callsToday === 1 ? " call" : " calls"),
      (Number(st.tokensToday) || 0).toLocaleString("en-IN") + " tokens", null],
-    ["This month", "≈ ₹" + (Number(st.spendMonth) || 0).toFixed(2),
-     (st.searchesMonth || 0) + " searches",
-     (Number(st.tokensMonth) || 0).toLocaleString("en-IN") + " tokens", null],
+    winCol,
     ["Daily cap", "₹" + Math.round(Number(st.dailyCostCap) || 0), "in-app stop", "", "var(--accent)"]
   ];
   var row = el("div", "costrow");
@@ -3425,8 +3442,28 @@ function anCost(host, st) {
     row.appendChild(col);
   });
   host.appendChild(row);
-  host.appendChild(el("div", "anfoot",
-    "Estimate only. It assumes every search is billed, so the real bill is usually a little lower."));
+  host.appendChild(el("div", "anfoot", anCostFoot(sw)));
+}
+
+/* What the middle column actually covers.
+   Says the FACT and not the cause: the log both evicts its oldest entry past 300 and was once
+   truncated by a one-time clean slate, and nothing stored can tell those apart afterwards. Naming
+   the wrong one would be a confident explanation of something the app does not know. */
+function anCostFoot(sw) {
+  var base = "Estimate only. It assumes every search is billed, so the real bill is usually a little lower.";
+  if (!sw) return base;
+  var notes = [];
+  if (!sw.complete) {
+    var d = Number(sw.coveredDays) || 0;
+    notes.push(d <= 0
+      ? "No calls are recorded yet, so this window has nothing to total."
+      : "The call log only reaches back " + d + (d === 1 ? " day" : " days") +
+        ", so this covers that much of the window rather than all " + (Number(sw.days) || 0) + " days.");
+    /* Both short-log cases can read BELOW the Today figure beside them, which looks like a
+       contradiction unless the reason is on screen. */
+    if (sw.logFull) notes.push("It keeps only the last 300 calls, so treat the figure as a floor.");
+  }
+  return notes.length ? base + " " + notes.join(" ") : base;
 }
 
 /* ---- News volume: one narrow column per week, channels as separated blocks. ---- */
@@ -4479,10 +4516,14 @@ function renderDashboard(app, d) {
     s.appendChild(el("div", "c", caption));
     return s;
   }
+  /* Both captions name what the phone actually computed. Top mover measures the newest, still
+     in-progress period against the average of the earlier ones, so it says "so far"; Emerging topic
+     compares two equal rolling spans and skips stories with no parseable date. */
   add(statCard("Top mover", a.topMover,
-    "Biggest " + anDelta(AN_WIN) + " gain in share of voice", AN_PALETTE[0]));
+    "Share of voice in the newest " + anPeriod(AN_WIN) + " so far, against its own average", AN_PALETTE[0]));
+  var espan = AN_WIN === "1M" ? "7 days" : "30 days";
   add(statCard("Emerging topic", a.emergingTopic,
-    "Channel rising fastest this " + anPeriod(AN_WIN), AN_PALETTE[2]));
+    "Biggest gain among dated stories, last " + espan + " vs the " + espan + " before", AN_PALETTE[2]));
 
   c = anCard("News volume", "Stories by channel over time");
   anVolume(c.body, a);
