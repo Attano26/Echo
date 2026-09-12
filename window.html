@@ -1035,7 +1035,36 @@ button.nstate:active{transform:scale(.97)}
   border:1px solid var(--line);border-radius:14px;padding:13px 15px;margin-bottom:8px;
   cursor:pointer;transition:border-color .15s ease,background .15s ease}
 .lgcard:hover{border-color:var(--line-2,var(--line))}
-.lgcard.open{border-color:var(--accent,#1F57F5)}
+/* SELECTED, not expanded: the card is a choice in a list, and the detail is elsewhere. Marking
+   it on the left edge keeps the row height identical whether or not it is the current one, so
+   the list never shifts under the cursor as you move down it. */
+.lgcard.on{border-color:var(--accent,#1F57F5);box-shadow:inset 3px 0 0 0 var(--accent,#1F57F5)}
+
+/* ---- Right pane -------------------------------------------------------- */
+.lgpht{font-weight:600;color:var(--ink);font-size:13px}
+.lgphd{margin-left:auto;font-size:12px;color:var(--ink-3)}
+.lgpane{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:16px}
+.lgtiles{display:flex;gap:8px;margin-bottom:18px}
+.lgtile{flex:1 1 0;min-width:0;background:var(--surface-2,var(--bg));border:1px solid var(--line);
+  border-radius:12px;padding:12px 12px 11px}
+.lgtn{font-size:19px;font-weight:600;color:var(--ink);letter-spacing:-.01em;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lgtl{font-size:11px;color:var(--ink-3);margin-top:2px}
+
+/* A source row and, beneath it, what that source actually did. */
+.lgsrcwrap{border:1px solid var(--line);border-radius:12px;margin-bottom:8px;overflow:hidden;
+  background:var(--surface-2,var(--bg))}
+.lgsrcwrap.on{border-color:var(--accent,#1F57F5)}
+.lgchev{flex:0 0 auto;color:var(--ink-3);font-size:11px;margin-left:8px}
+.lgsdet{padding:2px 14px 14px;border-top:1px solid var(--line)}
+.lgsh{font-size:10.5px;font-weight:600;letter-spacing:.04em;color:var(--ink-3);
+  margin:12px 0 7px}
+/* Queries as chips: ~28 of them read as a wall as a bulleted list, but scan fine wrapped. */
+.lgqs{display:flex;flex-wrap:wrap;gap:6px}
+.lgq{font-size:11px;color:var(--ink-2);background:var(--track,var(--bg));
+  border:1px solid var(--line);border-radius:999px;padding:3px 9px;max-width:100%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lgnote{font-size:11px;color:var(--ink-3);margin-top:8px;font-style:italic}
 .lgcard .lgd{margin-top:5px}
 .lgbody{flex:1;min-width:0}
 .lgtop{display:flex;align-items:center;gap:10px}
@@ -1047,8 +1076,7 @@ button.nstate:active{transform:scale(.97)}
 .lgsub{font-size:11.5px;color:var(--ink-3);margin-top:4px}
 .lgdet{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
 .lgdeth{font-size:10.5px;font-weight:600;letter-spacing:.04em;color:var(--ink-3);margin-bottom:8px}
-.lgsrc{display:flex;gap:10px;align-items:flex-start;padding:8px 0}
-.lgsrc + .lgsrc{border-top:1px solid var(--line)}
+.lgsrc{display:flex;gap:10px;align-items:center;padding:11px 14px;cursor:pointer}
 .lgsrc .lgd{margin-top:5px}
 .lgsrcb{flex:1;min-width:0}
 .lgsrcn{font-size:12.5px;font-weight:600;color:var(--ink)}
@@ -1056,8 +1084,11 @@ button.nstate:active{transform:scale(.97)}
 .lgsrcc{font-size:11.5px;font-weight:500;color:#34C759;flex:0 0 auto}
 .lgsrcc.paid{color:#E5A33B}
 .lgtitles{margin-top:6px}
-.lgt{font-size:11.5px;color:var(--ink-2);line-height:1.55;overflow:hidden;
-  text-overflow:ellipsis;white-space:nowrap}
+.lgt{font-size:12px;color:var(--ink-2);line-height:1.6;padding:1px 0}
+@media (max-width:900px){
+  /* Narrow: the pane drops under the list, matching how Reports behaves at this width. */
+  .lgpane{max-height:none}
+}
 
 /* Window selector: the phone's 1M / 3M / 6M segmented control. */
 /* Same grey as the phone and as the Basic/Smart switch. It used to be --surface-2, which reads on
@@ -2574,6 +2605,11 @@ function renderDrawerNav() {
    This page never fetches news and never calls an API, so everything here is a record of what the
    PHONE did. Nothing on this screen can spend money. */
 var LOG_WIN = "7d";
+/* Which run is open in the detail pane (by timestamp), and which source row is expanded
+   inside it. LOG_SRC is keyed BY RUN so opening a second refresh does not silently inherit
+   the first one's expanded row. */
+var LOG_OPEN = null;
+var LOG_SRC = {};
 
 /* Cost data lives under `settings` in the backup, next to spendWindows — NOT at the top level.
    One accessor so the nav count and the view can never read different places. */
@@ -2626,12 +2662,11 @@ function logDotClass(r) {
 
 function renderLogs(app, d) {
   var runs = costRuns().slice();
-  var wrap = el("div", "anwrap");
+  var cut = logCutoff(LOG_WIN);
+  var inWin = runs.filter(function (r) { return (r.t || 0) >= cut; });
 
   var head = el("div", "anhead");
   var left = el("div", "anheadl");
-  var cut = logCutoff(LOG_WIN);
-  var inWin = runs.filter(function (r) { return (r.t || 0) >= cut; });
   left.appendChild(el("h2", null,
     inWin.length + (inWin.length === 1 ? " refresh" : " refreshes") +
     ", " + inWin.reduce(function (a, r) { return a + (r.stories || 0); }, 0) + " stories"));
@@ -2639,109 +2674,194 @@ function renderLogs(app, d) {
   var seg = el("div", "anseg");
   LOG_WINDOWS.forEach(function (w) {
     var b = el("button", LOG_WIN === w[0] ? "on" : null, w[1]);
-    b.onclick = function () { LOG_WIN = w[0]; render(); };
+    b.onclick = function () { LOG_WIN = w[0]; LOG_OPEN = null; render(); };
     seg.appendChild(b);
   });
   head.appendChild(seg);
-  wrap.appendChild(head);
-
-  var legend = el("div", "lglegend");
-  [["free", "RSS · free"], ["paid", "Grounded · paid"], ["hybrid", "Hybrid · both"]].forEach(function (p) {
-    var row = el("span", "lgleg");
-    row.appendChild(el("span", "lgd " + p[0]));
-    row.appendChild(el("span", null, p[1]));
-    legend.appendChild(row);
-  });
-  wrap.appendChild(legend);
+  app.appendChild(head);
 
   if (!runs.length) {
-    /* Say WHICH of the two possible causes it is, rather than a bare "nothing here": an older
-       phone build simply does not send costRuns, and that is not the same as no refreshes. */
-    wrap.appendChild(el("div", "dempty",
-      "No cost log in this backup. Refresh on the phone, then sync — the log travels with it."));
-    app.appendChild(wrap); return;
+    /* Name WHICH of the two causes it is: an older phone build simply does not send costRuns,
+       and that is a different problem from having made no refreshes. */
+    app.appendChild(el("div", "dempty",
+      "No cost log in this backup. Refresh on the phone, then back up - the log travels with it."));
+    return;
   }
   if (!inWin.length) {
-    wrap.appendChild(el("div", "dempty", "No refreshes in this window. Try a longer range."));
-    app.appendChild(wrap); return;
+    app.appendChild(el("div", "dempty", "No refreshes in this window. Try a longer range."));
+    return;
   }
+
+  /* Keep the selected run across re-renders while it still exists, else fall to the newest, so
+     the detail pane is never empty on arrival. */
+  var sel = null;
+  if (LOG_OPEN != null) {
+    sel = inWin.filter(function (r) { return r.t === LOG_OPEN; })[0] || null;
+  }
+  if (!sel) { sel = inWin[0]; LOG_OPEN = sel.t; }
+
+  var split = el("div", "rsplit");
+  var list = el("div", "rlist");
+
+  var legend = el("div", "lglegend");
+  [["free", "RSS \u00b7 free"], ["paid", "Grounded \u00b7 paid"], ["hybrid", "Hybrid \u00b7 both"]]
+    .forEach(function (p) {
+      var row = el("span", "lgleg");
+      row.appendChild(el("span", "lgd " + p[0]));
+      row.appendChild(el("span", null, p[1]));
+      legend.appendChild(row);
+    });
+  list.appendChild(legend);
 
   var lastDay = null;
   inWin.forEach(function (r) {
     var day = logDayHeader(r.t || 0);
-    if (day !== lastDay) { wrap.appendChild(el("div", "lgday", day.toUpperCase())); lastDay = day; }
-    wrap.appendChild(logRunCard(r));
+    if (day !== lastDay) { list.appendChild(el("div", "lgday", day.toUpperCase())); lastDay = day; }
+    list.appendChild(logRunCard(r, r.t === LOG_OPEN));
   });
-  app.appendChild(wrap);
+  split.appendChild(list);
+  split.appendChild(logRunPane(sel));
+  app.appendChild(split);
 }
 
-function logRunCard(r) {
-  var card = el("div", "lgcard");
+/* LEFT RAIL: one card per refresh, selection only. The detail lives in the pane, so a card never
+   grows and the list never reflows under the cursor while you are reading it. */
+function logRunCard(r, on) {
+  var card = el("div", "lgcard" + (on ? " on" : ""));
   card.setAttribute("role", "button");
   card.setAttribute("tabindex", "0");
-
-  var dot = el("span", logDotClass(r));
-  card.appendChild(dot);
+  card.appendChild(el("span", logDotClass(r)));
 
   var body = el("div", "lgbody");
   var top = el("div", "lgtop");
   top.appendChild(el("span", "lgwhen",
-    logTime(r.t || 0) + "  ·  " + (r.mode || "Free RSS") +
-    ((r.repeats && r.repeats > 1) ? "  ·  ×" + r.repeats : "")));
-  var cost = el("span", "lgcost" + ((r.rupees && r.rupees >= 0.005) ? " paid" : ""), logCostText(r));
-  top.appendChild(cost);
+    logTime(r.t || 0) + "  \u00b7  " + (r.mode || "Free RSS") +
+    ((r.repeats && r.repeats > 1) ? "  \u00b7  \u00d7" + r.repeats : "")));
+  top.appendChild(el("span", "lgcost" + ((r.rupees && r.rupees >= 0.005) ? " paid" : ""),
+    logCostText(r)));
   body.appendChild(top);
-
-  /* The big number is what the refresh PRODUCED. Cost is secondary, and usually zero. */
-  body.appendChild(el("div", "lgbig", (r.stories || 0) + (r.stories === 1 ? " story" : " stories")));
-
-  var bits = [];
-  bits.push((r.sources || 0) + (r.sources === 1 ? " source" : " sources"));
+  body.appendChild(el("div", "lgbig",
+    (r.stories || 0) + (r.stories === 1 ? " story" : " stories")));
+  var bits = [(r.sources || 0) + ((r.sources === 1) ? " source" : " sources")];
   if (r.searches) bits.push(r.searches + (r.searches === 1 ? " paid search" : " paid searches"));
-  if (r.tokens) bits.push(Number(r.tokens).toLocaleString() + " tokens");
-  body.appendChild(el("div", "lgsub", bits.join("  ·  ")));
+  body.appendChild(el("div", "lgsub", bits.join("  \u00b7  ")));
+  card.appendChild(body);
 
-  /* SOURCE-CENTRIC detail, inline rather than in a dialog: the card answers "what did this get
-     me", and the breakdown answers "which source earned its place" — the question that leads to
-     an action. Keeping them together means you never lose the run you were looking at. */
+  var pick = function () { LOG_OPEN = r.t; render(); };
+  card.onclick = pick;
+  card.onkeydown = function (e) {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); }
+  };
+  return card;
+}
+
+/* RIGHT PANE: the selected refresh, source by source. Each source opens to the queries it ran and
+   the headlines it returned - the same three levels the phone walks through, except the list stays
+   on screen instead of being replaced by a sheet. */
+function logRunPane(r) {
+  var pane = el("div", "rprev");
+  var head = el("div", "rphead");
+  head.appendChild(el("span", logDotClass(r)));
+  head.appendChild(el("span", "lgpht", (r.mode || "Free RSS") + " refresh"));
+  head.appendChild(el("span", "lgphd", new Date(r.t || 0).toLocaleString(undefined,
+    { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })));
+  pane.appendChild(head);
+
+  var bodyWrap = el("div", "lgpane");
+
+  var tiles = el("div", "lgtiles");
+  [[String(r.stories || 0), "stories"],
+   [logCostText(r).replace("\u2248 ", ""), "cost"],
+   [String(r.sources || 0), "sources asked"]].forEach(function (t) {
+    var box = el("div", "lgtile");
+    box.appendChild(el("div", "lgtn", t[0]));
+    box.appendChild(el("div", "lgtl", t[1]));
+    tiles.appendChild(box);
+  });
+  bodyWrap.appendChild(tiles);
+  bodyWrap.appendChild(el("div", "lgdeth", "WHERE THESE CAME FROM"));
+
   var by = arr(r.by);
-  if (by.length) {
-    var det = el("div", "lgdet");
-    det.hidden = true;
-    det.appendChild(el("div", "lgdeth", "WHERE THESE CAME FROM"));
-    by.forEach(function (b) {
-      var row = el("div", "lgsrc");
-      row.appendChild(el("span", "lgd " + ((b.rupees && b.rupees >= 0.005) ? "paid" : "free")));
-      var c = el("div", "lgsrcb");
-      c.appendChild(el("div", "lgsrcn", b.src || "Source"));
-      var askedTxt = (b.asked ? b.asked + " asked  ·  " : "");
-      c.appendChild(el("div", "lgsrcm", askedTxt + (b.stories || 0) +
-        ((b.stories === 1) ? " story" : " stories")));
-      var titles = arr(b.titles);
-      if (titles.length) {
-        var ul = el("div", "lgtitles");
-        titles.forEach(function (t) { ul.appendChild(el("div", "lgt", "• " + t)); });
-        c.appendChild(ul);
-      }
-      row.appendChild(c);
-      row.appendChild(el("span", "lgsrcc" + ((b.rupees && b.rupees >= 0.005) ? " paid" : ""),
-        (b.rupees && b.rupees >= 0.005) ? "₹" + Number(b.rupees).toFixed(2) : "Free"));
-      det.appendChild(row);
-    });
-    body.appendChild(det);
+  if (!by.length) {
+    bodyWrap.appendChild(el("div", "dempty", "This refresh recorded no per-source detail."));
+  }
+  by.forEach(function (b, i) {
+    var open = (LOG_SRC[r.t] === i);
+    var wrap = el("div", "lgsrcwrap" + (open ? " on" : ""));
 
-    var toggle = function () {
-      det.hidden = !det.hidden;
-      card.classList.toggle("open", !det.hidden);
-    };
-    card.onclick = toggle;
-    card.onkeydown = function (e) {
+    var row = el("div", "lgsrc");
+    row.setAttribute("role", "button");
+    row.setAttribute("tabindex", "0");
+    row.appendChild(el("span", "lgd " + ((b.rupees && b.rupees >= 0.005) ? "paid" : "free")));
+    var c = el("div", "lgsrcb");
+    c.appendChild(el("div", "lgsrcn", b.src || "Source"));
+    c.appendChild(el("div", "lgsrcm",
+      (b.asked ? b.asked + " asked  \u00b7  " : "") +
+      (b.stories || 0) + ((b.stories === 1) ? " story" : " stories")));
+    row.appendChild(c);
+    row.appendChild(el("span", "lgsrcc" + ((b.rupees && b.rupees >= 0.005) ? " paid" : ""),
+      (b.rupees && b.rupees >= 0.005) ? "\u20b9" + Number(b.rupees).toFixed(2) : "Free"));
+    row.appendChild(el("span", "lgchev", open ? "\u25b4" : "\u25be"));
+    var toggle = function () { LOG_SRC[r.t] = open ? -1 : i; render(); };
+    row.onclick = toggle;
+    row.onkeydown = function (e) {
       if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
     };
-  }
+    wrap.appendChild(row);
 
-  card.appendChild(body);
-  return card;
+    if (open) {
+      var det = el("div", "lgsdet");
+      var qs = logQueries(b);
+      if (qs.length) {
+        det.appendChild(el("div", "lgsh", "WHAT IT SEARCHED  \u00b7  " + qs.length));
+        var qbox = el("div", "lgqs");
+        qs.forEach(function (q) { qbox.appendChild(el("span", "lgq", logShortQuery(q))); });
+        det.appendChild(qbox);
+      }
+      var titles = arr(b.titles);
+      if (titles.length) {
+        det.appendChild(el("div", "lgsh", "WHAT IT RETURNED  \u00b7  " +
+          (b.stories > titles.length ? titles.length + " of " + b.stories : titles.length)));
+        titles.forEach(function (t) { det.appendChild(el("div", "lgt", "\u2022 " + t)); });
+        if (b.stories > titles.length) {
+          /* Say the list is partial rather than letting it read as the whole run. */
+          det.appendChild(el("div", "lgnote",
+            "Older refreshes keep a sample of headlines, to keep the backup small."));
+        }
+      } else {
+        det.appendChild(el("div", "lgnote", "No headlines recorded for this source."));
+      }
+      wrap.appendChild(det);
+    }
+    bodyWrap.appendChild(wrap);
+  });
+
+  pane.appendChild(bodyWrap);
+  return pane;
+}
+
+/* Queries are POOLED in the backup: the plan repeats on every run, so each source carries an index
+   into one shared list instead of its own copy (~250 KB inlined vs ~4 KB pooled, measured over 103
+   runs). Backups written before pooling inline them; both shapes are handled. */
+function logQueries(b) {
+  if (b.q && b.q.length) return arr(b.q);
+  var pool = arr(((S.data || {}).settings || {}).costQueryPool);
+  var i = (b.qi == null) ? -1 : b.qi;
+  return (i >= 0 && pool[i]) ? arr(pool[i]) : [];
+}
+
+/* A sheet row is a URL, and a full Google News query string is unreadable as a chip. Show the host
+   plus the phrase it searched for where there is one, and the plain query otherwise. */
+function logShortQuery(q) {
+  var t = String(q || "");
+  if (!/^https?:\/\//i.test(t)) return t;
+  try {
+    var u = new URL(t);
+    var term = u.searchParams.get("q") || "";
+    term = term.replace(/\s*when:\d+d\s*/i, "").replace(/"/g, "").trim();
+    var host = u.hostname.replace(/^www\./, "");
+    return term ? host + " \u00b7 " + term : host + u.pathname;
+  } catch (e) { return t; }
 }
 
 /* Describe the RECURRENCE, not a single next firing — "9:00 AM on weekdays" tells you what
@@ -6926,7 +7046,7 @@ function renderAsk(app) {
    bad layout for another, since a 1600px line of body text is unreadable however much room
    there is. Capped and centred is what the reference does too. */
 var WIDE_TABS = ["dashboard", "alerts", "saved", "published", "liked", "disliked",
-                 "database", "restorepoints", "ask", "reports"];
+                 "database", "restorepoints", "ask", "reports", "logs"];
 
 /* ============================================================
    SKELETONS
@@ -7120,7 +7240,10 @@ function render() {
   $("#shell").classList.toggle("chat", S.tab === "ask");
   /* Same trick as the chat tab: the scroll column becomes a flex column so the preview pane
      can fill the height instead of collapsing to its content. */
-  $("#shell").classList.toggle("split", S.tab === "reports");
+  /* Reports and the Cost log share one geometry: a fixed list rail and a flexible detail
+     pane. Deliberately NOT a 50/50 split — a run card is a time and two numbers, while the
+     detail is headlines and query lists, so an even split starves the half needing width. */
+  $("#shell").classList.toggle("split", S.tab === "reports" || S.tab === "logs");
   var app = $("#app"); app.innerHTML = "";
   var d = S.data, i;
 
