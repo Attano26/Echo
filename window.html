@@ -1035,10 +1035,13 @@ button.nstate:active{transform:scale(.97)}
   border:1px solid var(--line);border-radius:14px;padding:13px 15px;margin-bottom:8px;
   cursor:pointer;transition:border-color .15s ease,background .15s ease}
 .lgcard:hover{border-color:var(--line-2,var(--line))}
-/* SELECTED, not expanded: the card is a choice in a list, and the detail is elsewhere. Marking
-   it on the left edge keeps the row height identical whether or not it is the current one, so
-   the list never shifts under the cursor as you move down it. */
-.lgcard.on{border-color:var(--accent,#1F57F5);box-shadow:inset 3px 0 0 0 var(--accent,#1F57F5)}
+/* SELECTED, not expanded: the card is a choice in a list and the detail lives in the pane, so
+   this only has to read as "current" - it must not change the row's height, or the list shifts
+   under the cursor as you move down it.
+   The accent BORDER alone does that. An earlier version also drew a 3px inset bar down the left
+   edge, which put 4px on one side against 1px on the other three and read as a rendering fault
+   rather than a selection. One mark per state. */
+.lgcard.on{border-color:var(--accent,#1F57F5)}
 
 /* ---- Right pane -------------------------------------------------------- */
 .lgpht{font-weight:600;color:var(--ink);font-size:13px}
