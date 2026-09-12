@@ -1099,15 +1099,12 @@ button.nstate:active{transform:scale(.97)}
    Scoped to .logsplit: #scroll losing its own scrollbar is only correct where the children take
    it over, and Reports is not in scope here. */
 @media (min-width:901px){
-  #shell.split.logsplit #scroll{overflow:hidden}
-  #shell.split.logsplit #scroll > .wrap{min-height:0;height:100%}
-  #shell.split.logsplit #app{min-height:0}
+  #shell.split #scroll{overflow:hidden}
+  #shell.split #scroll > .wrap{min-height:0;height:100%}
+  #shell.split #app{min-height:0}
 }
-@media (max-width:900px){
-  /* Narrow: the pane drops under the list and the PAGE scrolls again, so nothing is bounded. */
-  .lgpane{max-height:none;overflow:visible}
-  .rprev{overflow:visible}
-}
+/* Below the breakpoint .rsplit stacks and .rprev takes a fixed 70vh, so the page scrolls again
+   and the pane scrolls inside that box. Nothing to override — the base rules already do it. */
 
 /* Window selector: the phone's 1M / 3M / 6M segmented control. */
 /* Same grey as the phone and as the Basic/Smart switch. It used to be --surface-2, which reads on
@@ -2533,10 +2530,10 @@ function drawerOpen() { return $("#drawer").classList.contains("on"); }
 var NAV_GROUPS = [
   // Order is reading order: the feed first, then what you kept from it, then the numbers about
   // it, then the tool that queries it. Ask sits last in Feed because it acts ON these stories.
-  ["Feed",      ["alerts", "saved", "dashboard", "logs", "ask"]],
+  ["Feed",      ["alerts", "saved", "dashboard", "ask"]],
   ["Reporting", ["published", "reports"]],
   ["Signals",   ["liked", "disliked"]],
-  ["Data",      ["database", "restorepoints"]]
+  ["Data",      ["database", "restorepoints", "logs"]]
 ];
 
 /* One icon per tab id. A tab with no entry simply renders without one rather than breaking the
@@ -7263,7 +7260,6 @@ function render() {
      pane. Deliberately NOT a 50/50 split — a run card is a time and two numbers, while the
      detail is headlines and query lists, so an even split starves the half needing width. */
   $("#shell").classList.toggle("split", S.tab === "reports" || S.tab === "logs");
-  $("#shell").classList.toggle("logsplit", S.tab === "logs");
   var app = $("#app"); app.innerHTML = "";
   var d = S.data, i;
 
