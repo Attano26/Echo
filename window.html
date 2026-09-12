@@ -1088,9 +1088,25 @@ button.nstate:active{transform:scale(.97)}
 .lgsrcc.paid{color:#E5A33B}
 .lgtitles{margin-top:6px}
 .lgt{font-size:12px;color:var(--ink-2);line-height:1.6;padding:1px 0}
+/* BOUND THE HEIGHT CHAIN so the two panes scroll INSIDE themselves.
+   Measured 2026-09-12: without this every container grew to fit its content — .lgpane was 1428px
+   tall with 1428px of content, so it never produced a scrollbar — and the whole page grew to
+   1581px instead. The window selector then scrolled away with it, and a long expanded source had
+   to be chased by scrolling the page rather than the pane it lives in.
+   .wrap carries min-height:100% with no height, and #app inherits min-height:auto, so flex
+   children were free to grow rather than shrink. Giving the chain a real height and min-height:0
+   is what lets the overflow land on the panes.
+   Scoped to .logsplit: #scroll losing its own scrollbar is only correct where the children take
+   it over, and Reports is not in scope here. */
+@media (min-width:901px){
+  #shell.split.logsplit #scroll{overflow:hidden}
+  #shell.split.logsplit #scroll > .wrap{min-height:0;height:100%}
+  #shell.split.logsplit #app{min-height:0}
+}
 @media (max-width:900px){
-  /* Narrow: the pane drops under the list, matching how Reports behaves at this width. */
-  .lgpane{max-height:none}
+  /* Narrow: the pane drops under the list and the PAGE scrolls again, so nothing is bounded. */
+  .lgpane{max-height:none;overflow:visible}
+  .rprev{overflow:visible}
 }
 
 /* Window selector: the phone's 1M / 3M / 6M segmented control. */
@@ -7247,6 +7263,7 @@ function render() {
      pane. Deliberately NOT a 50/50 split — a run card is a time and two numbers, while the
      detail is headlines and query lists, so an even split starves the half needing width. */
   $("#shell").classList.toggle("split", S.tab === "reports" || S.tab === "logs");
+  $("#shell").classList.toggle("logsplit", S.tab === "logs");
   var app = $("#app"); app.innerHTML = "";
   var d = S.data, i;
 
