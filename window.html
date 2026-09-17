@@ -80,7 +80,7 @@
      A dedicated pair because --track is redeclared further down and cannot be trusted. */
   --seg-track:#E9E9EE; --seg-thumb:#FFFFFF;
   /* Storage breakdown: nine categorical hues, one per section, in the SAME slot order the phone
-     uses (News, Saved, Published, Reports, Competitors, Countries and norms, News ledger, Metrics,
+     uses (News, Saved, Published, Reports, Competitors, Countries, News ledger, Metrics,
      Metal prices) so a section is the same colour on both. Validated, not eyeballed. */
   --st1:#2A78D6; --st2:#EB6834; --st3:#1BAF7A; --st4:#EDA100; --st5:#E87BA4;
   --st6:#008300; --st7:#4A3AA7; --st8:#E34948; --st9:#1198AD;
@@ -900,7 +900,9 @@ body.in .dhead .mark{ animation:railsweep 9s linear infinite }
 .ndate{font-size:12px;color:var(--ink-3);white-space:nowrap;flex:0 0 auto;
   font-variant-numeric:tabular-nums}
 .nttl{font-family:var(--fs-title);font-size:15px;font-weight:600;line-height:1.42;margin:9px 0 0}
-.nsum{font-size:13.5px;color:var(--ink-2);line-height:1.62;margin:8px 0 0}
+.nsum{font-size:13.5px;color:var(--ink-2);line-height:1.62;margin:8px 0 0;
+  /* Four lines, then an ellipsis, whatever the source - curated feeds hand over whole articles. */
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;line-clamp:4;overflow:hidden}
 
 /* The source is a link when we have a URL for it, and looks like plain text until you are
    about to use it. Underline on hover, not a permanent blue: a wall of twenty cards with
@@ -3132,8 +3134,7 @@ function storageSlices() {
     ["Reports", editions().length, jsonBytes(arr(d.reportEditions))],
     ["Competitors", arr(d.competitors).length,
       jsonBytes(arr(d.competitors)) + jsonBytes(arr(d.competitorProducts))],
-    ["Countries and norms", arr(d.countries).length + arr(d.normCodes).length,
-      jsonBytes(arr(d.countries)) + jsonBytes(arr(d.normCodes))],
+    ["Countries", arr(d.countries).length, jsonBytes(arr(d.countries))],
     ["News ledger", ledger,
       jsonBytes(seen) + jsonBytes(String(d.seenStoryDates || "")) +
       jsonBytes(String(d.deletedStoryRecords || ""))],
@@ -5423,12 +5424,9 @@ function chIndex() {
   var lands = arr(d.countries).filter(function (c) { return c && c.name; }).map(function (c) {
     return { name: c.name, terms: [chFold(c.name)], row: c };
   });
-  var norms = arr(d.normCodes).filter(function (n) { return n && n.name; }).map(function (n) {
-    return { name: n.name, terms: [chFold(n.name)], row: n };
-  });
 
   CH_IX = { stamp: stamp, docs: docs, idf: idf, N: N, avg: avg, vocab: vocab,
-            comps: comps, lands: lands, norms: norms };
+            comps: comps, lands: lands };
   return CH_IX;
 }
 
@@ -5499,7 +5497,7 @@ function chEntities(q) {
       return e.terms.some(function (t) { return t.length >= 4 && hay.indexOf(t) >= 0; });
     });
   };
-  return { comps: pick(ix.comps), lands: pick(ix.lands), norms: pick(ix.norms) };
+  return { comps: pick(ix.comps), lands: pick(ix.lands) };
 }
 
 /* ---------- router ----------
@@ -5553,7 +5551,7 @@ function chAnswer(q) {
 
   /* A count question that NAMES something is a count over retrieval; one that names nothing —
      "what is the status", "how many stories do I have" — is the global figure. */
-  var named = ents.comps.length || ents.lands.length || ents.norms.length;
+  var named = ents.comps.length || ents.lands.length;
   var body = chTokens(q).filter(function (t) { return !CH_ROUTE_WORDS[t]; });
   if (kind === "count" && !named && !body.length) return chAnsMetric(q, d, ix);
 
@@ -5611,7 +5609,7 @@ function chUnknownSubject(q) {
   var t = " " + key(q).replace(/[^a-z0-9 ]+/g, " ") + " ";
   if (CH_ONBEAT.test(t)) return null;
   var e = chEntities(q);
-  if (e.comps.length || e.lands.length || e.norms.length) return null;
+  if (e.comps.length || e.lands.length) return null;
   /* The raw words, not the stems, so the model is handed "KTM" rather than "ktm". */
   var raw = String(q).split(/[^A-Za-z0-9À-ɏ]+/).filter(function (w) {
     if (w.length < 3) return false;
@@ -5654,7 +5652,6 @@ var CH_BUCKETS = [
   { k: "reports",   re: /\b(report|reports|edition|editions|dossier)\b/,        n: function ()  { return editions().length; },            one: "report",          many: "reports",           where: "the Reports tab" },
   { k: "comps",     re: /\b(competitor|competitors|compan(y|ies)|brand|brands|rival|rivals)\b/, n: function (d) { return arr(d.competitors).length; }, one: "competitor", many: "competitors", where: "the Database tab" },
   { k: "lands",     re: /\b(market|markets|countr(y|ies)|region|regions|geograph\w*)\b/, n: function (d) { return arr(d.countries).length; }, one: "market",     many: "markets",           where: "the Database tab" },
-  { k: "norms",     re: /\b(norm|norms|standard|standards|code|codes|regulation[s]?)\b/, n: function (d) { return arr(d.normCodes).length; }, one: "norm or code", many: "norms and codes",  where: "the Database tab" },
   { k: "restore",   re: /\b(restore point[s]?|backup[s]?|snapshot[s]?)\b/,      n: function (d) { return arr(d.restorePoints).length; },  one: "restore point",   many: "restore points",    where: "Restore points" }
 ];
 
@@ -5966,16 +5963,6 @@ function chAnsFind(q, d, ix, ents, wantCount) {
 
   if (!hits.length) {
     var near = chNear(q);
-    var norm = ents.norms[0];
-    if (norm) {
-      return { q: q, kind: "norm",
-        lead: "<b>" + esc(norm.name) + "</b> is one of your onboarded norms" +
-              (norm.row.type ? " (" + esc(norm.row.type) + ")" : "") + ", applying to " +
-              esc(norm.row.countryName || "all markets") + " · " + esc(norm.row.competitorName || "all competitors") +
-              ". No story in your data mentions it yet.",
-        stats: [], items: [], why: "",
-        note: norm.row.linkUrl ? "The reference link is on the Data tab." : "" };
-    }
     return { q: q, kind: "none",
       lead: chPick(q, [
         "Nothing on that, I am afraid.",
@@ -5984,7 +5971,7 @@ function chAnsFind(q, d, ix, ents, wantCount) {
       ]),
       stats: [], items: [], why: "",
       note: "I read only what your phone has fetched — " + chPl(ix.docs.length, "story", "stories") +
-            ", plus your competitors, markets and norms. I will not answer from outside the app." +
+            ", plus your competitors and markets. I will not answer from outside the app." +
             (near.length ? " Words I do have that look close: " + near.slice(0, 5).join(", ") + "." : "") };
   }
 
@@ -7374,23 +7361,6 @@ function render() {
        { t: "CAGR", w: ".7fr", cls: "m", num: true }],
       nations.map(function (c) { return [c.name, c.constructionGdp || "", c.cagr || ""]; })));
 
-    app.appendChild(el("div", "lbl", "Norms and codes"));
-    var norms = arr(d.normCodes);
-    if (!norms.length) app.appendChild(emptyState("No norms or codes onboarded."));
-    else app.appendChild(ledger(
-      [{ t: "Norm or code", w: "1.6fr", cls: "p" }, { t: "Type", w: ".8fr", cls: "m" },
-       { t: "Applies to", w: "1.2fr", cls: "m" }, { t: "Reference", w: ".6fr", cls: "m" }],
-      norms.map(function (n) {
-        var link = n.linkUrl
-          ? (function () {
-              var a = el("a", "chkl", "Open ↗");
-              a.href = n.linkUrl; a.target = "_blank"; a.rel = "noopener noreferrer";
-              return a;
-            })()
-          : "";
-        return [n.name, n.type || "Norm",
-                (n.countryName || "All") + " · " + (n.competitorName || "All"), link];
-      })));
   }
 
   /* The explanatory note lives at the foot of Alerts only — it explains this tab. */
