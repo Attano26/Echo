@@ -8054,12 +8054,18 @@ function mrBrandTokens(name) {
   if (paren && paren.trim().length >= 4) out.push(paren.trim().toLowerCase());
   return out;
 }
+/* In the phone's order: its sheet and PDF read countries ORDER BY name ASC (SQLite's binary order),
+   while the backup lists them as they were added. Unsorted, the switches, "India and Germany" and
+   the PDF's sections all came out the other way round from the phone. */
 function reportMarketList() {
   var seen = new Set(), out = [];
-  arr(S.data && S.data.countries).forEach(function (c) {
-    var n = String((c && c.name) || "").trim();
-    if (n && !seen.has(key(n))) { seen.add(key(n)); out.push(n); }
-  });
+  arr(S.data && S.data.countries)
+    .map(function (c) { return String((c && c.name) || ""); })
+    .sort(function (a, b) { return a < b ? -1 : a > b ? 1 : 0; })
+    .forEach(function (raw) {
+      var n = raw.trim();
+      if (n && !seen.has(key(n))) { seen.add(key(n)); out.push(n); }
+    });
   return out;
 }
 function reportMarketsOf(a, markets) {
