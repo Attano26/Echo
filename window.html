@@ -1386,6 +1386,11 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
   body{background:#fff;color:#000;overflow:visible}
   #shell,#gate,#toast,#ask,#upd{display:none !important}
   #report{display:block}
+  @page{size:A4;margin:0}
+  #report .rdoc{width:auto !important;height:auto !important;margin:0}
+  #report .rdocin{transform:none !important;gap:0;width:auto}
+  #report .rpage{box-shadow:none;break-after:page;page-break-after:always}
+  #report .rpage:last-child{break-after:auto;page-break-after:auto}
   #report .r-art{page-break-inside:avoid;margin:0 0 18px;padding:0 0 14px;border-bottom:1px solid #ddd}
   #report h1{font-size:22px;margin:0 0 4px}
   #report .r-sub{color:#555;font-size:12px;margin:0 0 22px}
@@ -1803,14 +1808,14 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
   .bver{font-size:34px}
 }
 
-/* ---------- reports, as a split view ----------
-   Editions on the left, the document itself on the right. The preview is the PDF the PHONE drew,
-   fetched from Drive and shown as-is, which is the only arrangement that cannot drift from the
-   phone's formatting: there is no second renderer to drift.
-
+/* ---------- the Monthly Report, as a split view ----------
+   The builder on the left, the document on the right. A PREVIOUS edition previews as the PDF the
+   phone drew, fetched from Drive and shown as-is, so it cannot drift from the phone's formatting.
    Word previews as the phone's own docx-fidelity PDF, for the reason the phone's code gives:
-   nothing can render a .docx to pixels natively, so the preview is a PDF drawn to match the Word
-   output. Same trick, same bytes, so what you see is what downloads. */
+   nothing can render a .docx to pixels natively.
+
+   This month's edition doesn't exist on the phone yet, so it is drawn here as A4 pages in the
+   phone PDF's own layout (the .rpage rules below). */
 #shell.split #scroll{padding-bottom:0}
 #shell.split #scroll > .wrap{min-height:100%;display:flex;flex-direction:column}
 #shell.split #app{flex:1 1 auto;display:flex;flex-direction:column;padding-top:0}
@@ -1829,30 +1834,145 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
   padding:34px;text-align:center;font-size:13.5px;line-height:1.7;color:var(--ink-3)}
 .rpmsg span{max-width:44ch}
 
-/* one edition */
-.rcard{flex:0 0 auto;background:var(--surface);border:1px solid var(--line-2);
-  border-radius:var(--r-card);box-shadow:var(--sh-1);padding:14px 16px 12px;cursor:pointer;
-  transition:border-color var(--t-hover) var(--ease),box-shadow var(--t-hover) var(--ease)}
-.rcard:hover{box-shadow:var(--sh-2)}
-.rcard.on{border-color:var(--accent);box-shadow:var(--sh-2)}
-.rctop{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
-.rcwk{font-family:var(--fs-title);font-size:12px;font-weight:600;color:var(--accent-ink)}
-.rcdate{font-size:12px;color:var(--ink-3);white-space:nowrap;font-variant-numeric:tabular-nums}
-.rcttl{font-family:var(--fs-title);font-size:15px;font-weight:600;line-height:1.4;margin:9px 0 0}
-.rcsub{font-size:12.5px;color:var(--ink-3);margin:5px 0 0}
-.rcfoot{display:flex;align-items:center;gap:10px;margin-top:13px}
-/* The format switch sits bottom LEFT, the download bottom RIGHT. */
+/* The PDF | Word switch in the preview's header. */
 .rcseg{display:flex;flex:0 0 auto;background:var(--track);border-radius:var(--r-pill);padding:2px}
 .rcseg button{border:0;background:none;font:inherit;font-size:12px;font-weight:500;
   color:var(--ink-3);padding:5px 13px;border-radius:var(--r-pill);cursor:pointer;
   transition:background var(--t-hover) var(--ease),color var(--t-hover) var(--ease)}
 .rcseg button.on{background:var(--track-on);color:var(--ink)}
-.rcdl{margin-left:auto;flex:0 0 auto}
 @media (max-width:900px){
   .rsplit{flex-direction:column}
   .rlist{flex:0 0 auto;overflow:visible}
   .rprev{flex:0 0 auto;height:70vh}
 }
+
+/* ============================================================
+   MONTHLY REPORT (the phone's Monthly Report sheet, on the web)
+   ============================================================ */
+.mrsplit .mrrail{flex:0 0 372px;gap:0;padding-right:4px}
+.mrtitle{font-family:var(--fs-title);font-size:19px;font-weight:600;letter-spacing:-.25px;
+  line-height:1.3;margin:4px 4px 14px}
+.mrcard{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-card);
+  box-shadow:var(--sh-1);flex:0 0 auto}
+.mrsum{padding:14px 16px 0}
+.mrstats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.mrstat + .mrstat{border-left:1px solid var(--line-2);padding-left:14px}
+.mrval{font-family:var(--fs-title);font-size:26px;font-weight:600;letter-spacing:-.4px;
+  line-height:1.15;color:var(--ink);font-variant-numeric:tabular-nums}
+.mrval.acc{color:var(--accent-ink)}
+.mrof{font-size:13px;font-weight:500;letter-spacing:0;color:var(--ink-3)}
+.mrslbl{font-size:12px;color:var(--ink-3);margin-top:2px}
+.mrsumfoot{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  min-height:44px;margin-top:12px;border-top:1px solid var(--line-2);font-size:12px;color:var(--ink-3)}
+.mrclear{border:0;background:none;font:inherit;font-size:13px;font-weight:600;color:var(--danger);
+  padding:8px 10px;margin-right:-10px;border-radius:8px;cursor:pointer}
+.mrclear:hover,.mrclear:focus-visible{background:rgba(240,97,109,.12)}
+.mrlbl{font-size:13px;font-weight:500;color:var(--ink-3);margin:22px 4px 8px}
+.mrrow{display:flex;align-items:center;gap:12px;padding:11px 14px;cursor:pointer;min-height:56px}
+.mrlist > * + *{box-shadow:inset 0 1px 0 var(--line-2)}
+.mrbadge{flex:none;width:32px;height:32px;border-radius:9px;display:grid;place-items:center;
+  font-size:12px;font-weight:600;background:var(--surface-2);color:var(--ink-3);
+  transition:background var(--t-hover) var(--ease),color var(--t-hover) var(--ease)}
+.mrrow.on .mrbadge{background:var(--accent-soft);color:var(--accent-ink)}
+.mrtxt{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:1px}
+.mrname{font-size:15px;font-weight:500;color:var(--ink)}
+.mrsub{font-size:12px;line-height:1.4;color:var(--ink-3)}
+.mrinc{margin-top:12px}
+.mrcap{font-size:12px;color:var(--ink-3);margin:18px 4px 8px}
+.mrprevbtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+  min-height:50px;flex:0 0 auto}
+.mrempty{padding:18px;font-size:13px;line-height:1.6;color:var(--ink-3);text-align:center}
+.mredrow{display:flex;align-items:center;gap:4px;padding:9px 6px 9px 14px;cursor:pointer;
+  border-radius:0;transition:background var(--t-hover) var(--ease)}
+.mredrow:first-child{border-radius:var(--r-card) var(--r-card) 0 0}
+.mredrow:last-child{border-radius:0 0 var(--r-card) var(--r-card)}
+.mredrow:only-child{border-radius:var(--r-card)}
+.mredrow:hover{background:var(--surface-2)}
+.mredrow.on{background:var(--accent-soft)}
+.mredlink{border:0;background:none;font:inherit;font-size:13px;font-weight:600;
+  color:var(--accent-ink);padding:9px 9px;border-radius:8px;cursor:pointer}
+.mredlink:hover{background:var(--accent-soft)}
+.mredlink:disabled{opacity:.5;cursor:default}
+
+/* iOS-style switch on a real checkbox */
+.mrsw{appearance:none;-webkit-appearance:none;flex:none;width:46px;height:28px;margin:0;
+  border-radius:14px;background:var(--track);position:relative;cursor:pointer;
+  transition:background var(--t-hover) var(--ease)}
+.mrsw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;
+  background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.28);transition:transform var(--t-hover) var(--ease)}
+.mrsw:checked{background:var(--accent)}
+.mrsw:checked::after{transform:translateX(18px)}
+.mrsw:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* the preview pane */
+.mrhead{flex-wrap:wrap;row-gap:8px}
+.mrhttl{display:flex;flex-direction:column;min-width:0;margin-right:auto}
+.mrhttl b{font-size:14px}
+.mrhttl span{font-size:12px;color:var(--ink-3)}
+.mrseg{margin:0}
+.mrzoom{display:flex;align-items:center;gap:2px;background:var(--track);border-radius:var(--r-pill);padding:2px}
+.mrzoom button{border:0;background:none;font:inherit;font-size:14px;font-weight:600;color:var(--ink-2);
+  min-width:28px;height:26px;padding:0 8px;border-radius:var(--r-pill);cursor:pointer}
+.mrzoom button.pct{font-size:12px;font-weight:500;min-width:48px;font-variant-numeric:tabular-nums}
+.mrzoom button:hover{background:var(--track-on)}
+.mrdl{flex:0 0 auto}
+.mrbody{overflow:hidden}
+.mrfoot{flex:0 0 auto;padding:10px 16px;border-top:1px solid var(--line-2);
+  font-size:12px;color:var(--ink-3);text-align:center}
+.mrscroll{position:absolute;inset:0;overflow:auto;overscroll-behavior:contain;padding:22px 0 64px}
+.mrpill{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);pointer-events:none;
+  background:rgba(0,0,0,.55);color:#fff;font-size:12px;padding:5px 12px;border-radius:var(--r-pill);
+  white-space:nowrap}
+.mrpill:empty{display:none}
+.mrdlbot{display:none}
+@media (max-width:560px){
+  .mrdltop{display:none}
+  .mrdlbot{display:flex;align-items:center;justify-content:center;width:100%;min-height:48px;margin:2px 0 10px}
+  .mrfoot{padding:12px 16px 14px}
+}
+@media (max-width:900px){
+  .mrsplit .mrrail{flex:0 0 auto;padding-right:0}
+  .mrpane{height:auto;min-height:78vh;scroll-margin-top:12px}
+}
+
+/* The edition as A4 pages, in points, drawn the way the phone's PDF is. */
+.rdoc{position:relative;margin:0 auto}
+.rdocin{width:595pt;transform-origin:0 0;display:flex;flex-direction:column;gap:14pt}
+.rpage{position:relative;flex:none;width:595pt;height:842pt;overflow:hidden;background:#fff;color:#111827;
+  font-family:'Arial Nova','Arial Nova Light',Arial,sans-serif;font-weight:300;
+  box-shadow:0 1px 3px rgba(0,0,0,.14),0 0 0 .5px rgba(0,0,0,.08);
+  -webkit-print-color-adjust:exact;print-color-adjust:exact}
+.rp-bar{position:absolute;left:44pt;top:70pt;width:66pt;height:6pt;background:#247A6A}
+.rp-kicker{position:absolute;left:44pt;top:96pt;font-size:14pt;line-height:1;color:#6B7280}
+.rp-title{position:absolute;left:44pt;right:24pt;top:127pt;font-size:36pt;line-height:1;color:#111827;white-space:nowrap}
+.rp-sub{position:absolute;left:44pt;top:175pt;font-size:14pt;line-height:1;color:#6B7280;white-space:pre}
+.rp-tiles{position:absolute;left:44pt;top:248pt;width:507pt;display:grid;grid-template-columns:1fr 1fr;gap:12pt}
+.rp-tile{position:relative;height:58pt;background:#F3F4F6;border-radius:8pt}
+.rp-num{position:absolute;left:14pt;top:5pt;font-size:36pt;line-height:1;color:#247A6A}
+.rp-lbl{position:absolute;left:14pt;top:41pt;font-size:9.5pt;line-height:1;color:#6B7280}
+.rp-body{position:absolute;left:44pt;right:44pt;top:52pt;height:734pt;overflow:hidden}
+.rp-sec{display:flex;align-items:baseline;gap:8pt;margin:28pt 0 16pt;padding-bottom:7pt;border-bottom:2pt solid #247A6A}
+.rp-body > .rp-sec:first-child{margin-top:0}
+.rp-sec b{font-weight:300;font-size:18pt;line-height:1.1;color:#111827}
+.rp-sec span{font-size:10pt;color:#9CA3AF}
+.rp-card{background:#FBFBFD;border:.8pt solid #E5E7EB;border-radius:10pt;padding:14pt;margin:0 0 12pt}
+.rp-tag{font-size:8.5pt;line-height:1.2;color:#247A6A;margin-bottom:9pt}
+.rp-head{font-size:14pt;line-height:15pt;color:#111827}
+.rp-meta{font-size:9pt;line-height:11pt;color:#9CA3AF;margin-top:5pt}
+.rp-sum{font-size:10pt;line-height:14pt;color:#374151;margin-top:6pt}
+.rp-foot{position:absolute;left:44pt;right:44pt;bottom:0;height:44pt;border-top:.8pt solid #E5E7EB;
+  font-size:8pt;line-height:1;color:#9CA3AF}
+.rp-f1{position:absolute;left:0;top:9pt}
+.rp-f2{position:absolute;left:0;right:0;top:23pt;display:flex;justify-content:space-between}
+.rp-f2 span:first-child{white-space:pre}
+/* Word's layout draws square tiles and cards; the Word preview shows that. */
+.rdoc.word .rp-tile,.rdoc.word .rp-card{border-radius:0}
+
+/* Confirm dialogs that offer two equal choices (Clear all) */
+.askrow.eq{display:grid;grid-template-columns:1fr 1fr;justify-content:stretch}
+.askrow.eq .btn{width:100%;display:flex;align-items:center;justify-content:center;min-height:44px}
+.askrow.eq .btn.ghost{background:var(--surface-2);border-color:transparent;color:var(--ink)}
+.btn.danger{background:rgba(240,97,109,.14);color:var(--danger)}
 </style>
 </head>
 <body>
@@ -1913,9 +2033,8 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
 
   <div id="repbar">
     <div class="wrap inner">
-      <div class="cnt"><b id="vcount">0</b> verified and ready to publish</div>
-      <button class="btn sm ghost" id="genWord">Word</button>
-      <button class="btn sm" id="genPdf">Generate PDF</button>
+      <div class="cnt"><b id="vcount">0</b> verified, ready for the Monthly Report</div>
+      <button class="btn sm" id="openReport">Open Monthly Report</button>
     </div>
   </div>
 </div>
@@ -2512,14 +2631,14 @@ function askConfirm(opts) {
   return askShell(function (box, done) {
     box.appendChild(el("h2", "askttl", opts.title));
     if (opts.body) box.appendChild(el("p", "askbody", opts.body));
-    var row = el("div", "askrow");
+    var row = el("div", "askrow" + (opts.equal ? " eq" : ""));
     var no = el("button", "btn sm ghost", opts.cancel || "Cancel");
     no.onclick = function () { done(false); };
-    var yes = el("button", "btn sm", opts.ok || "Continue");
+    var yes = el("button", "btn sm" + (opts.danger ? " danger" : ""), opts.ok || "Continue");
     yes.onclick = function () { done(true); };
     row.appendChild(no); row.appendChild(yes);
     box.appendChild(row);
-    yes.focus();
+    (opts.danger ? no : yes).focus();
   });
 }
 
@@ -2537,7 +2656,7 @@ var TABS = [
   ["alerts",    "News alerts", function () { return alerts().length; }],
   ["saved",     "Saved",     function () { return arr(S.data && S.data.savedNews).length; }],
   ["published", "Published", function () { return published().length; }],
-  ["reports",   "Reports",   function () { return editions().length; }],
+  ["reports",   "Monthly Report", function () { return editions().length; }],
   ["liked",     "Liked",     function () { return arr(S.data && S.data.likedTitles).length; }],
   ["disliked",  "Disliked",  function () { return arr(S.data && S.data.dislikedTitles).length; }],
   ["database",  "Database",  function () { return arr(S.data && S.data.competitors).length; }],
@@ -2552,7 +2671,7 @@ var TAB_TITLE = {
   alerts:    ["News alerts", "Window market intelligence"],
   saved:     ["Saved",     "Bookmarked stories"],
   published: ["Published", "Stories already in a report"],
-  reports:   ["Reports",   "Download a past edition"],
+  reports:   ["Monthly Report", "Pick the markets, preview, then download"],
   liked:     ["Liked",     "What you marked useful"],
   disliked:  ["Disliked",  "What you pushed away"],
   database:  ["Data",      "Markets and competitors"],
@@ -7556,6 +7675,7 @@ function render() {
   $("#shell").classList.toggle("split", S.tab === "reports" || S.tab === "logs");
   var app = $("#app"); app.innerHTML = "";
   var d = S.data, i;
+  if (S.tab !== "reports") { MR.sel = null; MR.includeAll = false; MR.draft = null; }
 
   if (S.loading) {
     app.appendChild(skeletonFor(S.tab));
@@ -7586,7 +7706,7 @@ function render() {
   }
   else if (S.tab === "published") {
     newsWall(app, published(), { publishedPill: true, placeholder: "Search published stories",
-      empty: "Nothing published yet. Verify some alerts, then generate a report." });
+      empty: "Nothing published yet. Verify some alerts, then publish the Monthly Report." });
   }
   else if (S.tab === "reports") {
     renderReports(app);
@@ -7807,67 +7927,29 @@ function toggleVerify(title) {
 function unpublishOnWeb(title) { requestOp(title, "unpub"); }
 
 /* ============================================================
-   REPORTS
-   ============================================================ */
-function reportHtml(title, dateLabel, articles) {
-  return "<h1>" + esc(title) + "</h1><p class='r-sub'>" + esc(dateLabel) + " · " +
-    articles.length + " article(s)</p>" +
-    articles.map(function (a) {
-      return "<div class='r-art'>" +
-        "<div class='r-meta'>" + esc(catShort(a.category) || "News") +
-          (a.date ? " · " + esc(a.date) : "") +
-          (a.source ? " · " + esc(a.source) : "") + "</div>" +
-        "<h2>" + esc(decodeEnt(a.title)) + "</h2>" +
-        (a.summary ? "<p class='r-sum'>" + esc(decodeEnt(a.summary)) + "</p>" : "") +
-      "</div>";
-    }).join("");
-}
-/* PDF via the browser's own print dialogue ("Save as PDF"). No library, no CDN, and
-   the output matches what you see rather than a re-implementation of it. */
-function printReport(title, dateLabel, articles) {
-  $("#report").innerHTML = reportHtml(title, dateLabel, articles);
-  var prev = document.title;
-  document.title = title + " — " + dateLabel;
-  window.print();
-  setTimeout(function () { document.title = prev; }, 500);
-}
-/* Word: an HTML document served with Word's MIME type. Word and Google Docs both
-   open it as a normal editable document, and it needs no zip library. */
-function downloadWord(title, dateLabel, articles) {
-  var doc =
-    '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">' +
-    '<head><meta charset="utf-8"><title>' + esc(title) + '</title><style>' +
-    'body{font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#000}' +
-    'h1{font-size:18pt;margin:0 0 4pt}.r-sub{color:#555;font-size:9pt;margin:0 0 18pt}' +
-    'h2{font-size:12pt;margin:0 0 4pt}.r-meta{font-size:8.5pt;color:#666;margin:0 0 4pt}' +
-    '.r-sum{font-size:10pt;line-height:1.5;margin:0}' +
-    '.r-art{margin:0 0 14pt;padding:0 0 10pt;border-bottom:1pt solid #ddd}' +
-    '</style></head><body>' + reportHtml(title, dateLabel, articles) + '</body></html>';
-  var blob = new Blob(["﻿", doc], { type: "application/msword" });
-  var a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = String(title).replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-") + "-" +
-    String(dateLabel).replace(/\s+/g, "-") + ".doc";
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
-}
-
-/* ============================================================
-   REPORTS
+   MONTHLY REPORT
    ------------------------------------------------------------
-   The phone draws both documents and uploads them beside the backup. This page fetches those
-   bytes and shows them; it does not render a report of its own, because a second renderer is a
-   second format, and the two would drift the first time either changed.
+   The phone's Monthly Report sheet, on the web (17 Sep 2026, phone build 47/48): one summary card
+   (verified / to verify / markets, Clear all behind a confirmation), a switch per onboarded market,
+   "Include all matching intel", one Preview button, a preview with a PDF / Word switch and a single
+   download button that follows it, and the previous editions.
 
-   Three files per edition, named for the edition id:
-     echo-report-<id>.pdf        the PDF, as the phone drew it
-     echo-report-<id>-word.pdf   the same content at docx fidelity, for previewing Word
-     echo-report-<id>.docx       the Word file itself
+   Two renderers, split by what exists:
+   - PREVIOUS editions are the files the phone drew and uploaded beside the backup
+     (echo-report-<id>.pdf, -word.pdf, .docx). This page shows and downloads those bytes and never
+     redraws them, so a past edition looks exactly as it did on the phone.
+   - THIS month's edition doesn't exist anywhere yet, so the page draws it, as a copy of the phone's
+     PDF layout (cover, four figures, a section per market, story cards) at A4 in points. Downloading
+     prints it (PDF) or saves it as a Word document, and publishes the stories: the phone records the
+     edition on its next Sync and uploads its own files on its next Back up.
    ============================================================ */
-var R_SEL = null;          // which edition is open
-var R_FMT = {};            // id -> "pdf" | "word", per card, as asked
+var R_SEL = null;          // which PREVIOUS edition is open (its id), or null for this month
+var R_FMT = {};            // edition id -> "pdf" | "word"
 var R_URL = {};            // "<name>" -> object URL, so a re-select does not re-download
 var R_MISS = {};           // "<name>" -> true when Drive does not have it
+/* sel: the markets switched on (null = not chosen yet, so every market starts on, as on the phone);
+   draft: the frozen preview of this month's edition; zoom: 0 = fit the pane's width. */
+var MR = { sel: null, includeAll: false, draft: null, fmt: "pdf", zoom: 0 };
 
 function reportFile(id, kind) {
   return kind === "docx" ? "echo-report-" + id + ".docx"
@@ -7886,7 +7968,6 @@ async function reportBlobUrl(name) {
   R_URL[name] = URL.createObjectURL(await r.blob());
   return R_URL[name];
 }
-
 function reportPreviewMsg(host, text) {
   host.innerHTML = "";
   var m = el("div", "rpmsg");
@@ -7894,22 +7975,380 @@ function reportPreviewMsg(host, text) {
   host.appendChild(m);
 }
 
-/* Load whichever document the selected card is set to. PDF for both states: the Word one is the
-   phone's docx-fidelity render, which is what the phone shows for the same button. */
+/* ---- names and dates, as the phone writes them ---- */
+function mrMonth(ms) { return new Date(ms).toLocaleDateString("en-US", { month: "long" }); }
+function mrMonthYear(ms) { return new Date(ms).toLocaleDateString("en-US", { month: "long", year: "numeric" }); }
+function mrReportTitle(ms) { return mrMonth(ms) + " Market Intel Report"; }
+/* "17 Sep 2026", as the phone's SimpleDateFormat writes it (Chrome's en-GB says "Sept"). */
+var MR_MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function mrDateLabel(ms) {
+  var d = new Date(ms);
+  return String(d.getDate()).padStart(2, "0") + " " + MR_MON[d.getMonth()] + " " + d.getFullYear();
+}
+function mrStories(n) { return n + (n === 1 ? " story" : " stories"); }
+/* "India", "India and Germany", "3 markets". */
+function mrLabel(names) {
+  if (!names.length) return "no market";
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return names[0] + " and " + names[1];
+  return names.length + " markets";
+}
+
+/* ---- which market a story belongs to ----
+   The phone's own verdict when the backup carries it (reportMarkets, phone build 49 and later).
+   Otherwise the same rule as the phone's reportMarketsOf: the fetch tag, else what the story names
+   (the market, a tracked competitor registered there, India-only signals, German text for
+   Germany), else the home market, the first non-German one. */
+var MR_INDIA_TERMS = ["india", "indian", "bharat",
+  "maharashtra", "karnataka", "tamil nadu", "telangana", "kerala", "gujarat", "rajasthan",
+  "uttar pradesh", "haryana", "punjab", "west bengal", "odisha", "orissa", "bihar",
+  "andhra pradesh", "madhya pradesh", "chhattisgarh", "jharkhand", "uttarakhand", "himachal",
+  "assam", "meghalaya", "tripura", "manipur", "nagaland", "mizoram", "arunachal", "sikkim",
+  "goa", "jammu", "kashmir", "ladakh", "puducherry", "pondicherry", "andaman", "lakshadweep",
+  "chandigarh",
+  "mumbai", "delhi", "new delhi", "delhi-ncr", "delhi ncr", "bengaluru", "bangalore", "chennai",
+  "hyderabad", "pune", "kolkata", "ahmedabad", "gurugram", "gurgaon", "noida", "greater noida",
+  "ghaziabad", "faridabad", "jaipur", "lucknow", "kochi", "cochin", "surat", "indore", "bhopal",
+  "nagpur", "visakhapatnam", "vizag", "coimbatore", "thane", "navi mumbai", "vadodara", "rajkot",
+  "nashik", "aurangabad", "mysuru", "mysore", "mangaluru", "mangalore", "thiruvananthapuram",
+  "trivandrum", "kozhikode", "madurai", "tiruchirappalli", "vijayawada", "guntur", "amaravati",
+  "warangal", "bhubaneswar", "cuttack", "patna", "ranchi", "raipur", "dehradun", "shimla",
+  "amritsar", "ludhiana", "jalandhar", "kanpur", "varanasi", "agra", "prayagraj", "allahabad",
+  "meerut", "gwalior", "jabalpur", "udaipur", "jodhpur", "kota", "ajmer", "guwahati", "siliguri",
+  "durgapur", "hosur", "sriperumbudur", "dholera", "gift city", "sonipat", "neemrana", "bhiwadi",
+  "silvassa", "daman", "vapi", "khopoli", "palghar", "panvel",
+  "crore", "lakh", "inr", "rs", "bis", "bureau of indian standards", "cpwd", "nhai", "mohua",
+  "igbc", "ecbc", "griha", "rera", "smart city", "smart cities", "pmay", "nbcc", "dmrc", "mmrda",
+  "cidco", "bbmp", "bmc", "gem portal", "make in india", "atmanirbhar", "niti aayog", "sebi",
+  "nse", "bse", "credai", "naredco", "lok sabha", "rajya sabha", "gst",
+  "hindalco", "nalco", "national aluminium", "vedanta", "jindal", "fenesta", "dcm shriram",
+  "asahi india", "ais glass", "ais windows", "tata", "godrej", "lodha", "dlf", "sobha",
+  "prestige group", "brigade group", "oberoi realty", "mahindra lifespaces", "l&t", "larsen",
+  "shapoorji", "afcons", "century ply", "greenply", "astral pipes", "astral ltd",
+  "supreme industries", "sintex", "prince pipes", "aparna enterprises", "venster", "eternia",
+  "encraft", "alumayer", "glass wall systems", "gsc glass", "gold plus glass", "saint-gobain india",
+  "tostem india", "lixil india", "schueco india", "schüco india", "reynaers india", "aluk india",
+  "deceuninck india", "rehau india", "kommerling india", "veka india", "profine india", "wintech",
+  "uniframe", "prominance", "asian paints", "banswara", "maan aluminium", "century aluminium",
+  "bhoruka", "golkonda", "manaksia", "aludecor", "window magic", "alcircle", "hindware",
+  "cera sanitaryware", "kajaria", "somany", "pidilite", "berger paints", "dorset india",
+  "ozone overseas", "hettich india", "dorma india", "geze india", "wurth india", "puravankara",
+  "embassy group", "phoenix mills", "adani", "reliance industries", "ambuja", "ultratech", "jsw",
+  "bhel", "ntpc"];
+function mrReEsc(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+var MR_INDIA_RX = new RegExp("(^|[^\\p{L}\\p{N}])(" +
+  MR_INDIA_TERMS.slice().sort(function (a, b) { return b.length - a.length; }).map(mrReEsc).join("|") +
+  ")(?![\\p{L}\\p{N}])", "iu");
+function mrMentionsIndia(text) { return text.indexOf("₹") >= 0 || MR_INDIA_RX.test(text); }
+function mrIsGermany(name) {
+  return ["germany", "deutschland", "de", "federal republic of germany"].indexOf(key(name)) >= 0;
+}
+function mrIsIndia(name) { return key(name) === "india"; }
+/* The phone's competitorBrandTokens: the name before any bracket, and the bracketed name, each
+   only when it has four or more letters. */
+function mrBrandTokens(name) {
+  var n = String(name || ""), out = [];
+  var paren = (n.match(/\(([^)]*)\)/) || [])[1];
+  var primary = n.split("(")[0].trim();
+  if (primary.length >= 4) out.push(primary.toLowerCase());
+  if (paren && paren.trim().length >= 4) out.push(paren.trim().toLowerCase());
+  return out;
+}
+function reportMarketList() {
+  var seen = new Set(), out = [];
+  arr(S.data && S.data.countries).forEach(function (c) {
+    var n = String((c && c.name) || "").trim();
+    if (n && !seen.has(key(n))) { seen.add(key(n)); out.push(n); }
+  });
+  return out;
+}
+function reportMarketsOf(a, markets) {
+  if (!markets.length) return [];
+  var pm = S.data && S.data.reportMarkets;
+  var mine = pm && pm[key(a.title)];
+  if (Array.isArray(mine)) {
+    var known = markets.filter(function (m) { return mine.some(function (x) { return sameName(x, m); }); });
+    if (known.length) return known;
+  }
+  var tag = storyMarketOf(a);
+  if (tag) {
+    var t = markets.filter(function (m) { return sameName(m, tag); })[0];
+    if (t) return [t];
+  }
+  var text = decodeEnt(a.title) + " " + decodeEnt(a.summary || "");
+  var low = text.toLowerCase();
+  var german = setOf(S.data && S.data.germanTitles).has(key(a.title));
+  var comps = arr(S.data && S.data.competitors);
+  var out = markets.filter(function (m) {
+    var named = new RegExp("(^|[^\\p{L}\\p{N}])" + mrReEsc(m) + "(?![\\p{L}\\p{N}])", "iu").test(text);
+    var byComp = comps.some(function (c) {
+      return competitorMarkets(c).some(function (x) { return sameName(x, m); }) &&
+        mrBrandTokens(c.name).some(function (tok) { return low.indexOf(tok) >= 0; });
+    });
+    // German text uses words ("bis") the India list reads as Indian; it is never India's.
+    var bySignal = mrIsIndia(m) ? (!german && mrMentionsIndia(text)) : mrIsGermany(m) ? german : false;
+    return named || byComp || bySignal;
+  });
+  if (!out.length) out = [markets.filter(function (m) { return !mrIsGermany(m); })[0] || markets[0]];
+  return out;
+}
+
+/* Everything the builder shows, from one pass over the feed. */
+function mrState() {
+  var markets = reportMarketList();
+  if (!MR.sel) MR.sel = new Set(markets);
+  var ver = verifiedSet();
+  // Subscribed and still in Alerts: the phone's feed.filter { it.isSubscribed }.
+  var subs = alerts().filter(function (a) { return a.isSubscribed !== false; });
+  var byKey = new Map();
+  subs.forEach(function (a) { byKey.set(key(a.title), reportMarketsOf(a, markets)); });
+  var mOf = function (a) { return byKey.get(key(a.title)) || []; };
+  var inSel = function (a) {
+    return !markets.length || mOf(a).some(function (m) { return MR.sel.has(m); });
+  };
+  var isVer = function (a) { return ver.has(key(a.title)); };
+  var selected = markets.filter(function (m) { return MR.sel.has(m); });
+  var verified = subs.filter(function (a) { return inSel(a) && isVer(a); });
+  var toVerify = subs.filter(function (a) { return inSel(a) && !isVer(a); });
+  return {
+    markets: markets, selected: selected, subs: subs, mOf: mOf, isVer: isVer,
+    verified: verified, toVerify: toVerify,
+    edition: MR.includeAll ? subs.filter(inSel) : verified,
+    // Name only the markets that actually contribute stories.
+    contributing: function (list) {
+      return selected.filter(function (m) { return list.some(function (a) { return mOf(a).indexOf(m) >= 0; }); });
+    }
+  };
+}
+
+function mrStat(value, label, accent, suffix) {
+  var s = el("div", "mrstat");
+  var v = el("div", "mrval" + (accent ? " acc" : ""), String(value));
+  if (suffix) v.appendChild(el("span", "mrof", " " + suffix));
+  s.appendChild(v);
+  s.appendChild(el("div", "mrslbl", label));
+  return s;
+}
+/* An iOS-style switch: a real checkbox, so the row's <label> toggles it and it stays keyboard
+   reachable. */
+function mrSwitch(on, label, onChange) {
+  var s = el("input", "mrsw");
+  s.type = "checkbox";
+  s.checked = !!on;
+  s.setAttribute("role", "switch");
+  s.setAttribute("aria-label", label);
+  s.onchange = function () { onChange(s.checked); };
+  return s;
+}
+/* A change to what goes in drops a preview that hasn't been published: it no longer shows the
+   edition the switches describe. A published one stays, so its other format can still download. */
+function mrChanged() {
+  if (MR.draft && !MR.draft.published) MR.draft = null;
+  render();
+}
+
+function renderReports(app) {
+  var st = mrState();
+  var split = el("div", "rsplit mrsplit");
+  var rail = el("div", "rlist mrrail");
+
+  rail.appendChild(el("div", "mrtitle", mrReportTitle(Date.now())));
+
+  // ---- summary ----
+  var sum = el("div", "mrcard mrsum");
+  var stats = el("div", "mrstats");
+  stats.appendChild(mrStat(st.verified.length, "Verified", true));
+  stats.appendChild(mrStat(st.toVerify.length, "To verify"));
+  stats.appendChild(st.markets.length
+    ? mrStat(st.selected.length, "Markets", false, "of " + st.markets.length)
+    : mrStat("All", "Markets"));
+  sum.appendChild(stats);
+  var foot = el("div", "mrsumfoot");
+  foot.appendChild(el("span", null, st.markets.length
+    ? "Counts for the markets turned on below" : "Counts for every subscribed story"));
+  if (st.verified.length) {
+    var clr = el("button", "mrclear", "Clear all");
+    clr.onclick = function () { mrClearAll(st); };
+    foot.appendChild(clr);
+  }
+  sum.appendChild(foot);
+  rail.appendChild(sum);
+
+  // ---- markets ----
+  if (st.markets.length) {
+    rail.appendChild(el("div", "mrlbl", "Markets in this report"));
+    var mk = el("div", "mrcard mrlist");
+    st.markets.forEach(function (m) {
+      var on = MR.sel.has(m);
+      var v = st.subs.filter(function (a) { return st.isVer(a) && st.mOf(a).indexOf(m) >= 0; }).length;
+      var t = st.subs.filter(function (a) { return !st.isVer(a) && st.mOf(a).indexOf(m) >= 0; }).length;
+      var row = el("label", "mrrow" + (on ? " on" : ""));
+      row.appendChild(el("span", "mrbadge", countryCode(m)));
+      var txt = el("span", "mrtxt");
+      txt.appendChild(el("span", "mrname", m));
+      txt.appendChild(el("span", "mrsub", v + " verified · " + t + " to verify"));
+      row.appendChild(txt);
+      row.appendChild(mrSwitch(on, "Include " + m, function (val) {
+        if (val) MR.sel.add(m); else MR.sel.delete(m);
+        mrChanged();
+      }));
+      mk.appendChild(row);
+    });
+    rail.appendChild(mk);
+  }
+
+  // ---- include all matching intel ----
+  var nothingOn = st.markets.length > 0 && !st.selected.length;
+  var n = st.toVerify.length;
+  var inc = el("label", "mrcard mrrow mrinc");
+  var itxt = el("span", "mrtxt");
+  itxt.appendChild(el("span", "mrname", "Include all matching intel"));
+  itxt.appendChild(el("span", "mrsub",
+    nothingOn ? "Turn on a market to include its stories"
+    : !n ? "Every story here is already verified"
+    : !st.markets.length ? "Adds the " + n + " " + (n === 1 ? "story" : "stories") + " you haven't verified"
+    : "Adds the " + n + " unverified " + (n === 1 ? "story" : "stories") + " from " + mrLabel(st.contributing(st.toVerify))));
+  inc.appendChild(itxt);
+  inc.appendChild(mrSwitch(MR.includeAll, "Include all matching intel", function (val) {
+    MR.includeAll = val;
+    mrChanged();
+  }));
+  rail.appendChild(inc);
+
+  // ---- preview ----
+  var ed = st.edition;
+  rail.appendChild(el("div", "mrcap",
+    nothingOn ? "Turn on at least one market"
+    : !ed.length ? "Nothing to include yet. Verify stories, or include all matching intel."
+    : "This edition · " + mrStories(ed.length) +
+      (st.markets.length ? " from " + mrLabel(st.contributing(ed)) : "")));
+  var pv = el("button", "btn mrprevbtn");
+  pv.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
+  pv.appendChild(el("span", null, "Preview report"));
+  pv.disabled = !ed.length;
+  pv.onclick = function () { mrOpenDraft(st); };
+  rail.appendChild(pv);
+
+  // ---- previous editions ----
+  rail.appendChild(el("div", "mrlbl", "Previous editions"));
+  var eds = editions();
+  if (!eds.length) {
+    rail.appendChild(el("div", "mrcard mrempty",
+      "Each report you download is kept here, ready to download again as PDF or Word."));
+  } else {
+    if (R_SEL != null && !eds.some(function (e) { return e.id === R_SEL; })) R_SEL = null;
+    var list = el("div", "mrcard mrlist");
+    eds.forEach(function (e) {
+      var row = el("div", "mredrow" + (e.id === R_SEL ? " on" : ""));
+      row.tabIndex = 0;
+      row.onclick = function () { R_SEL = e.id; render(); };
+      row.onkeydown = function (ev) { if (ev.key === "Enter") { R_SEL = e.id; render(); } };
+      var t2 = el("span", "mrtxt");
+      t2.appendChild(el("span", "mrname", mrMonthYear(e.createdAtMillis || e.id)));
+      t2.appendChild(el("span", "mrsub", mrStories(arr(e.articles).length) + " · " + (e.dateLabel || "")));
+      row.appendChild(t2);
+      [["pdf", "PDF"], ["word", "Word"]].forEach(function (o) {
+        var b = el("button", "mredlink", o[1]);
+        b.onclick = function (ev) { ev.stopPropagation(); mrDownloadEdition(e, o[0], b); };
+        row.appendChild(b);
+      });
+      list.appendChild(row);
+    });
+    rail.appendChild(list);
+  }
+
+  split.appendChild(rail);
+  split.appendChild(mrPane());
+  app.appendChild(split);
+
+  if (R_SEL != null) loadReportPreview();
+  else if (MR.draft) mrDrawDraft();
+  else reportPreviewMsg($("#rpBody"),
+    "Pick the markets, then press Preview report to see this month's edition. Previous editions open here too.");
+}
+
+/* The preview pane: this month's draft, or the previous edition that is selected. */
+function mrPane() {
+  var pane = el("div", "rprev mrpane");
+  var head = el("div", "rphead mrhead");
+  var ed = R_SEL != null ? editions().filter(function (e) { return e.id === R_SEL; })[0] : null;
+  var d = ed ? null : MR.draft;
+  var ttl = el("div", "mrhttl");
+  if (ed) {
+    ttl.appendChild(el("b", null, mrMonthYear(ed.createdAtMillis || ed.id) + " edition"));
+    ttl.appendChild(el("span", null, mrStories(arr(ed.articles).length) + " · " + (ed.dateLabel || "")));
+  } else {
+    ttl.appendChild(el("b", null, "Preview"));
+    if (d) {
+      ttl.appendChild(el("span", "mrpsub", [mrStories(d.articles.length)]
+        .concat(d.marketsText ? [d.marketsText] : [])
+        .concat(d.pages ? [d.pages + (d.pages === 1 ? " page" : " pages")] : []).join(" · ")));
+    }
+  }
+  head.appendChild(ttl);
+  if (ed || d) {
+    var fmt = ed ? (R_FMT[ed.id] || "pdf") : MR.fmt;
+    var seg = el("div", "rcseg mrseg");
+    [["pdf", "PDF"], ["word", "Word"]].forEach(function (o) {
+      var b = el("button", fmt === o[0] ? "on" : null, o[1]);
+      b.onclick = function () {
+        if (ed) R_FMT[ed.id] = o[0]; else MR.fmt = o[0];
+        render();
+      };
+      seg.appendChild(b);
+    });
+    head.appendChild(seg);
+    if (d) {
+      var zm = el("div", "mrzoom");
+      var out = el("button", null, "−"); out.title = "Zoom out"; out.setAttribute("aria-label", "Zoom out");
+      var pct = el("button", "pct", "Fit"); pct.id = "mrZoomPct"; pct.title = "Fit to width";
+      var inn = el("button", null, "+"); inn.title = "Zoom in"; inn.setAttribute("aria-label", "Zoom in");
+      out.onclick = function () { mrSetZoom(-1); };
+      inn.onclick = function () { mrSetZoom(1); };
+      pct.onclick = function () { MR.zoom = 0; mrApplyZoom(); };
+      zm.appendChild(out); zm.appendChild(pct); zm.appendChild(inn);
+      head.appendChild(zm);
+    }
+    var dl = el("button", "btn sm mrdl" + (d ? " mrdltop" : ""), fmt === "word" ? "Download Word" : "Download PDF");
+    dl.onclick = ed ? function () { mrDownloadEdition(ed, fmt, dl); }
+                    : function () { mrDownloadDraft(fmt, dl); };
+    head.appendChild(dl);
+  }
+  pane.appendChild(head);
+  var body = el("div", "rpbody mrbody");
+  body.id = "rpBody";
+  pane.appendChild(body);
+  if (d) {
+    var left = d.leftOut || [];
+    var foot = el("div", "mrfoot");
+    var dlb = el("button", "btn mrdl mrdlbot", MR.fmt === "word" ? "Download Word" : "Download PDF");
+    dlb.onclick = function () { mrDownloadDraft(MR.fmt, dlb); };
+    foot.appendChild(dlb);
+    foot.appendChild(el("div", null, d.published
+      ? "Published. You can download the other format too."
+      : "Downloading publishes these " + mrStories(d.articles.length) + "." +
+        (left.length === 1 ? " " + left[0] + " stays in the queue."
+         : left.length > 1 ? " " + mrLabel(left) + " stay in the queue." : "")));
+    pane.appendChild(foot);
+  }
+  return pane;
+}
+
+/* Load the selected previous edition: the phone's own file for the chosen format. */
 async function loadReportPreview() {
   var host = $("#rpBody");
   if (!host) return;
-  if (R_SEL == null) { reportPreviewMsg(host, "Choose a report on the left to read it here."); return; }
+  if (R_SEL == null) return;
   var fmt = R_FMT[R_SEL] || "pdf";
   var name = reportFile(R_SEL, fmt);
-  reportPreviewMsg(host, "Opening\u2026");
+  reportPreviewMsg(host, "Opening…");
   try {
     var url = await reportBlobUrl(name);
     if (R_SEL == null) return;
     if (!url) {
       reportPreviewMsg(host,
         "Your phone has not uploaded this one yet. It writes both documents when it backs up, so " +
-        "open Settings, then Storage, and press Back up. Nothing is rebuilt here \u2014 this page " +
+        "open Settings, then Storage, and press Back up. Nothing is rebuilt here: this page " +
         "shows the file the phone made, which is what keeps the two identical.");
       return;
     }
@@ -7923,113 +8362,310 @@ async function loadReportPreview() {
   }
 }
 
-function renderReports(app) {
-  var eds = editions();          // already newest first, by createdAtMillis
-  if (!eds.length) { app.appendChild(emptyState("No reports yet.")); return; }
-  if (R_SEL == null || !eds.some(function (e) { return e.id === R_SEL; })) R_SEL = eds[0].id;
-
-  var split = el("div", "rsplit");
-  var list = el("div", "rlist");
-
-  eds.forEach(function (e) {
-    var fmt = R_FMT[e.id] || "pdf";
-    var card = el("div", "rcard" + (e.id === R_SEL ? " on" : ""));
-    card.onclick = function () { R_SEL = e.id; render(); loadReportPreview(); };
-
-    var top = el("div", "rctop");
-    top.appendChild(el("span", "rcwk", e.weekLabel || "Report"));
-    top.appendChild(el("span", "rcdate", e.dateLabel || ""));
-    card.appendChild(top);
-    card.appendChild(el("p", "rcttl", e.title || "Market report"));
-    card.appendChild(el("p", "rcsub", chPl(arr(e.articles).length, "article", "articles") + " \u00b7 " +
-      (e.competitorsCount || 0) + " competitors \u00b7 " + (e.countriesCount || 0) + " markets"));
-
-    var foot = el("div", "rcfoot");
-    var seg = el("div", "rcseg");
-    [["pdf", "PDF"], ["word", "Word"]].forEach(function (o) {
-      var b = el("button", fmt === o[0] ? "on" : null, o[1]);
-      b.onclick = function (ev) {
-        ev.stopPropagation();          // choosing a format is not choosing a different report
-        R_FMT[e.id] = o[0];
-        R_SEL = e.id;
-        render(); loadReportPreview();
-      };
-      seg.appendChild(b);
-    });
-    foot.appendChild(seg);
-
-    /* The label follows the switch, so the button never promises a format you did not pick. */
-    var dl = el("button", "btn sm rcdl", fmt === "word" ? "Download Word" : "Download PDF");
-    dl.onclick = async function (ev) {
-      ev.stopPropagation();
-      var kind = fmt === "word" ? "docx" : "pdf";
-      var name = reportFile(e.id, kind);
-      dl.disabled = true;
-      var was = dl.textContent; dl.textContent = "Fetching\u2026";
-      try {
-        var url = await reportBlobUrl(name);
-        if (!url) { toast("Your phone has not uploaded this one yet. Press Back up on the phone."); return; }
-        var a = document.createElement("a");
-        a.href = url;
-        a.download = (e.title || "Market report").replace(/[^\w\s-]/g, "").trim()
-          .replace(/\s+/g, "-") + "-" + String(e.dateLabel || "").replace(/\s+/g, "-") +
-          (kind === "docx" ? ".docx" : ".pdf");
-        document.body.appendChild(a); a.click(); a.remove();
-      } finally { dl.disabled = false; dl.textContent = was; }
-    };
-    foot.appendChild(dl);
-    card.appendChild(foot);
-    list.appendChild(card);
-  });
-
-  var prev = el("div", "rprev");
-  var head = el("div", "rphead");
-  var sel = eds.filter(function (e) { return e.id === R_SEL; })[0];
-  var selFmt = R_FMT[R_SEL] || "pdf";
-  head.appendChild(el("b", null, (sel && sel.title) || "Report"));
-  head.appendChild(el("span", null, (sel && sel.dateLabel) || ""));
-  var badge = el("span", null, selFmt === "word" ? "Word preview" : "PDF");
-  badge.style.marginLeft = "auto";
-  head.appendChild(badge);
-  prev.appendChild(head);
-  var body = el("div", "rpbody"); body.id = "rpBody";
-  prev.appendChild(body);
-
-  split.appendChild(list);
-  split.appendChild(prev);
-  app.appendChild(split);
-  loadReportPreview();
+async function mrDownloadEdition(e, fmt, btn) {
+  var kind = fmt === "word" ? "docx" : "pdf";
+  var name = reportFile(e.id, kind);
+  var was = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Fetching…";
+  try {
+    var url = await reportBlobUrl(name);
+    if (!url) { toast("Your phone has not uploaded this one yet. Press Back up on the phone."); return; }
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "Market_Intel_Report_" + mrMonth(e.createdAtMillis || e.id) + "_" +
+      new Date(e.createdAtMillis || e.id).getFullYear() + (kind === "docx" ? ".docx" : ".pdf");
+    document.body.appendChild(a); a.click(); a.remove();
+  } finally { btn.disabled = false; btn.textContent = was; }
 }
 
-/* Publishing. Verified stories become an edition, move to Published, and leave
-   Alerts. Everything here is ADDITIVE — we append to our own file and never touch
-   the phone's, so nothing the phone holds can be lost. */
-async function publishVerified(kind) {
-  var list = verifiedArticles();
-  if (!list.length) return;
-  var ok = await askConfirm({
-    title: "Publish " + list.length + " article(s)?",
-    body: "They move out of Alerts and into Published, and become a report you can download again later. Your phone picks this up on its next sync.",
-    ok: "Publish"
-  });
-  if (!ok) return;
-
+/* ---- this month's draft ---- */
+function mrOpenDraft(st) {
+  if (!st.edition.length) return;
   var now = Date.now();
-  var dateLabel = new Date(now).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
-  var title = "Window Market Report";
-  if (kind === "pdf") printReport(title, dateLabel, list); else downloadWord(title, dateLabel, list);
+  R_SEL = null;
+  MR.zoom = 0;
+  MR.draft = {
+    id: now,
+    createdAtMillis: now,
+    dateLabel: mrDateLabel(now),
+    articles: st.edition.slice(),
+    verifiedTitles: st.edition.filter(st.isVer).map(function (a) { return key(a.title); }),
+    // The cover's "Markets covered" counts the markets in THIS edition.
+    marketsCount: st.markets.length ? st.selected.length : arr(S.data && S.data.countries).length,
+    marketsText: st.markets.length ? mrLabel(st.contributing(st.edition)) : "",
+    leftOut: st.markets.filter(function (m) {
+      return !MR.sel.has(m) && st.subs.some(function (a) { return st.isVer(a) && st.mOf(a).indexOf(m) >= 0; });
+    }),
+    published: false,
+    pages: 0
+  };
+  render();
+  if (window.matchMedia("(max-width:900px)").matches) {
+    var pane = document.querySelector(".mrpane");
+    var still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (pane) pane.scrollIntoView({ behavior: still ? "auto" : "smooth", block: "start" });
+  }
+}
 
-  var jan1 = new Date(new Date(now).getFullYear(), 0, 1).getTime();
-  var wk = Math.ceil((((now - jan1) / 86400000) + 1) / 7);
-  S.actions.reportEditions.push({
-    id: now, title: title, dateLabel: dateLabel, weekLabel: "Week " + wk, createdAtMillis: now,
-    articles: list,
-    verifiedTitles: list.map(function (a) { return key(a.title); }),
-    competitorsCount: arr(S.data && S.data.competitors).length,
-    countriesCount: arr(S.data && S.data.countries).length
+function mrCoverHtml(d) {
+  var sources = new Set(d.articles.map(function (a) { return key(a.source); }).filter(Boolean)).size;
+  var tiles = [[d.articles.length, "Verified stories"],
+    [arr(S.data && S.data.competitors).length, "Competitors tracked"],
+    [d.marketsCount, "Markets covered"],
+    [sources, "Sources cited"]];
+  return '<div class="rp-bar"></div>' +
+    '<div class="rp-kicker">MONTHLY COMPETITOR INTELLIGENCE</div>' +
+    '<div class="rp-title">' + esc(mrReportTitle(d.createdAtMillis)) + '</div>' +
+    '<div class="rp-sub">Product Management - Innovation Hub International  ·  ' + esc(d.dateLabel) + '</div>' +
+    '<div class="rp-tiles">' + tiles.map(function (t) {
+      return '<div class="rp-tile"><div class="rp-num">' + t[0] + '</div><div class="rp-lbl">' + esc(t[1]) + '</div></div>';
+    }).join("") + '</div>';
+}
+function mrFooter(d, n) {
+  var f = el("div", "rp-foot");
+  f.appendChild(el("div", "rp-f1", "Prepared by Product Management - Innovation Hub International"));
+  var r = el("div", "rp-f2");
+  r.appendChild(el("span", null, mrMonth(d.createdAtMillis) + "  ·  Internal use only"));
+  r.appendChild(el("span", null, String(n)));
+  f.appendChild(r);
+  return f;
+}
+/* The phone PDF's grouping: a story joins the first market it names, or whose registered
+   competitor it names; the rest go to "Global & general". */
+function mrSections(d) {
+  var comps = arr(S.data && S.data.competitors);
+  var assigned = new Set(), out = [];
+  var names = reportMarketList();
+  function matches(a, name) {
+    var t = decodeEnt(a.title).toLowerCase(), s = decodeEnt(a.summary || "").toLowerCase();
+    var n = name.toLowerCase();
+    if (t.indexOf(n) >= 0 || s.indexOf(n) >= 0) return true;
+    var text = t + " " + s;
+    return comps.some(function (c) {
+      return competitorMarkets(c).some(function (x) { return sameName(x, name); }) &&
+        mrBrandTokens(c.name).some(function (tok) { return text.indexOf(tok) >= 0; });
+    });
+  }
+  names.forEach(function (name) {
+    var list = d.articles.filter(function (a) { return !assigned.has(a) && matches(a, name); });
+    if (!list.length) return;
+    list.forEach(function (a) { assigned.add(a); });
+    out.push([name, list]);
   });
-  /* Publishing is a request per story, carrying the article so the phone can add one it has never
-     seen. Replaces any pending request for the same story. */
+  var rest = d.articles.filter(function (a) { return !assigned.has(a); });
+  if (rest.length) out.push(["Global & general", rest]);
+  return out;
+}
+function mrCardNode(a) {
+  var c = el("div", "rp-card");
+  c.appendChild(el("div", "rp-tag", String(catShort(a.category) || "News").toUpperCase()));
+  c.appendChild(el("div", "rp-head", decodeEnt(a.title)));
+  c.appendChild(el("div", "rp-meta", "Source · " + newsDate(a.date)));
+  if (a.summary) c.appendChild(el("div", "rp-sum", decodeEnt(a.summary)));
+  return c;
+}
+/* Lay the edition out on A4 pages, measuring as it goes: a card that overflows starts a new page,
+   and takes its section heading along if the heading would otherwise be left alone at the foot. */
+function mrPaginate(inner, d) {
+  inner.innerHTML = "";
+  var n = 1;
+  var cover = el("section", "rpage");
+  cover.innerHTML = mrCoverHtml(d);
+  cover.appendChild(mrFooter(d, n));
+  inner.appendChild(cover);
+  function newPage() {
+    n++;
+    var p = el("section", "rpage");
+    var b = el("div", "rp-body");
+    p.appendChild(b);
+    p.appendChild(mrFooter(d, n));
+    inner.appendChild(p);
+    return b;
+  }
+  var body = newPage();
+  mrSections(d).forEach(function (sec) {
+    var head = el("div", "rp-sec");
+    head.appendChild(el("b", null, sec[0]));
+    head.appendChild(el("span", null, mrStories(sec[1].length)));
+    var blocks = [head].concat(sec[1].map(mrCardNode));
+    blocks.forEach(function (node) {
+      body.appendChild(node);
+      if (body.scrollHeight > body.clientHeight + 1 && body.childNodes.length > 1) {
+        body.removeChild(node);
+        var carry = null;
+        var last = body.lastChild;
+        if (node !== head && last && last.classList && last.classList.contains("rp-sec")) {
+          carry = last;
+          body.removeChild(last);
+        }
+        body = newPage();
+        if (carry) body.appendChild(carry);
+        body.appendChild(node);
+      }
+    });
+  });
+  return n;
+}
+function mrDrawDraft() {
+  var host = $("#rpBody"), d = MR.draft;
+  if (!host || !d) return;
+  host.innerHTML = "";
+  var scroller = el("div", "mrscroll");
+  scroller.id = "mrScroll";
+  var doc = el("div", "rdoc" + (MR.fmt === "word" ? " word" : ""));
+  doc.id = "mrDoc";
+  var inner = el("div", "rdocin");
+  doc.appendChild(inner);
+  scroller.appendChild(doc);
+  host.appendChild(scroller);
+  var pill = el("div", "mrpill");
+  pill.id = "mrPill";
+  host.appendChild(pill);
+  var pages = mrPaginate(inner, d);
+  if (d.pages !== pages) {
+    d.pages = pages;
+    var sub = document.querySelector(".mrhead .mrpsub");
+    if (sub) {
+      sub.textContent = [mrStories(d.articles.length)]
+        .concat(d.marketsText ? [d.marketsText] : [])
+        .concat([pages + (pages === 1 ? " page" : " pages")]).join(" · ");
+    }
+  }
+  scroller.onscroll = mrUpdatePill;
+  mrApplyZoom();
+}
+var MR_ZOOMS = [0.5, 0.67, 0.8, 1, 1.25, 1.5, 2, 3];
+/* Fit = one whole A4 page in view, as on the phone: the smaller of the width and height fits. */
+function mrFitScale() {
+  var sc = $("#mrScroll"), page = document.querySelector("#mrDoc .rpage");
+  if (!sc || !page) return 1;
+  var byWidth = (sc.clientWidth - 40) / page.offsetWidth;
+  var byHeight = (sc.clientHeight - 86) / page.offsetHeight;
+  return Math.max(0.3, Math.min(1.5, byWidth, byHeight));
+}
+function mrSetZoom(dir) {
+  var cur = MR.zoom || mrFitScale();
+  var next = dir > 0 ? MR_ZOOMS.filter(function (z) { return z > cur + 0.01; })[0]
+                     : MR_ZOOMS.filter(function (z) { return z < cur - 0.01; }).pop();
+  if (next) { MR.zoom = next; mrApplyZoom(); }
+}
+function mrApplyZoom() {
+  var doc = $("#mrDoc"), sc = $("#mrScroll");
+  if (!doc || !sc) return;
+  var inner = doc.firstChild;
+  var s = MR.zoom || mrFitScale();
+  inner.style.transform = "scale(" + s + ")";
+  doc.style.width = Math.round(inner.offsetWidth * s) + "px";
+  doc.style.height = Math.round(inner.offsetHeight * s) + "px";
+  var pct = $("#mrZoomPct");
+  if (pct) pct.textContent = MR.zoom ? Math.round(s * 100) + "%" : "Fit";
+  mrUpdatePill();
+}
+function mrUpdatePill() {
+  var sc = $("#mrScroll"), pill = $("#mrPill"), doc = $("#mrDoc");
+  if (!sc || !pill || !doc) return;
+  var pages = doc.querySelectorAll(".rpage");
+  if (!pages.length) return;
+  var mid = sc.scrollTop + sc.clientHeight / 2, idx = 0;
+  for (var i = 0; i < pages.length; i++) {
+    var r = pages[i].getBoundingClientRect(), top = r.top - sc.getBoundingClientRect().top + sc.scrollTop;
+    if (top <= mid) idx = i;
+  }
+  pill.textContent = "Page " + (idx + 1) + " of " + pages.length;
+}
+window.addEventListener("resize", function () { if (S.tab === "reports" && MR.draft && !MR.zoom) mrApplyZoom(); });
+
+/* PDF: the browser's own print dialogue ("Save as PDF") on the same pages, at A4. */
+function mrPrintDraft(d) {
+  var src = document.querySelector("#mrDoc .rdocin");
+  if (!src) return false;
+  var r = $("#report");
+  r.innerHTML = "";
+  var doc = el("div", "rdoc printdoc" + (MR.fmt === "word" ? " word" : ""));
+  var copy = src.cloneNode(true);
+  copy.style.transform = "none";
+  doc.appendChild(copy);
+  r.appendChild(doc);
+  var prev = document.title;
+  // The print dialogue names the PDF after the page title.
+  document.title = "Market_Intel_Report_" + mrMonth(d.createdAtMillis) + "_" + new Date(d.createdAtMillis).getFullYear();
+  window.print();
+  setTimeout(function () { document.title = prev; r.innerHTML = ""; }, 800);
+  return true;
+}
+/* Word: an HTML document served with Word's MIME type, laid out the way the phone's .docx is:
+   cover, a two-by-two figure table, then a heading and a boxed card per story. */
+function mrWordHtml(d) {
+  var font = "font-family:'Arial Nova Light','Arial Nova',Arial,sans-serif;";
+  var sources = new Set(d.articles.map(function (a) { return key(a.source); }).filter(Boolean)).size;
+  var tiles = [[d.articles.length, "Verified stories"],
+    [arr(S.data && S.data.competitors).length, "Competitors tracked"],
+    [d.marketsCount, "Markets covered"], [sources, "Sources cited"]];
+  function tile(t) {
+    return '<td width="50%" style="background:#F3F4F6;padding:8pt 9pt;border:3pt solid #FFFFFF">' +
+      '<p style="margin:0;font-size:36pt;color:#247A6A;' + font + '">' + t[0] + '</p>' +
+      '<p style="margin:0;font-size:9pt;color:#6B7280;' + font + '">' + esc(t[1]) + '</p></td>';
+  }
+  var body =
+    '<p style="margin:0 0 13pt;border-bottom:3pt solid #247A6A;width:66pt;font-size:4pt">&nbsp;</p>' +
+    '<p style="margin:0 0 4pt;font-size:14pt;color:#6B7280;' + font + '">MONTHLY COMPETITOR INTELLIGENCE</p>' +
+    '<p style="margin:0 0 4pt;font-size:36pt;color:#111827;' + font + '">' + esc(mrReportTitle(d.createdAtMillis)) + '</p>' +
+    '<p style="margin:0 0 16pt;font-size:14pt;color:#6B7280;' + font + '">Product Management - Innovation Hub International  ·  ' + esc(d.dateLabel) + '</p>' +
+    '<table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse"><tr>' + tile(tiles[0]) + tile(tiles[1]) +
+    '</tr><tr>' + tile(tiles[2]) + tile(tiles[3]) + '</tr></table>' +
+    '<br clear="all" style="page-break-before:always">';
+  mrSections(d).forEach(function (sec, i) {
+    body += '<p style="margin:' + (i ? "18pt" : "0") + ' 0 7pt;padding-bottom:3pt;border-bottom:1.5pt solid #247A6A;font-size:18pt;color:#111827;' + font + '">' +
+      esc(sec[0]) + '<span style="font-size:10pt;color:#9CA3AF">   ' + mrStories(sec[1].length) + '</span></p>';
+    sec[1].forEach(function (a) {
+      var href = sourceHref(a);
+      body += '<table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin:0 0 7pt"><tr>' +
+        '<td style="background:#FBFBFD;border:.75pt solid #E5E7EB;padding:8.5pt 11pt">' +
+        '<p style="margin:0 0 5pt;font-size:8pt;color:#247A6A;' + font + '">' + esc(String(catShort(a.category) || "News").toUpperCase()) + '</p>' +
+        '<p style="margin:0 0 2pt;font-size:14pt;color:#111827;' + font + '">' + esc(decodeEnt(a.title)) + '</p>' +
+        '<p style="margin:0 0 3pt;font-size:8.5pt;color:#9CA3AF;' + font + '">' +
+          (href ? '<a href="' + esc(href) + '" style="color:#1F57F5">Source</a>' : 'Source') + '  ·  ' + esc(newsDate(a.date)) + '</p>' +
+        (a.summary ? '<p style="margin:0;font-size:10pt;color:#374151;' + font + '">' + esc(decodeEnt(a.summary)) + '</p>' : '') +
+        '</td></tr></table>';
+    });
+  });
+  return '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">' +
+    '<head><meta charset="utf-8"><title>' + esc(mrReportTitle(d.createdAtMillis)) + '</title>' +
+    '<style>@page WordSection1{size:595.3pt 841.9pt;margin:72pt 72pt 72pt 72pt}div.WordSection1{page:WordSection1}</style>' +
+    '</head><body><div class="WordSection1">' + body + '</div></body></html>';
+}
+function mrWordDownload(d) {
+  var blob = new Blob(["﻿", mrWordHtml(d)], { type: "application/msword" });
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "Market_Intel_Report_" + mrMonth(d.createdAtMillis) + "_" + new Date(d.createdAtMillis).getFullYear() + ".doc";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+}
+async function mrDownloadDraft(fmt, btn) {
+  var d = MR.draft;
+  if (!d) return;
+  if (fmt === "word") mrWordDownload(d);
+  else if (!mrPrintDraft(d)) { toast("The preview isn't ready yet."); return; }
+  await mrPublishDraft();
+}
+/* Publishing, exactly as before but for THIS edition's stories only: each becomes a request the
+   phone honours (moving it to Published), and the edition is recorded for the phone to keep.
+   Everything is additive in this page's own file; nothing the phone holds is touched. */
+async function mrPublishDraft() {
+  var d = MR.draft;
+  if (!d || d.published) return;
+  d.published = true;
+  var list = d.articles;
+  var jan1 = new Date(new Date(d.id).getFullYear(), 0, 1).getTime();
+  var wk = Math.ceil((((d.id - jan1) / 86400000) + 1) / 7);
+  S.actions.reportEditions.push({
+    id: d.id, title: "Window Market Report", dateLabel: d.dateLabel, weekLabel: "Week " + wk,
+    createdAtMillis: d.id, articles: list, verifiedTitles: d.verifiedTitles,
+    competitorsCount: arr(S.data && S.data.competitors).length,
+    countriesCount: d.marketsCount
+  });
   var gone = new Set(list.map(function (a) { return key(a.title); }));
   var keep = pendingRequests().filter(function (r) { return !gone.has(key(r.title)); });
   list.forEach(function (a) { keep.push({ rid: newRid(), op: "pub", title: a.title, article: a }); });
@@ -8039,10 +8675,34 @@ async function publishVerified(kind) {
   try {
     await pushActions(true);
     setStatus("");
-    toast(list.length + " article(s) published");
+    toast(mrStories(list.length) + " published");
   } catch (e) {
     setStatus("Published here, but saving to Drive failed: " + e.message, true);
   }
+}
+
+/* Clear all: un-verify exactly the stories the card counts, after a Cancel / Unverify question. */
+async function mrClearAll(st) {
+  var list = st.verified.slice();
+  if (!list.length) return;
+  var where = st.markets.length > 1 ? " in " + mrLabel(st.contributing(list)) : "";
+  var ok = await askConfirm({
+    title: "Unverify " + mrStories(list.length) + "?",
+    body: "They go back to To verify" + where + ". This can't be undone.",
+    ok: "Unverify", danger: true, equal: true
+  });
+  if (!ok) return;
+  var gone = new Set(list.map(function (a) { return key(a.title); }));
+  var keep = pendingRequests().filter(function (r) { return !gone.has(key(r.title)); });
+  list.forEach(function (a) { keep.push({ rid: newRid(), op: "unverify", title: a.title }); });
+  S.actions.requests = keep;
+  mrChanged();
+  save();
+  pushActions(true).then(function () {
+    toast("Unverified " + mrStories(list.length));
+  }).catch(function (e) {
+    setStatus("Saved here, but not sent to your phone yet: " + e.message, true);
+  });
 }
 
 /* ============================================================
@@ -8202,8 +8862,10 @@ $("#settingsPanel").onclick = function (e) {
   // Backdrop only: a click that started inside the pane must not dismiss it.
   if (e.target === this) closeSettingsPanel();
 };
-$("#genPdf").onclick  = function () { publishVerified("pdf"); };
-$("#genWord").onclick = function () { publishVerified("word"); };
+$("#openReport").onclick = function () {
+  S.tab = "reports"; save(); render();
+  $("#scroll").scrollTop = 0;
+};
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyTheme);
 
 /* Offline + update. A new version is downloaded quietly and applied only when the
