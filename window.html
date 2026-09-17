@@ -928,6 +928,75 @@ button.nstate:hover,button.nstate:focus-visible{color:var(--good-ink);
 button.nstate:active{transform:scale(.97)}
 .nstate.pub{color:var(--accent-ink);background:var(--accent-soft)}
 
+/* ---------- the phone's card layout (build 38, 17 Sep 2026) ----------
+   dot · CATEGORY ………… [EN|DE] · share
+   Headline
+   date · Source ↗
+   (opened) summary, then Fact check ……… Mark as correct
+   The whole card opens and closes; there is no chevron. */
+.ncard{cursor:pointer}
+.ntop{display:flex;align-items:center;gap:8px;min-width:0}
+.ntop .nchan{text-transform:uppercase;letter-spacing:.04em;font-size:11px;min-width:0}
+.ngrow{flex:1 1 auto}
+.sdot{width:8px;height:8px;border-radius:50%;flex:0 0 8px;background:var(--paid)}
+.sdot.rss{background:var(--free)}
+.sdot.hybrid{background:#3B82F6}
+.nverified{display:inline-grid;place-items:center;color:var(--good-ink);flex:none}
+.nverified svg{width:13px;height:13px}
+.nact{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;color:var(--ink-3);
+  flex:none;transition:background var(--t-hover) var(--ease),color var(--t-hover) var(--ease)}
+.nact:hover,.nact:focus-visible{background:var(--surface-2);color:var(--ink)}
+.nact svg{width:15px;height:15px}
+.lpill{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex:none}
+.lseg{font-size:10.5px;font-weight:700;letter-spacing:.02em;padding:3px 8px;color:var(--ink-3);
+  background:none;position:relative;transition:background var(--t-hover) var(--ease),color var(--t-hover) var(--ease)}
+.lseg:hover{color:var(--ink)}
+.lseg.on{background:var(--accent);color:#fff}
+.lseg.busy{color:transparent}
+.lseg.busy::after{content:"";position:absolute;inset:0;margin:auto;width:9px;height:9px;border-radius:50%;
+  border:1.5px solid var(--accent);border-right-color:transparent;animation:lspin .8s linear infinite}
+@keyframes lspin{to{transform:rotate(360deg)}}
+.nmeta{display:flex;align-items:baseline;gap:7px;margin-top:6px;min-width:0;font-size:12px;color:var(--ink-3)}
+.nmeta .nsrc{color:var(--free);font-weight:600;text-decoration:underline;text-underline-offset:2px}
+.nmeta a.nsrc:hover{color:var(--free)}
+.nmeta .nsrc.plain{color:var(--ink-3);font-weight:400;text-decoration:none}
+.ncard .nsum{margin-top:10px}
+.nfact{font-size:12px;font-weight:700;color:var(--accent-ink);text-decoration:underline;
+  text-underline-offset:2px;white-space:nowrap}
+.srclegend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--ink-3);align-items:center}
+.srclegend span{display:inline-flex;align-items:center;gap:6px}
+
+/* Buttons: continuous (squircle) corners instead of pill ends, like the phone. Browsers without
+   corner-shape get a plain 12px radius, which reads the same at a glance. */
+.btn,.vf,.nstate{border-radius:12px}
+@supports (corner-shape: squircle){
+  .btn,.vf,.nstate{border-radius:18px;corner-shape:squircle}
+}
+
+/* ---------- Data: markets first, like the phone ---------- */
+.mkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr));gap:14px}
+.mkcard{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-card);
+  box-shadow:var(--sh-1);padding:16px 18px;display:flex;flex-direction:column;gap:14px;text-align:left;
+  color:inherit;font:inherit;width:100%}
+button.mkcard{cursor:pointer;transition:border-color var(--t-hover) var(--ease),box-shadow var(--t-hover) var(--ease)}
+button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
+.mkhead{display:flex;align-items:center;gap:13px;min-width:0}
+.mkbadge{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;flex:none;
+  background:var(--accent-soft);color:var(--accent-ink);font-family:var(--fs-title);font-weight:700;font-size:15px}
+.mkbadge.q{background:var(--surface-2);color:var(--ink-3)}
+.mkname{font-family:var(--fs-title);font-size:17px;font-weight:600;line-height:1.25}
+.mksub{font-size:12.5px;color:var(--ink-3);margin-top:2px}
+.mkchev{margin-left:auto;color:var(--ink-3);font-size:20px;line-height:1}
+.mkstats{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line-2);padding-top:12px}
+.mkstat{padding:0 10px;border-left:1px solid var(--line-2)}
+.mkstat:first-child{padding-left:0;border-left:0}
+.mkstat .k{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+.mkstat .v{font-family:var(--fs-title);font-size:19px;font-weight:600;margin-top:3px;font-variant-numeric:tabular-nums}
+.mkstat .v.up{color:var(--good-ink)}
+.mkback{display:inline-flex;align-items:center;gap:4px;color:var(--accent-ink);font-weight:600;font-size:14px;
+  padding:6px 8px 6px 2px;border-radius:9px;margin-bottom:10px}
+.mkback:hover{background:var(--accent-soft)}
+
 /* ---------- search, with the filter living inside it ---------- */
 .nsearch{display:flex;flex-direction:column;gap:12px;margin-bottom:16px}
 .nfield{display:flex;align-items:center;gap:10px;background:var(--surface);
@@ -2485,7 +2554,7 @@ var TAB_TITLE = {
   reports:   ["Reports",   "Download a past edition"],
   liked:     ["Liked",     "What you marked useful"],
   disliked:  ["Disliked",  "What you pushed away"],
-  database:  ["Data",      "Competitors, markets and codes"],
+  database:  ["Data",      "Markets and competitors"],
   restorepoints: ["Restore points", "Snapshots your phone can roll back to"]
 };
 
@@ -3381,76 +3450,319 @@ function toggleIn(list, v) {
   if (i >= 0) list.splice(i, 1); else list.push(v);
 }
 
-/* One story. The four corners never move. */
+/* ---------- per-story facts the phone ships (build 39) ----------
+   Which stories are German, their translations, the phone's EN choices, each story's market and
+   which source found it. The phone decides all of these; this page only draws them. */
+var ICON_SHARE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+  'stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/>' +
+  '<circle cx="18" cy="19" r="2.6"/><path d="M8.3 10.8l7.4-4.4M8.3 13.2l7.4 4.4"/></svg>';
+
+/* Display names for the three long categories. Display only: filters keep the full names. */
+function catShort(c) {
+  c = String(c || "").trim();
+  if (/^related news$/i.test(c)) return "Market Related News";
+  return ({ "Tenders & Project Opportunities": "Tenders",
+            "Certifications & Standards": "Certifications",
+            "Partnerships & Distribution": "Partnerships" })[c] || c;
+}
+/* German Bing sends umlauts as "&#252;"; stories stored before the phone decoded them still do. */
+function decodeEnt(s) {
+  return String(s == null ? "" : s).replace(/&#(x[0-9a-f]{1,6}|[0-9]{1,7});/gi, function (m, v) {
+    var cp = /^x/i.test(v) ? parseInt(v.slice(1), 16) : parseInt(v, 10);
+    if (!cp || cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF)) return m;
+    try { return String.fromCodePoint(cp); } catch (e) { return m; }
+  });
+}
+var SET_CACHE = new WeakMap();
+function setOf(list) {
+  if (!Array.isArray(list)) return new Set();
+  var hit = SET_CACHE.get(list);
+  if (!hit) { hit = new Set(list.map(key)); SET_CACHE.set(list, hit); }
+  return hit;
+}
+function newsDate(raw) {
+  var s = String(raw || "").trim();
+  var m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return s;
+  var d = new Date(+m[1], +m[2] - 1, +m[3]);
+  if (isNaN(d)) return s;
+  return d.toLocaleDateString("en-US", { month: "long" }) + " " + m[3] + ", " + m[1];
+}
+function sourceKind(a) {
+  var d = S.data || {}, k = key(a.title);
+  if (setOf(d.bothTitles).has(k) || a.sourceType === "hybrid" || a.sourceType === "both") return "hybrid";
+  if (a.sourceType === "rss" || setOf(d.rssTitles).has(k)) return "rss";
+  return "grounded";
+}
+var SOURCE_LABEL = { rss: "Free RSS", grounded: "Grounded", hybrid: "Both sources" };
+function storyMarketOf(a) {
+  var m = (S.data && S.data.storyMarkets) || {};
+  return m[key(a.title)] || "";
+}
+/* Bing wraps the article in a redirect whose &url= carries the real address. */
+function realArticleUrl(u) {
+  var s = String(u || "").replace(/&amp;/g, "&");
+  var m = s.match(/[?&]url=([^&]+)/);
+  if (!m) return s;
+  try { return decodeURIComponent(m[1]); } catch (e) { return s; }
+}
+function factCheckQuery(title) {
+  var t = String(title || "").trim() || "this outward-opening aluminium window news";
+  return "Fact-check this news: \"" + t + "\". Is it true, exaggerated, or false? Tell me (1) whether it actually " +
+    "happened and is accurate, (2) the date/timeframe it occurred, (3) the city/region and country involved, " +
+    "(4) the company or brand involved, (5) a 2-3 line summary of what actually happened, and (6) the specific " +
+    "sources. If it can't be verified, say so.";
+}
+/* Where the source link goes — the phone's rule: RSS stories open the real article; the paid
+   search's stored links are unreliable, so those open Google AI Mode on the headline. */
+function sourceHref(a) {
+  var kind = sourceKind(a), real = a.sourceUrl ? realArticleUrl(a.sourceUrl) : "";
+  if ((kind === "rss" || kind === "hybrid") && /^https?:/i.test(real)) return real;
+  return "https://www.google.com/search?udm=50&q=" + encodeURIComponent(factCheckQuery(a.title));
+}
+/* The link a SHARED story carries: the real article, or a Google search for the headline. */
+function shareLink(a) {
+  var kind = sourceKind(a), real = a.sourceUrl ? realArticleUrl(a.sourceUrl) : "";
+  if ((kind === "rss" || kind === "hybrid") && /^https?:/i.test(real)) return real;
+  return a.title ? "https://www.google.com/search?q=" + encodeURIComponent(a.title) : real;
+}
+function shareStory(a, lang) {
+  var title = lang && lang.english ? lang.tr.t : decodeEnt(a.title);
+  var sum = lang && lang.english ? (lang.tr.s || a.summary) : a.summary;
+  var src = [a.source ? "Source: " + a.source : "", shareLink(a)].filter(Boolean).join("\n");
+  var text = [title, [catShort(a.category), newsDate(a.date)].filter(Boolean).join("  ·  "),
+              decodeEnt(sum || ""), src].filter(Boolean).join("\n\n");
+  if (navigator.share) {
+    navigator.share({ title: title, text: text }).catch(function () {});
+    return;
+  }
+  var done = function () { toast("Copied, with the source link"); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done, function () { toast("Couldn't copy this story."); });
+  } else toast("This browser can't share or copy.");
+}
+
+/* ---------- EN / DE ---------- */
+var LANG_LS = "echo.news.lang", TR_LS = "echo.news.tr";
+/* Parsed once and kept: these are read for every card on every render. */
+var LS_MEMO = {};
+function lsJson(k) {
+  if (!LS_MEMO[k]) {
+    try { LS_MEMO[k] = JSON.parse(localStorage.getItem(k) || "{}") || {}; } catch (e) { LS_MEMO[k] = {}; }
+  }
+  return LS_MEMO[k];
+}
+function lsPut(k, o) { LS_MEMO[k] = o; try { localStorage.setItem(k, JSON.stringify(o)); } catch (e) {} }
+var TR_BUSY = new Set();
+var WEB_TRANSLATOR = null;
+function storyTranslation(k) {
+  var fromPhone = (S.data && S.data.translations) || {};
+  return fromPhone[k] || lsJson(TR_LS)[k] || null;
+}
+/* null for a story that is not German. */
+function storyLang(a) {
+  var d = S.data || {}, k = key(a.title);
+  if (!setOf(d.germanTitles).has(k)) return null;
+  var tr = storyTranslation(k);
+  var pref = lsJson(LANG_LS)[k];
+  var wantEn = pref ? pref === "en" : setOf(d.englishTitles).has(k);
+  return { english: !!(wantEn && tr), tr: tr, busy: TR_BUSY.has(k) };
+}
+function setLangPref(k, en) { var o = lsJson(LANG_LS); o[k] = en ? "en" : "de"; lsPut(LANG_LS, o); }
+function withTimeout(p, ms, what) {
+  return Promise.race([p, new Promise(function (_, no) {
+    setTimeout(function () { no(new Error(what + " took too long")); }, ms);
+  })]);
+}
+/* The browser's own on-device translator (Chrome 138+). Free, like the phone's. */
+function browserTranslateStory(a) {
+  var mk = WEB_TRANSLATOR ? Promise.resolve(WEB_TRANSLATOR)
+    : self.Translator.create({ sourceLanguage: "de", targetLanguage: "en" })
+        .then(function (t) { WEB_TRANSLATOR = t; return t; });
+  return withTimeout(mk, 120000, "Downloading the German language pack").then(function (t) {
+    return withTimeout(Promise.all([
+      t.translate(decodeEnt(a.title)),
+      a.summary ? t.translate(decodeEnt(a.summary)) : Promise.resolve("")
+    ]), 30000, "Translation");
+  }).then(function (r) { return { t: r[0], s: r[1] }; });
+}
+function setStoryLanguage(a, en, opts) {
+  var k = key(a.title);
+  if (!en || storyTranslation(k)) { setLangPref(k, en); repaintCard(a, opts); return; }
+  if (TR_BUSY.has(k)) return;
+  if (!("Translator" in self)) {
+    toast("Tap EN on this story in the phone app — its translation shows here after the phone's next backup.");
+    return;
+  }
+  TR_BUSY.add(k); repaintCard(a, opts);
+  browserTranslateStory(a).then(function (tr) {
+    var o = lsJson(TR_LS);
+    o[k] = tr;
+    var ks = Object.keys(o);
+    if (ks.length > 400) ks.slice(0, ks.length - 400).forEach(function (x) { delete o[x]; });
+    lsPut(TR_LS, o);
+    setLangPref(k, true);
+  }).catch(function (e) {
+    toast("This browser couldn't translate it (" + ((e && e.message) || "unavailable") +
+      "). Tap EN on the phone instead.");
+  }).then(function () { TR_BUSY.delete(k); repaintCard(a, opts); });
+}
+function langPill(a, lang, opts) {
+  var p = el("span", "lpill");
+  [["EN", true, "Show in English"], ["DE", false, "Show the German original"]].forEach(function (o) {
+    var on = o[1] === lang.english;
+    var b = el("button", "lseg" + (on ? " on" : "") + (o[1] && lang.busy ? " busy" : ""), o[0]);
+    b.title = o[2];
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+    b.onclick = function (e) { e.stopPropagation(); setStoryLanguage(a, o[1], opts); };
+    p.appendChild(b);
+  });
+  return p;
+}
+
+/* Which cards are open, by headline — survives a re-render, not a reload. */
+var NEWS_OPEN = new Set();
+var CARD_NODES = {};
+function repaintCard(a, opts) {
+  var n = CARD_NODES[key(a.title)];
+  if (n && n.isConnected) n.replaceWith(articleCard(a, opts));
+}
+
+/* One story, laid out like the phone's card. */
 function articleCard(a, opts) {
   opts = opts || {};
-  var card = el("div", "ncard");
+  var k = key(a.title);
+  var open = NEWS_OPEN.has(k);
+  var lang = storyLang(a);
+  var card = el("div", "ncard" + (open ? " open" : ""));
+  card.tabIndex = 0;
+  card.setAttribute("aria-expanded", open ? "true" : "false");
+  CARD_NODES[k] = card;
 
-  var top = el("div", "ncorners");
-  top.appendChild(el("span", "nchan", a.category || "News"));
-  top.appendChild(el("span", "ndate", a.date || ""));
+  var top = el("div", "ntop");
+  var kind = sourceKind(a);
+  var dot = el("span", "sdot " + kind);
+  dot.title = SOURCE_LABEL[kind];
+  top.appendChild(dot);
+  top.appendChild(el("span", "nchan", catShort(a.category) || "News"));
+  if (verifiedSet().has(k)) {
+    var vb = el("span", "nverified");
+    vb.innerHTML = ICON_TICK;
+    vb.title = "Verified";
+    top.appendChild(vb);
+  }
+  top.appendChild(el("span", "ngrow"));
+  if (lang) top.appendChild(langPill(a, lang, opts));
+  var sh = el("button", "nact");
+  sh.innerHTML = ICON_SHARE;
+  sh.title = "Share this story";
+  sh.setAttribute("aria-label", "Share this story");
+  sh.onclick = function (e) { e.stopPropagation(); shareStory(a, lang); };
+  top.appendChild(sh);
   card.appendChild(top);
 
-  card.appendChild(el("p", "nttl", a.title));
-  if (a.summary) card.appendChild(el("p", "nsum", a.summary));
+  card.appendChild(el("p", "nttl", lang && lang.english ? lang.tr.t : decodeEnt(a.title)));
+
+  var meta = el("div", "nmeta");
+  if (a.date) meta.appendChild(el("span", "ndate", newsDate(a.date)));
+  if (a.source || a.sourceUrl) {
+    if (a.date) meta.appendChild(el("span", null, "·"));
+    if (a.sourceUrl) {
+      var link = el("a", "nsrc");
+      link.href = sourceHref(a);
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.title = "Open " + (a.source || "the source") + " in a new tab";
+      link.appendChild(document.createTextNode(a.source || "Source"));
+      link.appendChild(el("span", "ext", "↗"));
+      meta.appendChild(link);
+    } else {
+      meta.appendChild(el("span", "nsrc plain", a.source));
+    }
+  }
+  card.appendChild(meta);
   /* pmAdvisory is deliberately not rendered. The feature is retired; the field is left in
      the payload so nothing is lost, but nothing on this page reads it. */
 
-  var foot = el("div", "ncorners foot");
+  if (open) {
+    var sum = lang && lang.english ? (lang.tr.s || a.summary) : a.summary;
+    if (sum) card.appendChild(el("p", "nsum", decodeEnt(sum)));
 
-  /* Bottom left: the source. A link when we have a URL, plain text when we do not, so it never
-     promises a destination it cannot reach. */
-  if (a.sourceUrl) {
-    var link = el("a", "nsrc");
-    link.href = a.sourceUrl;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.title = "Open " + (a.source || "the source") + " in a new tab";
-    link.appendChild(document.createTextNode(a.source || "Source"));
-    var ext = el("span", "ext", "↗");
-    link.appendChild(ext);
-    foot.appendChild(link);
-  } else {
-    foot.appendChild(el("span", "nsrc", a.source || ""));
-  }
+    var foot = el("div", "ncorners foot");
+    /* Bottom left: the same plain Google search the phone's Fact check opens. */
+    var fc = el("a", "nfact", "Fact check");
+    fc.href = "https://www.google.com/search?q=" + encodeURIComponent(a.title + " is this news true?");
+    fc.target = "_blank";
+    fc.rel = "noopener noreferrer";
+    foot.appendChild(fc);
 
-  /* Bottom right: the state. On a verifiable page an unverified story is a BUTTON, so the
-     commonest action costs one click from where the eye already is. */
-  if (opts.publishedPill) {
-    foot.appendChild(publishedControl(a.title));
-  } else if (opts.verifiable) {
-    var on = verifiedSet().has(key(a.title));
-    if (on && verifiedOnPhone(a.title)) {
-      var fixed = el("span", "nstate on");
-      fixed.innerHTML = ICON_TICK;
-      fixed.appendChild(el("span", null, "Verified"));
-      fixed.title = "Verified on the phone. Change it there.";
-      foot.appendChild(fixed);
-    } else if (on) {
-      // Verified here, so it is ours to undo, from exactly where the mis-click happened.
-      var undo = el("button", "nstate on");
-      undo.innerHTML = ICON_TICK;
-      undo.appendChild(el("span", null, "Verified"));
-      undo.title = "Verified here. Click to undo.";
-      undo.onclick = function () { toggleVerify(a.title); };
-      foot.appendChild(undo);
-    } else {
-      var b = el("button", "nstate");
-      b.appendChild(el("span", null, "Not verified"));
-      b.title = "Click to mark this verified";
-      b.onclick = function () { toggleVerify(a.title); };
-      foot.appendChild(b);
+    /* Bottom right: the state. On a verifiable page an unverified story is a BUTTON, so the
+       commonest action costs one click from where the eye already is. */
+    if (opts.publishedPill) {
+      foot.appendChild(publishedControl(a.title));
+    } else if (opts.verifiable) {
+      var on = verifiedSet().has(k);
+      if (on && verifiedOnPhone(a.title)) {
+        var fixed = el("span", "nstate on");
+        fixed.innerHTML = ICON_TICK;
+        fixed.appendChild(el("span", null, "Verified"));
+        fixed.title = "Verified on the phone. Change it there.";
+        foot.appendChild(fixed);
+      } else if (on) {
+        // Verified here, so it is ours to undo, from exactly where the mis-click happened.
+        var undo = el("button", "nstate on");
+        undo.innerHTML = ICON_TICK;
+        undo.appendChild(el("span", null, "Verified"));
+        undo.title = "Verified here. Click to undo.";
+        undo.onclick = function () { toggleVerify(a.title); };
+        foot.appendChild(undo);
+      } else {
+        var b = el("button", "nstate");
+        b.innerHTML = ICON_TICK;
+        b.appendChild(el("span", null, "Mark as correct"));
+        b.title = "Click to mark this story correct";
+        b.onclick = function () { toggleVerify(a.title); };
+        foot.appendChild(b);
+      }
     }
+    card.appendChild(foot);
   }
-  card.appendChild(foot);
+
+  var toggle = function () {
+    if (NEWS_OPEN.has(k)) NEWS_OPEN.delete(k); else NEWS_OPEN.add(k);
+    card.replaceWith(articleCard(a, opts));
+  };
+  card.onclick = function (e) {
+    if (e.target.closest("a,button")) return;
+    // Selecting text to copy it is not a request to fold the card.
+    if (window.getSelection && String(window.getSelection()).length) return;
+    toggle();
+  };
+  card.onkeydown = function (e) {
+    if (e.target !== card) return;
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
+  };
   return card;
+}
+
+/* The three source dots, explained once above the wall. */
+function sourceLegend() {
+  var box = el("div", "srclegend");
+  ["rss", "grounded", "hybrid"].forEach(function (k) {
+    var item = el("span");
+    item.appendChild(el("span", "sdot " + k));
+    item.appendChild(document.createTextNode(SOURCE_LABEL[k]));
+    box.appendChild(item);
+  });
+  return box;
 }
 
 /* Everything a story can be matched on, lowercased once. */
 function articleHaystack(a) {
   /* No pmAdvisory here. Matching on text the card does not show produces a result you
      cannot explain by looking at it. */
-  return [a.title, a.summary, a.source, a.category]
+  var tr = storyTranslation(key(a.title)) || {};
+  return [decodeEnt(a.title), decodeEnt(a.summary), a.source, a.category, catShort(a.category), tr.t, tr.s]
     .filter(Boolean).join(" ").toLowerCase();
 }
 
@@ -3583,6 +3895,12 @@ function ledger(cols, rows) {
   return box;
 }
 
+/* A story is in a market when the phone tagged it so (German stories rarely say "Germany"), or
+   when it names the market. */
+function inMarket(a, hay, market) {
+  return storyMarketOf(a).toLowerCase() === market.toLowerCase() || hay.indexOf(market.toLowerCase()) >= 0;
+}
+
 function newsWall(app, list, opts) {
   opts = opts || {};
   var st = wallState();
@@ -3598,7 +3916,7 @@ function newsWall(app, list, opts) {
     if (a.category) chanSet[a.category] = 1;
     var hay = articleHaystack(a);
     compNames.forEach(function (n) { if (hay.indexOf(n.toLowerCase()) >= 0) compSet[n] = 1; });
-    landNames.forEach(function (n) { if (hay.indexOf(n.toLowerCase()) >= 0) landSet[n] = 1; });
+    landNames.forEach(function (n) { if (inMarket(a, hay, n)) landSet[n] = 1; });
   });
   var chans = Object.keys(chanSet).sort();
   var comps = Object.keys(compSet).sort();
@@ -3627,7 +3945,7 @@ function newsWall(app, list, opts) {
     }
     if (st.chan.length && st.chan.indexOf(a.category) < 0) return false;
     if (st.comp.length && !st.comp.some(function (n) { return hay.indexOf(n.toLowerCase()) >= 0; })) return false;
-    if (st.land.length && !st.land.some(function (n) { return hay.indexOf(n.toLowerCase()) >= 0; })) return false;
+    if (st.land.length && !st.land.some(function (n) { return inMarket(a, hay, n); })) return false;
     return true;
   });
   var shown = q
@@ -3717,7 +4035,8 @@ function newsWall(app, list, opts) {
       all.onclick = function () { grp[2].length = 0; render(); };
       chips.appendChild(all);
       grp[1].forEach(function (name) {
-        var c = el("button", "nchip" + (grp[2].indexOf(name) >= 0 ? " on" : ""), name);
+        var c = el("button", "nchip" + (grp[2].indexOf(name) >= 0 ? " on" : ""),
+          grp[2] === st.chan ? catShort(name) : name);
         c.onclick = function () { toggleIn(grp[2], name); render(); };
         chips.appendChild(c);
       });
@@ -3745,6 +4064,7 @@ function newsWall(app, list, opts) {
     });
     countRow.appendChild(view);
   }
+  if (list.length && newsViewEffective() === "cards") box.appendChild(sourceLegend());
   if (countRow.children.length) box.appendChild(countRow);
   app.appendChild(box);
 
@@ -3786,13 +4106,13 @@ function newsLedger(items, opts) {
     var src;
     if (a.sourceUrl) {
       src = el("a", "nsrc");
-      src.href = a.sourceUrl; src.target = "_blank"; src.rel = "noopener noreferrer";
+      src.href = sourceHref(a); src.target = "_blank"; src.rel = "noopener noreferrer";
       src.title = "Open " + (a.source || "the source") + " in a new tab";
       src.appendChild(document.createTextNode(a.source || "Source"));
       src.appendChild(el("span", "ext", "↗"));
     } else src = a.source || "";
 
-    var row = [a.date || "", a.category || "", a.title, src];
+    var row = [newsDate(a.date), catShort(a.category), decodeEnt(a.title), src];
     if (opts.publishedPill) {
       row.push(publishedControl(a.title));
     } else if (opts.verifiable) {
@@ -3811,7 +4131,7 @@ function newsLedger(items, opts) {
         st.onclick = function () { toggleVerify(a.title); };
       } else {
         st = el("button", "nstate");
-        st.appendChild(el("span", null, "Not verified"));
+        st.appendChild(el("span", null, "Mark as correct"));
         st.title = "Click to mark this verified";
         st.onclick = function () { toggleVerify(a.title); };
       }
@@ -7323,44 +7643,7 @@ function render() {
     }
   }
   else if (S.tab === "database") {
-    var comps = arr(d.competitors);
-    app.appendChild(el("div", "lbl", "Competitors"));
-    if (!comps.length) app.appendChild(emptyState("No competitors onboarded."));
-    /* KEY PRODUCT AND PRODUCT COUNT ARE GONE, replaced by six-week coverage.
-       Neither earned its column: nothing in the app ever captured keyProduct beyond the onboarding
-       form, and the product count came from a catalog with no UI on either screen. Both printed
-       blanks or a number that meant nothing. What you actually want from a competitor row is
-       whether they have been busy — which is the mark the phone already draws on its card, so this
-       reuses its rules verbatim rather than inventing a second definition of "active". */
-    else {
-      var covPool = arr(d.alerts).concat(arr(d.publishedNews));
-      app.appendChild(ledger(
-        [{ t: "Competitor", w: "1.4fr", cls: "p" }, { t: "Markets", w: ".9fr", cls: "m" },
-         { t: "Coverage · last 6 weeks", w: "1.6fr" }, { t: "Site", w: ".6fr", cls: "m" }],
-        comps.map(function (c) {
-          var cov = compCoverage(c.name, covPool);
-          var cell = el("div", "sparkcell");
-          cell.appendChild(sparkline(cov.weeks));
-          cell.appendChild(coverageLine(cov));
-          var site = c.websiteUrl
-            ? (function () {
-                var a = el("a", "chkl", "Open ↗");
-                a.href = c.websiteUrl; a.target = "_blank"; a.rel = "noopener noreferrer";
-                return a;
-              })()
-            : "";
-          return [c.name, c.markets || "", cell, site];
-        })));
-    }
-
-    app.appendChild(el("div", "lbl", "Markets"));
-    var nations = arr(d.countries);
-    if (!nations.length) app.appendChild(emptyState("No markets onboarded."));
-    else app.appendChild(ledger(
-      [{ t: "Market", w: "1.4fr", cls: "p" }, { t: "Construction GDP", w: "1fr", cls: "m", num: true },
-       { t: "CAGR", w: ".7fr", cls: "m", num: true }],
-      nations.map(function (c) { return [c.name, c.constructionGdp || "", c.cagr || ""]; })));
-
+    renderDatabase(app, d);
   }
 
   /* The explanatory note lives at the foot of Alerts only — it explains this tab. */
@@ -7377,6 +7660,148 @@ function render() {
   }
   refreshReportBar();
   measureScrollbar();
+}
+
+/* ============================================================
+   DATA — markets first, like the phone (build 38)
+   A card per market; open one to see the competitors onboarded there.
+   ============================================================ */
+var UNASSIGNED_MARKET = "__unassigned__";
+S.dbMarket = null;
+/* The phone's getCountryCode table, so the badge reads DE on both screens rather than GE here. */
+function countryCode(name) {
+  var n = String(name || "").trim().toLowerCase();
+  var table = [["germany", "DE"], ["united kingdom", "GB"], ["britain", "GB"], ["emirates", "AE"], ["uae", "AE"],
+    ["dubai", "AE"], ["canada", "CA"], ["brazil", "BR"], ["singapore", "SG"], ["united states", "US"],
+    ["france", "FR"], ["italy", "IT"], ["china", "CN"], ["india", "IN"], ["japan", "JP"], ["spain", "ES"],
+    ["belgium", "BE"], ["australia", "AU"], ["netherlands", "NL"], ["switzerland", "CH"], ["austria", "AT"],
+    ["vietnam", "VN"], ["portugal", "PT"], ["greece", "GR"], ["ireland", "IE"], ["saudi", "SA"],
+    ["qatar", "QA"], ["kuwait", "KW"], ["bahrain", "BH"], ["oman", "OM"]];
+  if (n === "uk") return "GB";
+  if (n === "us" || n === "usa") return "US";
+  for (var i = 0; i < table.length; i++) if (n.indexOf(table[i][0]) >= 0) return table[i][1];
+  return String(name || "").replace(/[^A-Za-z]/g, "").slice(0, 2).toUpperCase() || "?";
+}
+function competitorMarkets(c) {
+  return String((c && c.markets) || "").split(",").map(function (m) { return m.trim(); })
+    .filter(Boolean);
+}
+function sameName(x, y) { return String(x || "").trim().toLowerCase() === String(y || "").trim().toLowerCase(); }
+function marketStories(d, market) {
+  var pool = arr(d.alerts).concat(arr(d.publishedNews));
+  return pool.filter(function (a) { return inMarket(a, articleHaystack(a), market); }).length;
+}
+function marketCard(d, country, comps, clickable) {
+  var here = comps.filter(function (c) {
+    return competitorMarkets(c).some(function (m) { return sameName(m, country.name); });
+  }).length;
+  var card = el(clickable ? "button" : "div", "mkcard");
+  var head = el("div", "mkhead");
+  head.appendChild(el("div", "mkbadge", countryCode(country.name)));
+  var txt = el("div");
+  txt.appendChild(el("div", "mkname", country.name));
+  txt.appendChild(el("div", "mksub", here + (here === 1 ? " competitor" : " competitors") + " onboarded"));
+  head.appendChild(txt);
+  if (clickable) head.appendChild(el("span", "mkchev", "›"));
+  card.appendChild(head);
+  var stats = el("div", "mkstats");
+  var gdp = String(country.constructionGdp || "").trim();
+  var cagr = String(country.cagr || "").trim();
+  [["Constr. GDP", gdp ? "$" + gdp.replace(/^\$/, "").replace(/\s*b$/i, "") + "B" : "—", ""],
+   ["CAGR", cagr ? cagr.replace(/%$/, "") + "%" : "—", cagr ? " up" : ""],
+   ["Stories", String(marketStories(d, country.name)), ""]].forEach(function (x) {
+    var st = el("div", "mkstat");
+    st.appendChild(el("div", "k", x[0]));
+    st.appendChild(el("div", "v" + x[2], x[1]));
+    stats.appendChild(st);
+  });
+  card.appendChild(stats);
+  if (clickable) {
+    card.onclick = function () { S.dbMarket = country.name; render(); };
+    card.title = "Open " + country.name;
+  }
+  return card;
+}
+function unassignedCard(n) {
+  var card = el("button", "mkcard");
+  var head = el("div", "mkhead");
+  head.appendChild(el("div", "mkbadge q", "?"));
+  var txt = el("div");
+  txt.appendChild(el("div", "mkname", "Unassigned"));
+  txt.appendChild(el("div", "mksub", n + (n === 1 ? " competitor" : " competitors") + " with no onboarded market"));
+  head.appendChild(txt);
+  head.appendChild(el("span", "mkchev", "›"));
+  card.appendChild(head);
+  card.onclick = function () { S.dbMarket = UNASSIGNED_MARKET; render(); };
+  return card;
+}
+function competitorLedger(d, list) {
+  var covPool = arr(d.alerts).concat(arr(d.publishedNews));
+  /* Six-week coverage, the mark the phone draws on its competitor card (same rules). */
+  return ledger(
+    [{ t: "Competitor", w: "1.4fr", cls: "p" }, { t: "Markets", w: ".9fr", cls: "m" },
+     { t: "Coverage · last 6 weeks", w: "1.6fr" }, { t: "Site", w: ".6fr", cls: "m" }],
+    list.map(function (c) {
+      var cov = compCoverage(c.name, covPool);
+      var cell = el("div", "sparkcell");
+      cell.appendChild(sparkline(cov.weeks));
+      cell.appendChild(coverageLine(cov));
+      var site = c.websiteUrl
+        ? (function () {
+            var a = el("a", "chkl", "Open ↗");
+            a.href = c.websiteUrl; a.target = "_blank"; a.rel = "noopener noreferrer";
+            return a;
+          })()
+        : "";
+      return [c.name, c.markets || "", cell, site];
+    }));
+}
+function renderDatabase(app, d) {
+  var nations = arr(d.countries).filter(function (c) { return c && c.name; });
+  var comps = arr(d.competitors).filter(function (c) { return c && c.name; });
+  var unassigned = comps.filter(function (c) {
+    return !competitorMarkets(c).some(function (m) {
+      return nations.some(function (n) { return sameName(n.name, m); });
+    });
+  });
+  var mk = S.dbMarket;
+  if (mk && mk !== UNASSIGNED_MARKET && !nations.some(function (n) { return sameName(n.name, mk); })) mk = S.dbMarket = null;
+  if (mk === UNASSIGNED_MARKET && !unassigned.length) mk = S.dbMarket = null;
+
+  if (!mk) {
+    app.appendChild(el("div", "lbl", "Markets"));
+    if (!nations.length && !unassigned.length) {
+      app.appendChild(emptyState("No markets onboarded. Onboard a country on the phone, then its competitors."));
+      return;
+    }
+    var grid = el("div", "mkgrid");
+    nations.forEach(function (n) { grid.appendChild(marketCard(d, n, comps, true)); });
+    if (unassigned.length) grid.appendChild(unassignedCard(unassigned.length));
+    app.appendChild(grid);
+    return;
+  }
+
+  var back = el("button", "mkback", "‹ Markets");
+  back.onclick = function () { S.dbMarket = null; render(); };
+  app.appendChild(back);
+  var list;
+  if (mk === UNASSIGNED_MARKET) {
+    app.appendChild(el("div", "lbl", "Unassigned"));
+    app.appendChild(el("p", "mksub",
+      "Competitors whose markets match no onboarded country. Give one a market on the phone, or onboard the country it operates in."));
+    list = unassigned;
+  } else {
+    var country = nations.filter(function (n) { return sameName(n.name, mk); })[0];
+    var grid1 = el("div", "mkgrid");
+    grid1.appendChild(marketCard(d, country, comps, false));
+    app.appendChild(grid1);
+    list = comps.filter(function (c) {
+      return competitorMarkets(c).some(function (m) { return sameName(m, mk); });
+    });
+    app.appendChild(el("div", "lbl", "Competitors in " + country.name));
+  }
+  if (!list.length) app.appendChild(emptyState("No competitors here yet. Onboard one on the phone."));
+  else app.appendChild(competitorLedger(d, list));
 }
 
 function refreshReportBar() {
@@ -7402,11 +7827,11 @@ function reportHtml(title, dateLabel, articles) {
     articles.length + " article(s)</p>" +
     articles.map(function (a) {
       return "<div class='r-art'>" +
-        "<div class='r-meta'>" + esc(a.category || "News") +
+        "<div class='r-meta'>" + esc(catShort(a.category) || "News") +
           (a.date ? " · " + esc(a.date) : "") +
           (a.source ? " · " + esc(a.source) : "") + "</div>" +
-        "<h2>" + esc(a.title) + "</h2>" +
-        (a.summary ? "<p class='r-sum'>" + esc(a.summary) + "</p>" : "") +
+        "<h2>" + esc(decodeEnt(a.title)) + "</h2>" +
+        (a.summary ? "<p class='r-sum'>" + esc(decodeEnt(a.summary)) + "</p>" : "") +
       "</div>";
     }).join("");
 }
