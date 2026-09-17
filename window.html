@@ -575,13 +575,16 @@ body.in .dhead .mark{ animation:railsweep 9s linear infinite }
 /* ---------- section label ---------- */
 .lbl{font-family:var(--fs-title);font-size:13px;font-weight:600;color:var(--ink-3);margin:22px 0 10px}
 
-/* The count and the view switch share a line: the switch belongs beside the thing it changes. */
-.ncountrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+/* One line under the search: what the dots mean on the left, the count and the view switch on the
+   right. The switch belongs beside the thing it changes, and the legend is too short to earn a line
+   of its own. */
+.ncountrow{display:flex;align-items:center;gap:8px 16px;flex-wrap:wrap;min-height:28px}
 .ncountrow .ncount{margin:0}
+.nrowend{display:flex;align-items:center;gap:12px;margin-left:auto}
 
 /* The cards/list switch. Same material as every other segmented control in the app. */
 .nview{display:inline-flex;background:var(--seg-track);border-radius:var(--r-pill);
-  padding:2px;gap:2px;flex:0 0 auto;margin-left:auto}
+  padding:2px;gap:2px;flex:0 0 auto}
 .nview button{border:0;background:transparent;color:var(--ink-3);font:inherit;font-size:11.5px;
   padding:4px 11px;border-radius:var(--r-pill);cursor:pointer;letter-spacing:-.01em;
   transition:background var(--t-hover) var(--ease),color var(--t-hover) var(--ease)}
@@ -3725,7 +3728,7 @@ function articleCard(a, opts) {
   return card;
 }
 
-/* The three source dots, explained once above the wall. */
+/* The three source dots, explained once, on the same line as the cards/list switch. */
 function sourceLegend() {
   var box = el("div", "srclegend");
   ["rss", "grounded", "hybrid"].forEach(function (k) {
@@ -4031,8 +4034,12 @@ function newsWall(app, list, opts) {
      reachable whenever there are stories — which is nearly always, and was never while I had the
      switch inside this condition. */
   var countRow = el("div", "ncountrow");
+  /* The legend shares this line rather than taking one of its own. It only explains the card
+     dots, so the list view, which has none, goes without it. */
+  if (list.length && newsViewEffective() === "cards") countRow.appendChild(sourceLegend());
+  var rowEnd = el("div", "nrowend");
   if (q || active) {
-    countRow.appendChild(el("div", "ncount",
+    rowEnd.appendChild(el("div", "ncount",
       shown.length + " of " + list.length + (list.length === 1 ? " story" : " stories")));
   }
   if (list.length) {
@@ -4042,9 +4049,9 @@ function newsWall(app, list, opts) {
       b.onclick = function () { setNewsView(o[0]); render(); };
       view.appendChild(b);
     });
-    countRow.appendChild(view);
+    rowEnd.appendChild(view);
   }
-  if (list.length && newsViewEffective() === "cards") box.appendChild(sourceLegend());
+  if (rowEnd.children.length) countRow.appendChild(rowEnd);
   if (countRow.children.length) box.appendChild(countRow);
   app.appendChild(box);
 
