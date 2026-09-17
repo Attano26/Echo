@@ -1938,6 +1938,7 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
 /* The edition as A4 pages, in points, drawn the way the phone's PDF is. */
 .rdoc{position:relative;margin:0 auto}
 .rdocin{width:595pt;transform-origin:0 0;display:flex;flex-direction:column;gap:14pt}
+.rpage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .rpage{position:relative;flex:none;width:595pt;height:842pt;overflow:hidden;background:#fff;color:#111827;
   font-family:'Arial Nova','Arial Nova Light',Arial,sans-serif;font-weight:300;
   box-shadow:0 1px 3px rgba(0,0,0,.14),0 0 0 .5px rgba(0,0,0,.08);
@@ -7675,7 +7676,7 @@ function render() {
   $("#shell").classList.toggle("split", S.tab === "reports" || S.tab === "logs");
   var app = $("#app"); app.innerHTML = "";
   var d = S.data, i;
-  if (S.tab !== "reports") { MR.sel = null; MR.includeAll = false; MR.draft = null; }
+  if (S.tab !== "reports") { MR.sel = null; MR.includeAll = false; MR.draft = null; mrPdfReset(); }
 
   if (S.loading) {
     app.appendChild(skeletonFor(S.tab));
@@ -7937,7 +7938,9 @@ function unpublishOnWeb(title) { requestOp(title, "unpub"); }
    Two renderers, split by what exists:
    - PREVIOUS editions are the files the phone drew and uploaded beside the backup
      (echo-report-<id>.pdf, -word.pdf, .docx). This page shows and downloads those bytes and never
-     redraws them, so a past edition looks exactly as it did on the phone.
+     re-lays them out, so a past edition looks exactly as it did on the phone. They are painted
+     with PDF.js rather than the browser's own viewer, whose zoom lives inside the plugin where
+     the page can't reach it, so both kinds of preview share one − Fit + control and page count.
    - THIS month's edition doesn't exist anywhere yet, so the page draws it, as a copy of the phone's
      PDF layout (cover, four figures, a section per market, story cards) at A4 in points. Downloading
      prints it (PDF) or saves it as a Word document, and publishes the stories: the phone records the
@@ -7950,6 +7953,15 @@ var R_MISS = {};           // "<name>" -> true when Drive does not have it
 /* sel: the markets switched on (null = not chosen yet, so every market starts on, as on the phone);
    draft: the frozen preview of this month's edition; zoom: 0 = fit the pane's width. */
 var MR = { sel: null, includeAll: false, draft: null, fmt: "pdf", zoom: 0 };
+/* PDF.js, pinned, loaded only when a previous edition is opened. The legacy build, because it is
+   the one that still runs on older phone browsers. */
+var PDFJS_BASE = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/";
+var R_PDFJS = null;        // promise of the library
+var R_DOCS = {};           // "<name>" -> promise of the parsed document
+var R_DOC_ORDER = [];      // newest last; only a few documents are kept parsed
+/* The pages on screen: painted when near the view, released when far from it, repainted sharp
+   after a zoom. */
+var MR_PDF = { sheets: [], io: null, timer: 0 };
 
 function reportFile(id, kind) {
   return kind === "docx" ? "echo-report-" + id + ".docx"
@@ -8247,8 +8259,13 @@ function renderReports(app) {
     eds.forEach(function (e) {
       var row = el("div", "mredrow" + (e.id === R_SEL ? " on" : ""));
       row.tabIndex = 0;
-      row.onclick = function () { R_SEL = e.id; render(); };
-      row.onkeydown = function (ev) { if (ev.key === "Enter") { R_SEL = e.id; render(); } };
+      var open = function () {
+        if (R_SEL !== e.id) MR.zoom = 0;
+        R_SEL = e.id;
+        render();
+      };
+      row.onclick = open;
+      row.onkeydown = function (ev) { if (ev.key === "Enter") open(); };
       var t2 = el("span", "mrtxt");
       t2.appendChild(el("span", "mrname", mrMonthYear(e.createdAtMillis || e.id)));
       t2.appendChild(el("span", "mrsub", mrStories(arr(e.articles).length) + " · " + (e.dateLabel || "")));
@@ -8304,10 +8321,10 @@ function mrPane() {
       seg.appendChild(b);
     });
     head.appendChild(seg);
-    if (d) {
+    if (d || ed) {
       var zm = el("div", "mrzoom");
       var out = el("button", null, "−"); out.title = "Zoom out"; out.setAttribute("aria-label", "Zoom out");
-      var pct = el("button", "pct", "Fit"); pct.id = "mrZoomPct"; pct.title = "Fit to width";
+      var pct = el("button", "pct", "Fit"); pct.id = "mrZoomPct"; pct.title = "Fit the whole page";
       var inn = el("button", null, "+"); inn.title = "Zoom in"; inn.setAttribute("aria-label", "Zoom in");
       out.onclick = function () { mrSetZoom(-1); };
       inn.onclick = function () { mrSetZoom(1); };
@@ -8345,12 +8362,17 @@ async function loadReportPreview() {
   var host = $("#rpBody");
   if (!host) return;
   if (R_SEL == null) return;
-  var fmt = R_FMT[R_SEL] || "pdf";
-  var name = reportFile(R_SEL, fmt);
-  reportPreviewMsg(host, "Opening…");
+  var id = R_SEL;
+  var fmt = R_FMT[id] || "pdf";
+  var name = reportFile(id, fmt);
+  // Only say "Opening" when it is slow: a document already parsed redraws without the flash.
+  var slow = setTimeout(function () {
+    if (host.isConnected && !host.firstChild) reportPreviewMsg(host, "Opening…");
+  }, 200);
+  var gone = function () { return R_SEL !== id || !host.isConnected; };
   try {
     var url = await reportBlobUrl(name);
-    if (R_SEL == null) return;
+    if (gone()) return;
     if (!url) {
       reportPreviewMsg(host,
         "Your phone has not uploaded this one yet. It writes both documents when it backs up, so " +
@@ -8358,14 +8380,151 @@ async function loadReportPreview() {
         "shows the file the phone made, which is what keeps the two identical.");
       return;
     }
+    var doc = null;
+    try { doc = await mrPdfDoc(name, url); } catch (err) { doc = null; }
+    if (gone()) return;
+    if (doc) { await mrDrawPdf(host, doc, fmt); return; }
+    // PDF.js didn't load (offline, or the CDN is blocked): the browser's own viewer, which the
+    // zoom control can't drive, so the control goes.
+    mrPdfReset();
     host.innerHTML = "";
     var f = el("iframe");
     f.src = url + "#toolbar=0&navpanes=0";
     f.title = "Report preview";
     host.appendChild(f);
+    var zm = document.querySelector(".mrzoom");
+    if (zm) zm.hidden = true;
   } catch (e) {
-    reportPreviewMsg(host, "Could not open it: " + (e.message || e));
+    if (!gone()) reportPreviewMsg(host, "Could not open it: " + (e.message || e));
+  } finally {
+    clearTimeout(slow);
   }
+}
+
+function mrPdfLib() {
+  if (!R_PDFJS) {
+    R_PDFJS = import(PDFJS_BASE + "legacy/build/pdf.min.mjs").then(function (lib) {
+      lib.GlobalWorkerOptions.workerSrc = PDFJS_BASE + "legacy/build/pdf.worker.min.mjs";
+      return lib;
+    });
+    // A failed load is retried the next time rather than remembered.
+    R_PDFJS.catch(function () { R_PDFJS = null; });
+  }
+  return R_PDFJS;
+}
+function mrPdfDoc(name, url) {
+  if (!R_DOCS[name]) {
+    R_DOCS[name] = mrPdfLib().then(function (lib) {
+      return fetch(url).then(function (r) { return r.arrayBuffer(); }).then(function (buf) {
+        return lib.getDocument({
+          data: new Uint8Array(buf),
+          isEvalSupported: false,
+          standardFontDataUrl: PDFJS_BASE + "standard_fonts/",
+          cMapUrl: PDFJS_BASE + "cmaps/",
+          cMapPacked: true
+        }).promise;
+      });
+    });
+    R_DOCS[name].catch(function () { delete R_DOCS[name]; });
+    R_DOC_ORDER = R_DOC_ORDER.filter(function (n) { return n !== name; }).concat([name]);
+    while (R_DOC_ORDER.length > 4) {
+      var old = R_DOC_ORDER.shift();
+      if (R_DOCS[old]) R_DOCS[old].then(function (d) { d.destroy(); }, function () {});
+      delete R_DOCS[old];
+    }
+  }
+  return R_DOCS[name];
+}
+
+/* The edition as blank A4 sheets in the same stack the draft uses, painted as they come near. */
+async function mrDrawPdf(host, doc, fmt) {
+  mrPdfReset();
+  host.innerHTML = "";
+  var scroller = el("div", "mrscroll");
+  scroller.id = "mrScroll";
+  var docEl = el("div", "rdoc" + (fmt === "word" ? " word" : ""));
+  docEl.id = "mrDoc";
+  var inner = el("div", "rdocin");
+  docEl.appendChild(inner);
+  scroller.appendChild(docEl);
+  host.appendChild(scroller);
+  var pill = el("div", "mrpill");
+  pill.id = "mrPill";
+  host.appendChild(pill);
+  var sheets = [], widest = 0;
+  for (var i = 1; i <= doc.numPages; i++) {
+    var page = await doc.getPage(i);
+    if (!host.isConnected) return;
+    var vp = page.getViewport({ scale: 1 });
+    var sheet = el("section", "rpage pdfpage");
+    // PDF units are points, so the sheet is exactly the size the phone drew.
+    sheet.style.width = vp.width + "pt";
+    sheet.style.height = vp.height + "pt";
+    sheet._page = page;
+    widest = Math.max(widest, vp.width);
+    inner.appendChild(sheet);
+    sheets.push(sheet);
+  }
+  inner.style.width = widest + "pt";
+  MR_PDF.sheets = sheets;
+  MR_PDF.io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) {
+      en.target._near = en.isIntersecting;
+      if (en.isIntersecting) mrPaintPage(en.target); else mrFreePage(en.target);
+    });
+  }, { root: scroller, rootMargin: "100% 0px" });
+  sheets.forEach(function (sh) { MR_PDF.io.observe(sh); });
+  scroller.onscroll = mrUpdatePill;
+  mrApplyZoom();
+}
+/* Pixels per CSS pixel of the sheet: the zoom times the screen's density, in quarter steps so a
+   small change doesn't repaint, and capped so one page stays a few megabytes. */
+function mrPdfScale() {
+  var s = (MR.zoom || mrFitScale()) * (window.devicePixelRatio || 1);
+  return Math.min(4, Math.max(0.5, Math.ceil(s * 4) / 4));
+}
+function mrPaintPage(sheet) {
+  var want = mrPdfScale();
+  if (sheet._scale === want || sheet._want === want) return;
+  if (sheet._task) sheet._task.cancel();
+  var vp = sheet._page.getViewport({ scale: want * 96 / 72 });
+  var canvas = document.createElement("canvas");
+  canvas.width = Math.floor(vp.width);
+  canvas.height = Math.floor(vp.height);
+  var task = sheet._page.render({ canvasContext: canvas.getContext("2d"), viewport: vp });
+  sheet._task = task;
+  sheet._want = want;
+  // The old picture stays up, stretched, until the sharp one is ready.
+  task.promise.then(function () {
+    if (sheet._task !== task) return;
+    sheet._task = null; sheet._want = 0;
+    var old = sheet.querySelector("canvas");
+    if (old) { old.width = 0; old.height = 0; old.remove(); }
+    sheet.appendChild(canvas);
+    sheet._scale = want;
+  }, function () {
+    if (sheet._task === task) { sheet._task = null; sheet._want = 0; }
+  });
+}
+function mrFreePage(sheet) {
+  if (sheet._task) { sheet._task.cancel(); sheet._task = null; }
+  sheet._want = 0;
+  var c = sheet.querySelector("canvas");
+  if (c) { c.width = 0; c.height = 0; c.remove(); }
+  sheet._scale = 0;
+}
+function mrPdfRepaintSoon() {
+  if (!MR_PDF.sheets.length) return;
+  clearTimeout(MR_PDF.timer);
+  MR_PDF.timer = setTimeout(function () {
+    MR_PDF.sheets.forEach(function (sh) { if (sh._near && sh.isConnected) mrPaintPage(sh); });
+  }, 160);
+}
+function mrPdfReset() {
+  if (MR_PDF.io) { MR_PDF.io.disconnect(); MR_PDF.io = null; }
+  clearTimeout(MR_PDF.timer);
+  MR_PDF.sheets.forEach(mrFreePage);
+  MR_PDF.sheets = [];
 }
 
 async function mrDownloadEdition(e, fmt, btn) {
@@ -8516,6 +8675,7 @@ function mrPaginate(inner, d) {
 function mrDrawDraft() {
   var host = $("#rpBody"), d = MR.draft;
   if (!host || !d) return;
+  mrPdfReset();
   host.innerHTML = "";
   var scroller = el("div", "mrscroll");
   scroller.id = "mrScroll";
@@ -8551,6 +8711,7 @@ function mrFitScale() {
   return Math.max(0.3, Math.min(1.5, byWidth, byHeight));
 }
 function mrSetZoom(dir) {
+  if (!document.querySelector("#mrDoc .rpage")) return;
   var cur = MR.zoom || mrFitScale();
   var next = dir > 0 ? MR_ZOOMS.filter(function (z) { return z > cur + 0.01; })[0]
                      : MR_ZOOMS.filter(function (z) { return z < cur - 0.01; }).pop();
@@ -8567,6 +8728,7 @@ function mrApplyZoom() {
   var pct = $("#mrZoomPct");
   if (pct) pct.textContent = MR.zoom ? Math.round(s * 100) + "%" : "Fit";
   mrUpdatePill();
+  mrPdfRepaintSoon();
 }
 function mrUpdatePill() {
   var sc = $("#mrScroll"), pill = $("#mrPill"), doc = $("#mrDoc");
@@ -8580,7 +8742,9 @@ function mrUpdatePill() {
   }
   pill.textContent = "Page " + (idx + 1) + " of " + pages.length;
 }
-window.addEventListener("resize", function () { if (S.tab === "reports" && MR.draft && !MR.zoom) mrApplyZoom(); });
+window.addEventListener("resize", function () {
+  if (S.tab === "reports" && (MR.draft || R_SEL != null) && !MR.zoom) mrApplyZoom();
+});
 
 /* PDF: the browser's own print dialogue ("Save as PDF") on the same pages, at A4. */
 function mrPrintDraft(d) {
