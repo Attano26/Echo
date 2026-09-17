@@ -932,9 +932,8 @@ button.nstate:active{transform:scale(.97)}
    dot · CATEGORY ………… [EN|DE] · share
    Headline
    date · Source ↗
-   (opened) summary, then Fact check ……… Mark as correct
-   The whole card opens and closes; there is no chevron. */
-.ncard{cursor:pointer}
+   summary, then Fact check ……… Mark as correct
+   On the web every card is always open (user request 2026-09-17) - there is room for it. */
 .ntop{display:flex;align-items:center;gap:8px;min-width:0}
 .ntop .nchan{text-transform:uppercase;letter-spacing:.04em;font-size:11px;min-width:0}
 .ngrow{flex:1 1 auto}
@@ -957,12 +956,11 @@ button.nstate:active{transform:scale(.97)}
   border:1.5px solid var(--accent);border-right-color:transparent;animation:lspin .8s linear infinite}
 @keyframes lspin{to{transform:rotate(360deg)}}
 .nmeta{display:flex;align-items:baseline;gap:7px;margin-top:6px;min-width:0;font-size:12px;color:var(--ink-3)}
-.nmeta .nsrc{color:var(--free);font-weight:600;text-decoration:underline;text-underline-offset:2px}
-.nmeta a.nsrc:hover{color:var(--free)}
-.nmeta .nsrc.plain{color:var(--ink-3);font-weight:400;text-decoration:none}
+/* Links are gray and turn link-blue only under the pointer (user request 2026-09-17: no green). */
+.nmeta .nsrc{color:var(--ink-3);font-weight:500}
 .ncard .nsum{margin-top:10px}
-.nfact{font-size:12px;font-weight:700;color:var(--accent-ink);text-decoration:underline;
-  text-underline-offset:2px;white-space:nowrap}
+.nfact{font-size:12px;font-weight:500;color:var(--ink-3);text-decoration:none;white-space:nowrap}
+.nfact:hover,.nfact:focus-visible{color:var(--accent-ink);text-decoration:underline;text-underline-offset:2px}
 .srclegend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--ink-3);align-items:center}
 .srclegend span{display:inline-flex;align-items:center;gap:6px}
 
@@ -1567,8 +1565,8 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
 @keyframes chpop{0%{transform:scale(1)}40%{transform:scale(1.08)}100%{transform:scale(1)}}
 .chkey{padding:0 4px 9px}
 .chkn{margin:0 0 7px;font-size:12px;line-height:1.5;color:var(--ink-3)}
-.chkl{font-size:12.5px;color:var(--accent-ink);text-decoration:none;flex:0 0 auto}
-.chkl:hover{text-decoration:underline}
+.chkl{font-size:12.5px;color:var(--ink-3);text-decoration:none;flex:0 0 auto}
+.chkl:hover,.chkl:focus-visible{color:var(--accent-ink);text-decoration:underline}
 .chctx b{font-weight:500;color:var(--ink-2)}
 .chctx button{background:none;border:0;padding:0;font-size:12.5px;color:var(--accent-ink);cursor:pointer}
 .chctx button:hover{text-decoration:underline}
@@ -3518,13 +3516,13 @@ function factCheckQuery(title) {
 function sourceHref(a) {
   var kind = sourceKind(a), real = a.sourceUrl ? realArticleUrl(a.sourceUrl) : "";
   if ((kind === "rss" || kind === "hybrid") && /^https?:/i.test(real)) return real;
-  return "https://www.google.com/search?udm=50&q=" + encodeURIComponent(factCheckQuery(a.title));
+  return "https://www.google.com/search?udm=50&q=" + encodeURIComponent(factCheckQuery(decodeEnt(a.title)));
 }
 /* The link a SHARED story carries: the real article, or a Google search for the headline. */
 function shareLink(a) {
   var kind = sourceKind(a), real = a.sourceUrl ? realArticleUrl(a.sourceUrl) : "";
   if ((kind === "rss" || kind === "hybrid") && /^https?:/i.test(real)) return real;
-  return a.title ? "https://www.google.com/search?q=" + encodeURIComponent(a.title) : real;
+  return a.title ? "https://www.google.com/search?q=" + encodeURIComponent(decodeEnt(a.title)) : real;
 }
 function shareStory(a, lang) {
   var title = lang && lang.english ? lang.tr.t : decodeEnt(a.title);
@@ -3620,8 +3618,7 @@ function langPill(a, lang, opts) {
   return p;
 }
 
-/* Which cards are open, by headline — survives a re-render, not a reload. */
-var NEWS_OPEN = new Set();
+/* The live card node per headline, so a language switch can repaint just that card. */
 var CARD_NODES = {};
 function repaintCard(a, opts) {
   var n = CARD_NODES[key(a.title)];
@@ -3632,11 +3629,8 @@ function repaintCard(a, opts) {
 function articleCard(a, opts) {
   opts = opts || {};
   var k = key(a.title);
-  var open = NEWS_OPEN.has(k);
   var lang = storyLang(a);
-  var card = el("div", "ncard" + (open ? " open" : ""));
-  card.tabIndex = 0;
-  card.setAttribute("aria-expanded", open ? "true" : "false");
+  var card = el("div", "ncard");
   CARD_NODES[k] = card;
 
   var top = el("div", "ntop");
@@ -3684,14 +3678,14 @@ function articleCard(a, opts) {
   /* pmAdvisory is deliberately not rendered. The feature is retired; the field is left in
      the payload so nothing is lost, but nothing on this page reads it. */
 
-  if (open) {
+  {
     var sum = lang && lang.english ? (lang.tr.s || a.summary) : a.summary;
     if (sum) card.appendChild(el("p", "nsum", decodeEnt(sum)));
 
     var foot = el("div", "ncorners foot");
     /* Bottom left: the same plain Google search the phone's Fact check opens. */
     var fc = el("a", "nfact", "Fact check");
-    fc.href = "https://www.google.com/search?q=" + encodeURIComponent(a.title + " is this news true?");
+    fc.href = "https://www.google.com/search?q=" + encodeURIComponent(decodeEnt(a.title) + " is this news true?");
     fc.target = "_blank";
     fc.rel = "noopener noreferrer";
     foot.appendChild(fc);
@@ -3728,20 +3722,6 @@ function articleCard(a, opts) {
     card.appendChild(foot);
   }
 
-  var toggle = function () {
-    if (NEWS_OPEN.has(k)) NEWS_OPEN.delete(k); else NEWS_OPEN.add(k);
-    card.replaceWith(articleCard(a, opts));
-  };
-  card.onclick = function (e) {
-    if (e.target.closest("a,button")) return;
-    // Selecting text to copy it is not a request to fold the card.
-    if (window.getSelection && String(window.getSelection()).length) return;
-    toggle();
-  };
-  card.onkeydown = function (e) {
-    if (e.target !== card) return;
-    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
-  };
   return card;
 }
 
