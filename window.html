@@ -1754,6 +1754,12 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
    same card rather than a lookalike. */
 .chbot .chsrc .ncard{background:var(--surface-2);box-shadow:none}
 .chwhy,.chnote{margin-top:11px;font-size:12.5px;line-height:1.55;color:var(--ink-3)}
+.chfail{margin-top:11px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;
+  font-size:12.5px;line-height:1.55;color:var(--ink-3)}
+.chfail b{color:var(--ink);font-weight:500}
+.chfail button{border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;
+  font-size:12.5px;padding:4px 13px;border-radius:999px;cursor:pointer}
+.chfail button:active{transform:scale(.97)}
 
 @media (max-width:640px){
   .chsug{grid-template-columns:1fr}
@@ -2191,6 +2197,7 @@ function save() {
       theme: S.theme, actions: S.actions
     }));
   } catch (e) { /* private mode: still works, it just forgets on reload */ }
+  try { sessionStorage.setItem("echo.ask.tab", S.tab === "ask" ? "ask" : ""); } catch (e) {}
 }
 function load() {
   try {
@@ -2203,6 +2210,11 @@ function load() {
     // Deliberately NOT restoring o.tab — see the note on S.tab above. Older saved state may still
     // carry a `tab` key; it is simply ignored rather than migrated.
   } catch (e) {}
+  /* A REFRESH IS NOT A VISIT. A new visit still lands on News alerts, but reloading the page used to
+     throw away an Ask conversation mid-thread and drop you on alerts (user, 2026-09-21). sessionStorage
+     lives exactly as long as this browser tab, so only a reload of the same tab comes back to Ask;
+     the conversation follows in chRestoreSession. */
+  try { if (sessionStorage.getItem("echo.ask.tab") === "ask") S.tab = "ask"; } catch (e) {}
 }
 
 /* ---------- requests: what this page has asked the phone to do ---------- */
@@ -5687,6 +5699,7 @@ function renderDashboard(app, d) {
 var CH_IX = null;
 var CH_LOG = [];      // [{q, kind, lead, stats, items, why, note}] — newest first
 var CH_DRAFT = "";    // survives the render() that answering triggers
+var CH_RESTORED = false;   // the saved conversation is read back once, on the first Ask render
 
 /* English function words only. Domain words are handled by IDF, not by a list. */
 var CH_STOP = (function () {
@@ -7090,72 +7103,114 @@ function chPrompt(m) {
   return out.join("\n");
 }
 
+/* How long to wait, and when to try again. 25 s and a 900-token ceiling used to end a Smart reply
+   early: a question carries ~16k tokens of your stories, a thinking model spends part of the ceiling
+   before it writes, and the phone itself allows the same model 60 s with no ceiling. A failure then
+   showed the Basic answer with the reason hidden under "Usage", which read as "Smart gave a generic
+   reply" (user, 2026-09-21). One quiet retry covers a rate blip or an overloaded model; a rejected
+   key is never retried. */
+var CH_TIMEOUT_MS = 60000;
+var CH_RETRY = { 429: 1, 500: 1, 502: 1, 503: 1, 504: 1 };
+
+/* The reason in words a reader can act on. Every 400 used to read "the key was rejected", which
+   sent people to replace a key that was fine; Google's own message decides now. */
+function chWhyFailed(status, e) {
+  var msg = String((e && e.message) || "").replace(/\s+/g, " ").trim();
+  if (msg.length > 160) msg = msg.slice(0, 157) + "…";
+  var why = "";
+  try { arr(e && e.details).forEach(function (x) { if (x && x.reason) why = x.reason; }); } catch (x) {}
+  var said = msg ? ": " + msg : "";
+  if (/API_KEY_INVALID|API key not valid/i.test(why + " " + msg)) {
+    return /expired/i.test(msg) ? "Google says this API key has expired. Renew it, then paste it in Settings"
+                                : "Google rejected the API key as not valid. Check it in Settings";
+  }
+  if (status === 429) return "Google's limit for this key is used up for now (429). Try again in a minute" + said;
+  if (status === 403) return "this key is not allowed to use " + CH_MODEL + " (403)" + said;
+  if (status === 404) return "Google does not offer " + CH_MODEL + " to this key (404)" + said;
+  if (status >= 500) return "Google's service failed (" + status + ")" + said;
+  return "Google refused the request (" + status + ")" + said;
+}
+
 function chCallModel(m, done) {
   var key = chKey();
-  if (!key) return done(null, "no key");
-  var ctrl = window.AbortController ? new AbortController() : null;
-  var timer = setTimeout(function () { ctrl && ctrl.abort(); }, 25000);
-  fetch(CH_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: CH_RULES + CH_VOICE }] },
-      contents: [{ role: "user", parts: [{ text: chPrompt(m) }] }],
-      /* A schema rather than a delimiter the model has to remember. The answer keeps its markdown;
-         the follow-ups arrive as real strings instead of a line to be parsed back out of prose. */
-      generationConfig: {
-        temperature: 0.45, maxOutputTokens: 900,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "OBJECT",
-          properties: {
-            answer: { type: "STRING" },
-            followUps: { type: "ARRAY", items: { type: "STRING" } }
-          },
-          required: ["answer"]
-        }
+  if (!key) return done(null, "no API key is saved in this browser. Add one in Settings");
+  var tries = 0;
+  var body = JSON.stringify({
+    systemInstruction: { parts: [{ text: CH_RULES + CH_VOICE }] },
+    contents: [{ role: "user", parts: [{ text: chPrompt(m) }] }],
+    /* A schema rather than a delimiter the model has to remember. The answer keeps its markdown;
+       the follow-ups arrive as real strings instead of a line to be parsed back out of prose.
+       The ceiling is room, not a length rule: the rules ask for short answers, and a cut-off JSON
+       reply is worse than a long one. */
+    generationConfig: {
+      temperature: 0.45, maxOutputTokens: 4096,
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: "OBJECT",
+        properties: {
+          answer: { type: "STRING" },
+          followUps: { type: "ARRAY", items: { type: "STRING" } }
+        },
+        required: ["answer"]
       }
-    }),
-    signal: ctrl ? ctrl.signal : undefined
-  }).then(function (r) {
-    return r.json().catch(function () { return {}; }).then(function (j) {
-      return { ok: r.ok, status: r.status, j: j };
-    });
-  }).then(function (res) {
-    clearTimeout(timer);
-    if (!res.ok) {
-      var e = res.j && res.j.error;
-      return done(null, res.status === 429 ? "the free quota is spent for now"
-                      : (res.status === 400 || res.status === 403) ? "the key was rejected"
-                      : (e && e.message) || ("HTTP " + res.status));
     }
-    var cand = res.j && res.j.candidates && res.j.candidates[0];
-    /* NEVER parts[0]. This is a thinking model: the first part can be a thought carrying no text
-       at all, and reading it alone is how you get an empty answer out of a perfectly good reply. */
-    var parts = (cand && cand.content && cand.content.parts) || [];
-    var text = parts.map(function (x) { return x && x.text ? x.text : ""; }).join("").trim();
-    if (!text) return done(null, cand && cand.finishReason ? "it stopped: " + cand.finishReason : "an empty reply");
-
-    /* The parse is defended even with a schema in force: a reply truncated at the token ceiling is
-       still JSON-shaped enough to look right and not complete enough to parse, and the honest
-       fallback is to show what came back rather than to lose it. */
-    var payload = null;
-    try { payload = JSON.parse(text); } catch (e) { payload = null; }
-    if (!payload || typeof payload.answer !== "string" || !payload.answer.trim()) {
-      payload = { answer: text, followUps: [] };
-    }
-    var ups = (payload.followUps || []).map(function (x) { return String(x || "").trim(); })
-      .filter(function (x) { return x.length > 3 && x.length <= 90; })
-      .slice(0, 3);
-
-    var u = res.j.usageMetadata || {};
-    done({ text: payload.answer, followUps: ups,
-           inTok: u.promptTokenCount || 0, outTok: u.candidatesTokenCount || 0,
-           totalTok: u.totalTokenCount || 0, thoughtTok: u.thoughtsTokenCount || 0 }, null);
-  }).catch(function (err) {
-    clearTimeout(timer);
-    done(null, (err && err.name === "AbortError") ? "it timed out" : String((err && err.message) || err));
   });
+  (function attempt() {
+    tries++;
+    var ctrl = window.AbortController ? new AbortController() : null;
+    var timer = setTimeout(function () { ctrl && ctrl.abort(); }, CH_TIMEOUT_MS);
+    fetch(CH_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+      body: body,
+      signal: ctrl ? ctrl.signal : undefined
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) {
+        return { ok: r.ok, status: r.status, j: j };
+      });
+    }).then(function (res) {
+      clearTimeout(timer);
+      if (!res.ok) {
+        if (tries < 2 && CH_RETRY[res.status]) return setTimeout(attempt, 2500);
+        return done(null, chWhyFailed(res.status, res.j && res.j.error));
+      }
+      var cand = res.j && res.j.candidates && res.j.candidates[0];
+      /* NEVER parts[0]. This is a thinking model: the first part can be a thought carrying no text
+         at all, and reading it alone is how you get an empty answer out of a perfectly good reply. */
+      var parts = (cand && cand.content && cand.content.parts) || [];
+      var text = parts.map(function (x) { return x && x.text ? x.text : ""; }).join("").trim();
+      if (!text) {
+        var fr = cand && cand.finishReason;
+        var blocked = res.j && res.j.promptFeedback && res.j.promptFeedback.blockReason;
+        return done(null, blocked ? "Google blocked the question (" + blocked + ")"
+                        : fr ? "Gemini stopped before answering (" + fr + ")" : "Gemini sent an empty reply");
+      }
+
+      /* The parse is defended even with a schema in force: a reply truncated at the token ceiling is
+         still JSON-shaped enough to look right and not complete enough to parse, and the honest
+         fallback is to show what came back rather than to lose it. */
+      var payload = null;
+      try { payload = JSON.parse(text); } catch (e) { payload = null; }
+      if (!payload || typeof payload.answer !== "string" || !payload.answer.trim()) {
+        payload = { answer: text, followUps: [] };
+      }
+      var ups = (payload.followUps || []).map(function (x) { return String(x || "").trim(); })
+        .filter(function (x) { return x.length > 3 && x.length <= 90; })
+        .slice(0, 3);
+
+      var u = res.j.usageMetadata || {};
+      done({ text: payload.answer, followUps: ups,
+             inTok: u.promptTokenCount || 0, outTok: u.candidatesTokenCount || 0,
+             totalTok: u.totalTokenCount || 0, thoughtTok: u.thoughtsTokenCount || 0 }, null);
+    }).catch(function (err) {
+      clearTimeout(timer);
+      var aborted = err && err.name === "AbortError";
+      /* A dropped connection gets one more go; a timeout does not, it would double the wait. */
+      if (!aborted && tries < 2) return setTimeout(attempt, 2500);
+      done(null, aborted ? "Gemini took longer than " + (CH_TIMEOUT_MS / 1000) + " seconds to answer"
+                         : "the call to Google did not go through (" + String((err && err.message) || err) + ")");
+    });
+  })();
 }
 
 /* Model output is UNTRUSTED TEXT and is escaped before anything else happens to it. Only then is
@@ -7285,18 +7340,63 @@ function chAsk(q) {
 
   /* The cards and figures are on screen already; only the wording is waiting. A failure costs the
      reader nothing but the phrasing, so it is reported as a footnote rather than as an error. */
-  if (m.pending) {
-    chCallModel(m, function (out, err) {
-      m.pending = false;
-      if (out) {
-        m.lead = chProse(out.text); m.via = "model"; m.usage = out;
-        m.followUps = out.followUps || [];
-      }
-      else { m.via = "local"; m.viaErr = err; }
-      render();
-      var s2 = $("#scroll"); if (s2) s2.scrollTop = s2.scrollHeight;
-    });
-  }
+  chSaveSession();
+  if (m.pending) chRunModel(m, true);
+}
+
+/* One Smart call for one turn: a new question, or "Try again" on a turn whose call failed. */
+function chRunModel(m, follow) {
+  m.pending = true; m.via = null; m.viaErr = null;
+  chCallModel(m, function (out, err) {
+    m.pending = false;
+    if (out) {
+      m.lead = chProse(out.text); m.modelText = out.text; m.via = "model"; m.usage = out;
+      m.followUps = out.followUps || [];
+    }
+    else { m.via = "local"; m.viaErr = err; m.lead = m.composed; }
+    chSaveSession();
+    render();
+    if (follow) { var s2 = $("#scroll"); if (s2) s2.scrollTop = s2.scrollHeight; }
+  });
+}
+
+/* THE CONVERSATION SURVIVES A REFRESH of this browser tab (sessionStorage; closed tab = gone).
+   Only what cannot be recomputed is kept: the question, and the model's own words when it answered.
+   Everything else (cards, figures, the Basic answer) is rebuilt from the current data by chAnswer,
+   which reads and never writes. The model's text is stored as text and re-escaped by chProse, never
+   stored as HTML. A turn still waiting when the page reloaded comes back with Try again. */
+var CH_SESS_LS = "echo.ask.session";
+function chSaveSession() {
+  try {
+    sessionStorage.setItem(CH_SESS_LS, JSON.stringify(CH_LOG.slice(-20).map(function (m) {
+      var said = m.via === "model" && m.modelText;
+      return { q: m.q, smart: !!m.smartTurn,
+               text: said ? m.modelText : null, usage: said ? m.usage : null,
+               followUps: said ? (m.followUps || []) : [],
+               err: m.pending ? "the page was reloaded before Gemini answered" : (m.viaErr || null) };
+    })));
+  } catch (e) {}
+}
+function chRestoreSession() {
+  CH_RESTORED = true;
+  if (CH_LOG.length) return;
+  var saved = [];
+  try { saved = JSON.parse(sessionStorage.getItem(CH_SESS_LS) || "[]"); } catch (e) { saved = []; }
+  arr(saved).forEach(function (t) {
+    if (!t || !t.q) return;
+    var m = chAnswer(t.q);
+    m.composed = m.lead;
+    m.shape = chShape(t.q, m.kind, chEntities(t.q));
+    m.smartTurn = !!t.smart;
+    m.pending = false;
+    if (t.text) {
+      m.lead = chProse(t.text); m.modelText = t.text; m.via = "model";
+      m.usage = t.usage || null; m.followUps = arr(t.followUps);
+    } else if (t.smart) {
+      m.via = "local"; m.viaErr = t.err || "the page was reloaded before Gemini answered";
+    }
+    CH_LOG.push(m);
+  });
 }
 
 /* Provenance, kept but got out of the way. Which of the two wrote a sentence and what it cost are
@@ -7402,6 +7502,20 @@ function chRenderTurn(m) {
   }
   bot.appendChild(lead);
 
+  /* A Smart turn that fell back says so HERE. It used to show the Basic answer with the reason
+     tucked under "Usage", which looked like Smart answering badly. */
+  if (m.smartTurn && !m.pending && m.via === "local" && m.viaErr) {
+    var fail = el("div", "chfail");
+    var ft = el("span");
+    ft.appendChild(el("b", null, "Smart didn't answer this one"));
+    ft.appendChild(document.createTextNode(": " + m.viaErr + ". Showing the Basic answer."));
+    fail.appendChild(ft);
+    var again = el("button", null, "Try again");
+    again.onclick = function () { chRunModel(m, false); render(); };
+    fail.appendChild(again);
+    bot.appendChild(fail);
+  }
+
   /* THE TILES BELONG TO THE COMPOSED ANSWER, NOT TO EVERY ANSWER. Matches / Newest / Published is
      what chAnsFind computes to support ITS sentence. Rendering them under a model reply put the
      same three-column skeleton beneath every question whatever had been asked, which is what made
@@ -7466,6 +7580,7 @@ function chRenderTurn(m) {
 
 function renderAsk(app) {
   var ix = chIndex(), d = S.data || {};
+  if (!CH_RESTORED) chRestoreSession();
   var pane = el("div", "chpane");
   var flow = el("div", "chflow" + (CH_LOG.length ? "" : " start"));
 
@@ -7565,7 +7680,7 @@ function renderAsk(app) {
   if (CH_LOG.length) {
     ctx.appendChild(document.createTextNode(" · "));
     var clr = el("button", null, "Clear");
-    clr.onclick = function () { CH_LOG = []; render(); };
+    clr.onclick = function () { CH_LOG = []; chSaveSession(); render(); };
     ctx.appendChild(clr);
   }
   dock.appendChild(ctx);
