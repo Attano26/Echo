@@ -9385,8 +9385,16 @@ if ("serviceWorker" in navigator && location.protocol === "https:") {
         });
       });
       $("#updGo").onclick = function () {
-        if (reg.waiting) reg.waiting.postMessage("applyUpdate");
-        location.reload();
+        /* Reload once the new version has TAKEN OVER, not straight away. Reloading at once could
+           still be answered by the old worker while the new one was activating, and the fresh page
+           then showed this bar again (seen 2026-09-21). controllerchange is the takeover; 3 s is
+           the fallback so the button never does nothing. */
+        var go = function () { location.reload(); };
+        if (reg.waiting) {
+          navigator.serviceWorker.addEventListener("controllerchange", go);
+          setTimeout(go, 3000);
+          reg.waiting.postMessage("applyUpdate");
+        } else go();
       };
     }).catch(function () {});
   });
