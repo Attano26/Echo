@@ -1170,20 +1170,20 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
   transition:background var(--t-hover) var(--ease),color var(--t-hover) var(--ease)}
 .anseg button:active{transform:scale(.97)}
 .anseg button.on{background:var(--surface);color:var(--ink);box-shadow:var(--sh-1);font-weight:500}
-/* The country line under the heading: "Select Country" on the left, the pill on the right. The
-   pill copies the phone's news-source pill (10px corners, the track grey, a dot, the label, a
-   chevron): grey dot for every country, accent dot once narrowed to one. The select inside is
+/* The country pill sits beside the 1M / 3M / 6M switch, with no label: the pill says what it holds.
+   (The phone puts it on a line of its own under "Select Country"; the web has the width for one row.)
+   Same track grey, height and round ends as the switch beside it, and the phone pill's dot and
+   chevron: grey dot for every country, accent dot once narrowed to one. The select inside is
    native, so phones get their own picker. */
-.anmkt{flex-basis:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}
-.anmkt .lbl{font-size:13px;color:var(--ink-3)}
-.anpill{position:relative;display:inline-flex;align-items:center;background:var(--seg-track);border-radius:10px}
-.anpill .dot{position:absolute;left:11px;top:50%;width:7px;height:7px;margin-top:-3.5px;border-radius:50%;
+.anctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.anpill{position:relative;display:inline-flex;align-items:center;background:var(--seg-track);border-radius:999px}
+.anpill .dot{position:absolute;left:13px;top:50%;width:7px;height:7px;margin-top:-3.5px;border-radius:50%;
   background:var(--ink-3);pointer-events:none}
 .anpill.on .dot{background:var(--accent)}
-.anpill::after{content:"";position:absolute;right:13px;top:50%;width:6px;height:6px;pointer-events:none;
+.anpill::after{content:"";position:absolute;right:14px;top:50%;width:6px;height:6px;pointer-events:none;
   border-right:1.5px solid var(--ink-3);border-bottom:1.5px solid var(--ink-3);transform:translateY(-70%) rotate(45deg)}
 .anpill select{appearance:none;-webkit-appearance:none;border:0;background:transparent;color:var(--ink);
-  font:inherit;font-size:13px;font-weight:500;letter-spacing:.2px;padding:7px 32px 7px 25px;border-radius:10px;
+  font:inherit;font-size:12.5px;font-weight:500;padding:9px 33px 9px 27px;border-radius:999px;
   cursor:pointer;max-width:220px}
 .anpill select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
@@ -5531,6 +5531,7 @@ function renderDashboard(app, d) {
     inWindow + (inWindow === 1 ? " story " : " stories ") + anPhrase(AN_WIN) + ", " +
     (a.totalCount || 0) + " in the feed"));
   head.appendChild(left);
+  var ctl = el("div", "anctl");
   var seg = el("div", "anseg");
   ["1M", "3M", "6M"].forEach(function (k) {
     if (!an[k]) return;
@@ -5538,10 +5539,8 @@ function renderDashboard(app, d) {
     b.onclick = function () { AN_WIN = k; render(); };
     seg.appendChild(b);
   });
-  head.appendChild(seg);
+  ctl.appendChild(seg);
   if (mkts.length >= 2) {
-    var line = el("div", "anmkt");
-    line.appendChild(el("span", "lbl", "Select Country"));
     var pill = el("span", "anpill" + (mkt ? " on" : ""));
     pill.appendChild(el("span", "dot"));
     var sel = el("select");
@@ -5554,9 +5553,9 @@ function renderDashboard(app, d) {
     });
     sel.onchange = function () { anSetMarket(sel.value); render(); };
     pill.appendChild(sel);
-    line.appendChild(pill);
-    head.appendChild(line);
+    ctl.appendChild(pill);
   }
+  head.appendChild(ctl);
   wrap.appendChild(head);
 
   if (!a.totalCount) {
