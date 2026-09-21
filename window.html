@@ -429,7 +429,6 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0}
 @media (min-width:1000px){ #btnClose{display:none} }
 
 /* ---------- sync status in the rail ---------- */
-.syncrow{display:flex;align-items:center;gap:10px;padding:12px 18px 4px;font-size:12.5px;color:var(--ink-3)}
 .syncdot{width:7px;height:7px;border-radius:50%;flex:0 0 7px;background:var(--ink-3)}
 .syncdot.ok{background:var(--free)}
 .syncdot.behind{background:var(--paid)}
@@ -505,7 +504,6 @@ body.in .dhead .mark{ animation:railsweep 9s linear infinite }
 .srow .sv{color:var(--ink);text-align:right;font-weight:500}
 .srow .sv.dim{color:var(--ink-3);font-weight:400}
 .dnote{font-size:11.5px;color:var(--ink-3);line-height:1.6;padding:10px 18px 0}
-.dsep{height:1px;background:var(--line);margin:14px 18px 0}
 /* The rail is a column: nav scrolls, footer is pinned. */
 #drawer{display:flex;flex-direction:column}
 #drawerNav{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
@@ -637,13 +635,10 @@ body.in .dhead .mark{ animation:railsweep 9s linear infinite }
 /* ---------- cards ---------- */
 .list{padding-top:12px}
 .card{background:var(--surface);border-radius:var(--r-card);padding:16px;margin-bottom:10px}
-.crow{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .cat{font-size:12.5px;font-weight:600;letter-spacing:0;color:var(--accent-ink)}
 .meta{font-size:12px;color:var(--ink-3)}
 .ttl{font-family:var(--fs-title);font-size:15.5px;font-weight:600;line-height:1.4;margin:8px 0 0}
 .sum{font-size:13.5px;color:var(--ink-2);line-height:1.6;margin:8px 0 0}
-.adv{font-size:13px;color:var(--ink-2);line-height:1.6;margin:10px 0 0;
-  padding-left:12px;border-left:2px solid var(--accent)}
 .acts{display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap}
 .kv{display:flex;padding:5px 0;font-size:13.5px}
 .kv .k{color:var(--ink-3);width:130px;flex:0 0 130px}
@@ -668,10 +663,6 @@ body.in .dhead .mark{ animation:railsweep 9s linear infinite }
 
 /* Verify control — a real checkbox, so it is keyboard reachable and reads correctly
    to a screen reader instead of being a div that happens to look checkable. */
-.vf{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-3);
-  cursor:pointer;padding:7px 12px;border-radius:var(--r-pill);border:1px solid var(--line)}
-.vf input{accent-color:var(--accent);width:15px;height:15px;margin:0;cursor:pointer}
-.vf.on{color:var(--accent-ink);border-color:var(--accent);background:var(--accent-soft);font-weight:600}
 .pill{font-size:11px;font-weight:600;padding:3px 9px;border-radius:var(--r-pill);
   background:var(--surface-2);color:var(--ink-3)}
 .pill.ok{background:rgba(52,199,89,.15);color:var(--free)}
@@ -707,7 +698,6 @@ body.in .dhead .mark{ animation:railsweep 9s linear infinite }
    (a calendar wants room; a single number does not), never by decoration.
    ============================================================ */
 .dash{padding:2px 0 30px}
-.dsub{font-size:12.5px;color:var(--ink-3);margin:0 0 14px;font-weight:300}
 
 /* ============================================================
    THE GLANCE STRIP — the phone's home-screen widgets, as they were designed
@@ -784,16 +774,12 @@ body.in .dhead .mark{ animation:railsweep 9s linear infinite }
   letter-spacing:-.018em;line-height:1;font-variant-numeric:tabular-nums}
 .w-num.sm{font-size:calc(27 * var(--u))}
 .w-unit{font-size:calc(10.5 * var(--u));font-weight:500;color:var(--ink-2);line-height:1.15}
-.w-line{font-size:calc(11.5 * var(--u));line-height:1.28;font-weight:500;color:var(--ink);
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
-  max-height:calc(29.5 * var(--u))}
 /* The descriptive line. margin-top:auto pushes it to the BOTTOM of the free space, so it ends
    just above the footer in every widget. With the rules gone, this shared baseline is what
    makes the strip read as one set. */
 .w-say{margin-top:auto;flex:0 0 auto;overflow:hidden;font-size:calc(10 * var(--u));
   color:var(--ink-2);line-height:1.35;padding-bottom:calc(7 * var(--u));
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.w-sub{font-size:calc(10 * var(--u));color:var(--ink-2);line-height:1.35}
 /* Fixed height, so the footer's content starts at the same y in every widget. No rule: the
    shared geometry separates the bands already, and eight of them across a row read as noise. */
 .w-foot{flex:0 0 auto;height:calc(33 * var(--u));
@@ -1054,7 +1040,6 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
 .dempty{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-card);
   padding:26px 22px;text-align:center;color:var(--ink-3);font-size:13.5px;line-height:1.6}
 
-@media (max-width:620px){ .wtile{flex-basis:136px} }
 
 /* ============================================================
    ANALYTICS — the phone's Settings -> Analytics, card for card
@@ -1149,7 +1134,6 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
 .lgcost.paid{color:#E5A33B}
 .lgbig{font-size:20px;font-weight:600;color:var(--ink);margin-top:6px;letter-spacing:-.01em}
 .lgsub{font-size:11.5px;color:var(--ink-3);margin-top:4px}
-.lgdet{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
 .lgdeth{font-size:10.5px;font-weight:600;letter-spacing:.04em;color:var(--ink-3);margin-bottom:8px}
 .lgsrc{display:flex;gap:10px;align-items:center;padding:11px 14px;cursor:pointer}
 .lgsrc .lgd{margin-top:5px}
@@ -1158,7 +1142,6 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
 .lgsrcm{font-size:11px;color:var(--ink-3);margin-top:2px}
 .lgsrcc{font-size:11.5px;font-weight:500;color:#34C759;flex:0 0 auto}
 .lgsrcc.paid{color:#E5A33B}
-.lgtitles{margin-top:6px}
 .lgt{font-size:12px;color:var(--ink-2);line-height:1.6;padding:1px 0}
 /* BOUND THE HEIGHT CHAIN so the two panes scroll INSIDE themselves.
    Measured 2026-09-12: without this every container grew to fit its content — .lgpane was 1428px
@@ -1187,6 +1170,15 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
   transition:background var(--t-hover) var(--ease),color var(--t-hover) var(--ease)}
 .anseg button:active{transform:scale(.97)}
 .anseg button.on{background:var(--surface);color:var(--ink);box-shadow:var(--sh-1);font-weight:500}
+/* The market picker sits left of the window switch. A native select, so phones get their own
+   picker; dressed as the same grey track, with the caret drawn in CSS so it follows the theme. */
+.anctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.anselw{position:relative;display:inline-flex}
+.anselw::after{content:"";position:absolute;right:13px;top:50%;width:6px;height:6px;pointer-events:none;
+  border-right:1.5px solid var(--ink-3);border-bottom:1.5px solid var(--ink-3);transform:translateY(-70%) rotate(45deg)}
+.ansel{appearance:none;-webkit-appearance:none;border:0;background:var(--seg-track);color:var(--ink);
+  font:inherit;font-size:12.5px;font-weight:500;padding:9px 32px 9px 15px;border-radius:999px;cursor:pointer;max-width:200px}
+.ansel:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 .ancard{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-card);
   box-shadow:var(--sh-1);padding:18px 20px;display:flex;flex-direction:column}
@@ -1391,12 +1383,8 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
   #report .rdocin{transform:none !important;gap:0;width:auto}
   #report .rpage{box-shadow:none;break-after:page;page-break-after:always}
   #report .rpage:last-child{break-after:auto;page-break-after:auto}
-  #report .r-art{page-break-inside:avoid;margin:0 0 18px;padding:0 0 14px;border-bottom:1px solid #ddd}
   #report h1{font-size:22px;margin:0 0 4px}
-  #report .r-sub{color:#555;font-size:12px;margin:0 0 22px}
   #report h2{font-size:14px;margin:0 0 6px;line-height:1.35}
-  #report .r-meta{font-size:11px;color:#666;margin:0 0 6px}
-  #report .r-sum{font-size:12px;line-height:1.6;margin:0}
   a{color:#000;text-decoration:none}
 }
 
@@ -1576,6 +1564,21 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
 .chkl{font-size:12.5px;color:var(--ink-3);text-decoration:none;flex:0 0 auto}
 .chkl:hover,.chkl:focus-visible{color:var(--accent-ink);text-decoration:underline}
 .chctx b{font-weight:500;color:var(--ink-2)}
+/* ---- Ask context: which markets and which news Ask reads ----
+   The Context link opens a small panel above the composer. It reuses the mode switch's segmented
+   control for News and pill chips for Markets, so it reads as part of the same dock. */
+.chctx .chctxb{display:inline-flex;align-items:center;gap:4px;color:var(--ink-3)}
+.chctx .chctxb svg{width:13px;height:13px}
+.chctx .chctxb.on{color:var(--accent-ink)}
+.chctxp{flex-direction:column;align-items:stretch;gap:10px;margin:0 4px 10px;padding:12px 14px;
+  background:var(--surface);border:1px solid var(--line-2);border-radius:14px;box-shadow:var(--sh-1)}
+.chctxr{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.chctxl{min-width:62px;font-size:12px;color:var(--ink-3)}
+.chctx .chchip{padding:4px 12px;border-radius:var(--r-pill);background:var(--seg-track);color:var(--ink-3);
+  font-size:11.5px;transition:background var(--t-hover) var(--ease),color var(--t-hover) var(--ease)}
+.chctx .chchip:hover{text-decoration:none;color:var(--ink-2)}
+.chctx .chchip.on{background:var(--accent-soft);color:var(--accent-ink);font-weight:500}
+.chctxn{font-size:11.5px;color:var(--ink-3)}
 .chctx button{background:none;border:0;padding:0;font-size:12.5px;color:var(--accent-ink);cursor:pointer}
 .chctx button:hover{text-decoration:underline}
 .chbox{position:relative;display:flex;align-items:center;gap:8px;background:var(--surface);
@@ -3594,6 +3597,36 @@ function decodeEnt(s) {
     try { return String.fromCodePoint(cp); } catch (e) { return m; }
   });
 }
+/* The publisher as a reader should see it. Phone builds up to 49 stored it HTML-escaped
+   ("Th&#252;ringer Allgemeine", "E&amp;E News") and cut it at 28 characters BEFORE decoding, so some
+   stop mid-entity ("Sekund&") and all of those are short of the real name. Same rule as the phone's
+   displaySourceName: decode (twice, &amp; last, for Google's double escaping), drop a cut-off entity,
+   and end a name that was cut short with an ellipsis. */
+var NAMED_ENT = { quot: '"', apos: "'", nbsp: " ", lt: "<", gt: ">", auml: "ä", ouml: "ö", uuml: "ü",
+  Auml: "Ä", Ouml: "Ö", Uuml: "Ü", szlig: "ß", eacute: "é", egrave: "è", ndash: "–", mdash: "—",
+  lsquo: "‘", rsquo: "’", ldquo: "“", rdquo: "”", hellip: "…" };
+function decodeAllEnt(s) {
+  s = String(s == null ? "" : s);
+  for (var i = 0; i < 2 && s.indexOf("&") >= 0; i++) {
+    s = decodeEnt(s)
+      .replace(/&([A-Za-z]+);/g, function (m, n) { return NAMED_ENT.hasOwnProperty(n) ? NAMED_ENT[n] : m; })
+      .replace(/&amp;/g, "&");
+  }
+  return s;
+}
+function srcName(raw) {
+  raw = String(raw == null ? "" : raw);
+  if (raw.indexOf("&") < 0) return raw;
+  var s = decodeAllEnt(raw), partial = /&#?[A-Za-z0-9]{0,7}$/;
+  if (raw.length === 28 && (s !== raw || partial.test(raw))) s = s.replace(partial, "").replace(/\s+$/, "") + "…";
+  return s;
+}
+/* Once, on load, so every card, search, report and Ask answer reads the same clean name. */
+function cleanSources(d) {
+  var fix = function (a) { if (a && typeof a.source === "string") a.source = srcName(a.source); };
+  ["newsArticles", "alerts", "intel", "savedNews", "publishedNews"].forEach(function (k) { arr(d[k]).forEach(fix); });
+  arr(d.reportEditions).forEach(function (e) { arr(e && e.articles).forEach(fix); });
+}
 var SET_CACHE = new WeakMap();
 function setOf(list) {
   if (!Array.isArray(list)) return new Set();
@@ -4295,6 +4328,13 @@ var AN_GREY = "#9A9CAB";
    theme switch recolours it without re-rendering the card. */
 var AN_HEAT = ["var(--heat-0)", "var(--heat-1)", "var(--heat-2)", "var(--heat-3)", "var(--heat-4)"];
 var AN_WIN = "1M";
+/* "" = all markets. Remembered in this browser only; a market that has since gone falls back to all. */
+var AN_MKT_LS = "echo.analytics.market";
+var AN_MKT = (function () { try { return localStorage.getItem(AN_MKT_LS) || ""; } catch (e) { return ""; } })();
+function anSetMarket(m) {
+  AN_MKT = m || "";
+  try { AN_MKT ? localStorage.setItem(AN_MKT_LS, AN_MKT) : localStorage.removeItem(AN_MKT_LS); } catch (e) {}
+}
 
 /* Window-aware copy, so every subtitle tracks the active filter exactly as on the phone. */
 function anPhrase(w) { return w === "1M" ? "last month" : (w === "3M" ? "last 3 months" : "last 6 months"); }
@@ -4954,13 +4994,6 @@ window.addEventListener("resize", function () {
    Every figure comes from `data.widgets`, the snapshot the phone computes for the launcher, so
    a number here and the same number on the home screen cannot disagree.
    ============================================================ */
-/* "AUG", the way the phone's own widget stamps it: monthAbbrev uppercased. Backups written
-   before monthAbbrev existed fall back to the first three letters of the full name, so the
-   stamp is never the whole word on a 240px tile. */
-function monthStamp(w) {
-  var a = String((w && (w.monthAbbrev || w.monthLabel)) || "").trim();
-  return a ? a.slice(0, 3).toUpperCase() : null;
-}
 function wTop(label, stamp) {
   var top = el("div", "w-top");
   var m = el("span", "w-mark");
@@ -5440,7 +5473,12 @@ function rupee(v) {
 function renderDashboard(app, d) {
   var wrap = el("div", "dash");
   var w = d.widgets || {};
-  var an = d.analytics || null;
+  /* Per-market figures come from the phone like the rest (analyticsByMarket, build 50). The picker
+     lists the markets it sent, in the phone's order, and only appears when there are two. */
+  var byM = d.analyticsByMarket || {};
+  var mkts = reportMarketList().filter(function (m) { return byM[m]; });
+  var mkt = mkts.indexOf(AN_MKT) >= 0 ? AN_MKT : "";
+  var an = mkt ? byM[mkt] : (d.analytics || null);
 
   /* ---------- the glance strip: the eight home-screen widgets ---------- */
   /* The glance strip lives on News alerts now. This tab is the analytics wall and nothing
@@ -5486,6 +5524,21 @@ function renderDashboard(app, d) {
     inWindow + (inWindow === 1 ? " story " : " stories ") + anPhrase(AN_WIN) + ", " +
     (a.totalCount || 0) + " in the feed"));
   head.appendChild(left);
+  var ctl = el("div", "anctl");
+  if (mkts.length >= 2) {
+    var sw = el("span", "anselw");
+    var sel = el("select", "ansel");
+    sel.setAttribute("aria-label", "Market");
+    [""].concat(mkts).forEach(function (m) {
+      var o = el("option", null, m || "All markets");
+      o.value = m;
+      if (m === mkt) o.selected = true;
+      sel.appendChild(o);
+    });
+    sel.onchange = function () { anSetMarket(sel.value); render(); };
+    sw.appendChild(sel);
+    ctl.appendChild(sw);
+  }
   var seg = el("div", "anseg");
   ["1M", "3M", "6M"].forEach(function (k) {
     if (!an[k]) return;
@@ -5493,7 +5546,8 @@ function renderDashboard(app, d) {
     b.onclick = function () { AN_WIN = k; render(); };
     seg.appendChild(b);
   });
-  head.appendChild(seg);
+  ctl.appendChild(seg);
+  head.appendChild(ctl);
   wrap.appendChild(head);
 
   if (!a.totalCount) {
@@ -5548,7 +5602,7 @@ function renderDashboard(app, d) {
   add(c);
 
   c = anCard("News overview", "Of news fetched in the " + anPhrase(AN_WIN) + ", what you did with it");
-  anOverview(c.body, cv, arr(d.alerts).length);
+  anOverview(c.body, cv, typeof a.inFeed === "number" ? a.inFeed : arr(d.alerts).length);
   add(c);
 
   c = anCard("Conversion flow", "Where every story ended up, from the feed to a decision");
@@ -5811,12 +5865,59 @@ function chCorpus() {
   arr(d.intel).forEach(function (a) { add(a, "intel"); });
   arr(d.newsArticles).forEach(function (a) { add(a, "stored"); });
   editions().forEach(function (e) { arr(e.articles).forEach(function (a) { add(a, "published"); }); });
-  return out;
+
+  /* The reader's context (the Context panel in the dock): which news, and which markets. A story's
+     market is the phone's own verdict (reportMarkets), the same as the Monthly Report's switches. */
+  var c = chCtx(), all = reportMarketList(), on = chOnMarkets(c);
+  var byMarket = all.length >= 2 && on.length < all.length;
+  return out.filter(function (rec) {
+    if (c.scope === "saved" && rec.buckets.indexOf("saved") < 0) return false;
+    if (c.scope === "published" && !rec.published && rec.buckets.indexOf("published") < 0) return false;
+    if (byMarket && !reportMarketsOf(rec.raw, all).some(function (m) { return on.indexOf(m) >= 0; })) return false;
+    return true;
+  });
+}
+
+/* ---------- context ----------
+   What Ask reads, set from the dock: which news (all of it, saved, or published) and which markets.
+   Remembered in this browser only. Markets are stored as the ones switched OFF, so a market added
+   on the phone later starts switched on, and switching every market off is not possible. */
+var CH_CTX_LS = "echo.ask.context";
+var CH_CTX_OPEN = false;
+var CH_SCOPES = [["all", "All news"], ["saved", "Saved"], ["published", "Published"]];
+function chCtx() {
+  var o = {};
+  try { o = JSON.parse(localStorage.getItem(CH_CTX_LS) || "{}") || {}; } catch (e) { o = {}; }
+  return {
+    scope: ["all", "saved", "published"].indexOf(o.scope) >= 0 ? o.scope : "all",
+    off: arr(o.off).map(key)
+  };
+}
+function chSetCtx(c) {
+  try { localStorage.setItem(CH_CTX_LS, JSON.stringify({ scope: c.scope, off: c.off })); } catch (e) {}
+}
+function chOnMarkets(c) {
+  var all = reportMarketList();
+  var on = all.filter(function (m) { return c.off.indexOf(key(m)) < 0; });
+  return on.length ? on : all;
+}
+function chCtxActive(c) {
+  var all = reportMarketList();
+  return c.scope !== "all" || (all.length >= 2 && chOnMarkets(c).length < all.length);
+}
+/* "12 saved stories from India" — the dock line, the greeting and the Smart prompt say the same. */
+function chCtxCount(n, c) {
+  var all = reportMarketList(), on = chOnMarkets(c);
+  var what = c.scope === "saved" ? chPl(n, "saved story", "saved stories")
+           : c.scope === "published" ? chPl(n, "published story", "published stories")
+           : chPl(n, "story", "stories");
+  return what + (all.length >= 2 && on.length < all.length ? " from " + chList(on) : "");
 }
 
 /* ---------- index ---------- */
 function chIndex() {
-  var stamp = String((S.data && S.data.updatedAtMillis) || 0);
+  var cx = chCtx();
+  var stamp = String((S.data && S.data.updatedAtMillis) || 0) + "|" + cx.scope + "|" + chOnMarkets(cx).join(",");
   if (CH_IX && CH_IX.stamp === stamp) return CH_IX;
 
   var docs = chCorpus(), df = {}, vocab = {}, i, j;
@@ -6887,6 +6988,12 @@ function chPrompt(m) {
      six cards retrieval happened to surface. */
   var all = ix.docs.slice().sort(function (a, b) { return (b.ms || 0) - (a.ms || 0); });
   var shown = all.slice(0, CH_INVENTORY_MAX);
+  var cxp = chCtx();
+  if (chCtxActive(cxp)) {
+    out.push("SCOPE: the reader has limited Ask to " + chCtxCount(all.length, cxp) + ". Stories outside it are " +
+             "hidden on purpose. If nothing here answers the question, say it is not in that selection — " +
+             "never that it does not exist.", "");
+  }
   out.push("INVENTORY — every story the reader holds (" + all.length + " in total" +
            (all.length > shown.length ? ", newest " + shown.length + " listed" : "") + ")");
   shown.forEach(function (doc, i) {
@@ -7318,7 +7425,7 @@ function renderAsk(app) {
     var intro = el("p", "chintro");
     intro.innerHTML =
       "Ask about a competitor, a market, a theme, what you have spent, or what is moving. " +
-      "I read only what your phone has fetched — <b>" + chPl(ix.docs.length, "story", "stories") +
+      "I read only what your phone has fetched — <b>" + esc(chCtxCount(ix.docs.length, chCtx())) +
       "</b>, plus your <b>" + chPl(ix.comps.length, "competitor", "competitors") + "</b> and <b>" +
       chPl(ix.lands.length, "market", "markets") + "</b>. There is no model behind me and no key in " +
       (chSmart()
@@ -7382,8 +7489,17 @@ function renderAsk(app) {
   });
   ctx.appendChild(seg);
 
+  var cx = chCtx(), cxOn = chCtxActive(cx), mk = reportMarketList();
   ctx.appendChild(document.createTextNode("Reading "));
-  ctx.appendChild(el("b", null, chPl(ix.docs.length, "story", "stories")));
+  ctx.appendChild(el("b", null, chCtxCount(ix.docs.length, cx)));
+  ctx.appendChild(document.createTextNode(" · "));
+  var cxb = el("button", "chctxb" + (cxOn ? " on" : ""));
+  cxb.innerHTML = ICON_SLIDERS;
+  cxb.appendChild(document.createTextNode("Context"));
+  cxb.setAttribute("aria-expanded", CH_CTX_OPEN ? "true" : "false");
+  cxb.title = "Choose which news Ask reads";
+  cxb.onclick = function () { CH_CTX_OPEN = !CH_CTX_OPEN; render(); };
+  ctx.appendChild(cxb);
   var srcMode = newsSourceOf(d);
   if (srcMode) {
     ctx.appendChild(document.createTextNode(" · phone is on "));
@@ -7396,6 +7512,43 @@ function renderAsk(app) {
     ctx.appendChild(clr);
   }
   dock.appendChild(ctx);
+
+  if (CH_CTX_OPEN) {
+    var panel = el("div", "chctx chctxp");
+    var r1 = el("div", "chctxr");
+    r1.appendChild(el("span", "chctxl", "News"));
+    var sseg = el("div", "chseg");
+    CH_SCOPES.forEach(function (s) {
+      var b = el("button", cx.scope === s[0] ? "on" : null);
+      b.appendChild(el("span", "chsegl", s[1]));
+      b.onclick = function () { var c = chCtx(); c.scope = s[0]; chSetCtx(c); render(); };
+      sseg.appendChild(b);
+    });
+    r1.appendChild(sseg);
+    panel.appendChild(r1);
+    if (mk.length >= 2) {
+      var r2 = el("div", "chctxr");
+      r2.appendChild(el("span", "chctxl", "Markets"));
+      var onM = chOnMarkets(cx);
+      mk.forEach(function (m) {
+        var isOn = onM.indexOf(m) >= 0;
+        var chip = el("button", "chchip" + (isOn ? " on" : ""), m);
+        chip.setAttribute("aria-pressed", isOn ? "true" : "false");
+        chip.onclick = function () {
+          var c = chCtx(), k = key(m), i = c.off.indexOf(k);
+          if (i >= 0) c.off.splice(i, 1);
+          else if (chOnMarkets(c).length <= 1) { toast("Keep at least one market on"); return; }
+          else c.off.push(k);
+          chSetCtx(c); render();
+        };
+        r2.appendChild(chip);
+      });
+      panel.appendChild(r2);
+    }
+    panel.appendChild(el("div", "chctxn",
+      "Ask answers only from this selection, in Basic and Smart. Remembered in this browser."));
+    dock.appendChild(panel);
+  }
 
   /* Smart with no key asks for one HERE, rather than sending you to Settings to find a field you
      have never seen. Same input and buttons as the Settings row, so it is one control in two
@@ -8890,6 +9043,7 @@ async function loadEverything() {
     setStatus("Nothing in Drive yet. On your phone open Settings, then Storage, and press Back up.", true);
     render(); return;
   }
+  cleanSources(data);
   S.data = data;
 
   /* Merge whatever this browser previously wrote, so a fresh device sees it too. */
