@@ -3900,13 +3900,17 @@ function sourceLegend() {
   return box;
 }
 
-/* Everything a story can be matched on, lowercased once. */
-function articleHaystack(a) {
+/* Everything a story can be matched on. articleText keeps the case (the competitor rule checks
+   capitals); articleHaystack is the same text lowercased once. */
+function articleText(a) {
   /* No pmAdvisory here. Matching on text the card does not show produces a result you
      cannot explain by looking at it. */
   var tr = storyTranslation(key(a.title)) || {};
   return [decodeEnt(a.title), decodeEnt(a.summary), a.source, a.category, catShort(a.category), tr.t, tr.s]
-    .filter(Boolean).join(" ").toLowerCase();
+    .filter(Boolean).join(" ");
+}
+function articleHaystack(a) {
+  return articleText(a).toLowerCase();
 }
 
 /* The wall: search, filters, then the cards that survive both. */
@@ -4049,20 +4053,22 @@ function newsWall(app, list, opts) {
   var st = wallState();
   var d = S.data || {};
 
-  /* Filter vocabularies come from what is actually in this list, not from the whole database.
-     A chip that filters to nothing is a dead control, and offering ten of them is worse than
-     offering the four that can do something. */
-  var chanSet = {}, compSet = {}, landSet = {};
-  var compNames = arr(d.competitors).map(function (c) { return c && c.name; }).filter(Boolean);
+  /* Channel and market chips come from what is actually in this list, not from the whole
+     database: a chip that filters to nothing is a dead control. */
+  var chanSet = {}, landSet = {};
   var landNames = arr(d.countries).map(function (c) { return c && c.name; }).filter(Boolean);
   list.forEach(function (a) {
     if (a.category) chanSet[a.category] = 1;
     var hay = articleHaystack(a);
-    compNames.forEach(function (n) { if (hay.indexOf(n.toLowerCase()) >= 0) compSet[n] = 1; });
     landNames.forEach(function (n) { if (inMarket(a, hay, n)) landSet[n] = 1; });
   });
   var chans = Object.keys(chanSet).sort();
-  var comps = Object.keys(compSet).sort();
+  /* Competitors are the exception (user, 2026-09-21): every one you track gets a chip, as on the
+     phone, so a name can always be found here; "0 of 197 stories" then says this list has none.
+     Until then a chip appeared only when a story carried the competitor's FULL saved name, which
+     most never do ("Schueco India pvt Ltd", "TOSTEM (LIXIL) India"): 3 of 10 showed on alerts. */
+  var comps = arr(d.competitors).map(function (c) { return c && c.name; }).filter(Boolean)
+    .filter(function (n, i, all) { return all.indexOf(n) === i; }).sort();
   var lands = Object.keys(landSet).sort();
 
   var q = st.q.trim().toLowerCase();
@@ -4087,7 +4093,10 @@ function newsWall(app, list, opts) {
       if (!hit) return false;
     }
     if (st.chan.length && st.chan.indexOf(a.category) < 0) return false;
-    if (st.comp.length && !st.comp.some(function (n) { return hay.indexOf(n.toLowerCase()) >= 0; })) return false;
+    if (st.comp.length) {
+      var txt = articleText(a);
+      if (!st.comp.some(function (n) { return compMentioned(txt, n); })) return false;
+    }
     if (st.land.length && !st.land.some(function (n) { return inMarket(a, hay, n); })) return false;
     return true;
   });
@@ -5750,6 +5759,46 @@ function chBrandTerms(name) {
   if (base.length >= 4) terms.push(base);
   if (paren && paren[1] && paren[1].trim().length >= 4) terms.push(paren[1].trim());
   return terms;
+}
+
+/* Does this text name the competitor? The filter chips' rule, the same as the phone's
+   (CompetitorMatch.mentions in data/CompetitorMatch.kt): one of its brand terms above, as a WHOLE
+   word, written with a capital where the term has one. Umlauts read as their German spelling
+   (ü = ue, ß = ss) and a term may drop that e, so "Schueco" finds Schüco, Schueco and Schuco while
+   "Schon doorways" does not find "Schön" (a German publisher, "Einfach Schön"). Whole words and the
+   capital keep it out of "ressourcenschonende" and the everyday German "schon".
+   Measured on the stored stories 2026-09-21: the full saved name found 0 Schüco stories on alerts,
+   this finds them; every competitor gets its stories, Schon doorways none. */
+function brandFold(s) {
+  return String(s == null ? "" : s).normalize("NFD")
+    .replace(/([aouAOU])\u0308/g, "$1e").replace(/\u00df/g, "ss")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+var COMP_RX = {};
+function compMentioned(text, name) {
+  var rules = COMP_RX[name];
+  if (!rules) {
+    rules = [];
+    chBrandTerms(name).forEach(function (t) {
+      var f = brandFold(t);
+      [f, f.replace(/([aouAOU])[eE]/g, "$1")].forEach(function (v, i, both) {
+        if (i && v === both[0]) return;
+        rules.push({ cap: /^\p{Lu}/u.test(v),
+                     rx: new RegExp("(^|[^\\p{L}\\p{N}])(" + v.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") +
+                                    ")(?![\\p{L}\\p{N}])", "giu") });
+      });
+    });
+    COMP_RX[name] = rules;
+  }
+  var hay = brandFold(text);
+  return rules.some(function (r) {
+    var m;
+    r.rx.lastIndex = 0;
+    while ((m = r.rx.exec(hay))) {
+      if (!r.cap || /^\p{Lu}/u.test(m[2])) return true;
+    }
+    return false;
+  });
 }
 
 /* ---------- dates ----------
