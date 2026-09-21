@@ -1170,15 +1170,22 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
   transition:background var(--t-hover) var(--ease),color var(--t-hover) var(--ease)}
 .anseg button:active{transform:scale(.97)}
 .anseg button.on{background:var(--surface);color:var(--ink);box-shadow:var(--sh-1);font-weight:500}
-/* The market picker sits left of the window switch. A native select, so phones get their own
-   picker; dressed as the same grey track, with the caret drawn in CSS so it follows the theme. */
-.anctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.anselw{position:relative;display:inline-flex}
-.anselw::after{content:"";position:absolute;right:13px;top:50%;width:6px;height:6px;pointer-events:none;
+/* The country line under the heading: "Select Country" on the left, the pill on the right. The
+   pill copies the phone's news-source pill (10px corners, the track grey, a dot, the label, a
+   chevron): grey dot for every country, accent dot once narrowed to one. The select inside is
+   native, so phones get their own picker. */
+.anmkt{flex-basis:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}
+.anmkt .lbl{font-size:13px;color:var(--ink-3)}
+.anpill{position:relative;display:inline-flex;align-items:center;background:var(--seg-track);border-radius:10px}
+.anpill .dot{position:absolute;left:11px;top:50%;width:7px;height:7px;margin-top:-3.5px;border-radius:50%;
+  background:var(--ink-3);pointer-events:none}
+.anpill.on .dot{background:var(--accent)}
+.anpill::after{content:"";position:absolute;right:13px;top:50%;width:6px;height:6px;pointer-events:none;
   border-right:1.5px solid var(--ink-3);border-bottom:1.5px solid var(--ink-3);transform:translateY(-70%) rotate(45deg)}
-.ansel{appearance:none;-webkit-appearance:none;border:0;background:var(--seg-track);color:var(--ink);
-  font:inherit;font-size:12.5px;font-weight:500;padding:9px 32px 9px 15px;border-radius:999px;cursor:pointer;max-width:200px}
-.ansel:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.anpill select{appearance:none;-webkit-appearance:none;border:0;background:transparent;color:var(--ink);
+  font:inherit;font-size:13px;font-weight:500;letter-spacing:.2px;padding:7px 32px 7px 25px;border-radius:10px;
+  cursor:pointer;max-width:220px}
+.anpill select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 .ancard{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-card);
   box-shadow:var(--sh-1);padding:18px 20px;display:flex;flex-direction:column}
@@ -5524,21 +5531,6 @@ function renderDashboard(app, d) {
     inWindow + (inWindow === 1 ? " story " : " stories ") + anPhrase(AN_WIN) + ", " +
     (a.totalCount || 0) + " in the feed"));
   head.appendChild(left);
-  var ctl = el("div", "anctl");
-  if (mkts.length >= 2) {
-    var sw = el("span", "anselw");
-    var sel = el("select", "ansel");
-    sel.setAttribute("aria-label", "Market");
-    [""].concat(mkts).forEach(function (m) {
-      var o = el("option", null, m || "All markets");
-      o.value = m;
-      if (m === mkt) o.selected = true;
-      sel.appendChild(o);
-    });
-    sel.onchange = function () { anSetMarket(sel.value); render(); };
-    sw.appendChild(sel);
-    ctl.appendChild(sw);
-  }
   var seg = el("div", "anseg");
   ["1M", "3M", "6M"].forEach(function (k) {
     if (!an[k]) return;
@@ -5546,8 +5538,25 @@ function renderDashboard(app, d) {
     b.onclick = function () { AN_WIN = k; render(); };
     seg.appendChild(b);
   });
-  ctl.appendChild(seg);
-  head.appendChild(ctl);
+  head.appendChild(seg);
+  if (mkts.length >= 2) {
+    var line = el("div", "anmkt");
+    line.appendChild(el("span", "lbl", "Select Country"));
+    var pill = el("span", "anpill" + (mkt ? " on" : ""));
+    pill.appendChild(el("span", "dot"));
+    var sel = el("select");
+    sel.setAttribute("aria-label", "Select country");
+    [""].concat(mkts).forEach(function (m) {
+      var o = el("option", null, m || "All countries");
+      o.value = m;
+      if (m === mkt) o.selected = true;
+      sel.appendChild(o);
+    });
+    sel.onchange = function () { anSetMarket(sel.value); render(); };
+    pill.appendChild(sel);
+    line.appendChild(pill);
+    head.appendChild(line);
+  }
   wrap.appendChild(head);
 
   if (!a.totalCount) {
