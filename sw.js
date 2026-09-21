@@ -11,7 +11,7 @@
 
    Bump VERSION on every deploy. That is what tells every installed copy that
    something changed. */
-const VERSION = "echo-2026-09-21-ask-smart-steady";
+const VERSION = "echo-2026-09-21-no-stale-page";
 
 const ASSETS = [
   "./",
@@ -32,9 +32,17 @@ const ASSETS = [
   "./ArialNova-Bold.woff2"
 ];
 
+/* PAST THE BROWSER'S HTTP CACHE. GitHub Pages serves every file with max-age=600, and a plain fetch
+   from here goes through the browser's HTTP cache. So for ten minutes after a deploy this worker
+   installed the NEW version number holding the OLD page, and every visit in that window ran old code:
+   a new tab opened 2026-09-21 on "echo-2026-09-21-ask-smart-steady" was still missing that deploy's
+   functions. That is why only Ctrl+F5 (which skips the HTTP cache) seemed to fix things. "reload" on
+   install always downloads; "no-cache" on a page asks the server first and costs a 304 when unchanged. */
 self.addEventListener("install", e => {
   // Deliberately no skipWaiting here. The page decides when to swap.
-  e.waitUntil(caches.open(VERSION).then(c => c.addAll(ASSETS)).catch(() => {}));
+  e.waitUntil(caches.open(VERSION)
+    .then(c => c.addAll(ASSETS.map(u => new Request(u, { cache: "reload" }))))
+    .catch(() => {}));
 });
 
 self.addEventListener("activate", e => {
@@ -62,7 +70,8 @@ self.addEventListener("fetch", e => {
                  url.pathname.endsWith("/");
   if (isPage) {
     e.respondWith(
-      fetch(req)
+      // By URL, not by req: a navigation Request cannot be copied with options.
+      fetch(req.url, { cache: "no-cache", credentials: "same-origin" })
         .then(res => {
           const copy = res.clone();
           caches.open(VERSION).then(c => c.put(req, copy)).catch(() => {});
