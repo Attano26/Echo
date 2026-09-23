@@ -5788,15 +5788,21 @@ function brandFold(s) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 var COMP_RX = {};
+/* A PARENT-company name in brackets (Hindalco, Asahi India Glass, LIXIL) counts only in a story about
+   windows, doors or facades (phone build 55, CompetitorMatch): "Asahi India Glass" alone was mostly
+   share prices and car glass, "Hindalco" alone mostly metal. The brand itself needs nothing extra. */
+var COMP_FEN = /(^|[^\p{L}\p{N}])(windows?|doors?|fa[cç]ades?|fenestration|glazing|casements?|curtain[- ]walls?|u-?pvc)(?![\p{L}\p{N}])/iu;
 function compMentioned(text, name) {
   var rules = COMP_RX[name];
   if (!rules) {
     rules = [];
+    var weakM = /\(([^)]*)\)/.exec(String(name || ""));
+    var weak = weakM ? weakM[1].trim() : null;
     chBrandTerms(name).forEach(function (t) {
       var f = brandFold(t);
       [f, f.replace(/([aouAOU])[eE]/g, "$1")].forEach(function (v, i, both) {
         if (i && v === both[0]) return;
-        rules.push({ cap: /^\p{Lu}/u.test(v),
+        rules.push({ cap: /^\p{Lu}/u.test(v), strong: t !== weak,
                      rx: new RegExp("(^|[^\\p{L}\\p{N}])(" + v.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") +
                                     ")(?![\\p{L}\\p{N}])", "giu") });
       });
@@ -5804,7 +5810,9 @@ function compMentioned(text, name) {
     COMP_RX[name] = rules;
   }
   var hay = brandFold(text);
+  var aboutWindows = COMP_FEN.test(hay);
   return rules.some(function (r) {
+    if (!r.strong && !aboutWindows) return false;
     var m;
     r.rx.lastIndex = 0;
     while ((m = r.rx.exec(hay))) {
