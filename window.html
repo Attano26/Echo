@@ -5211,6 +5211,15 @@ var DRAW = {
 
 return { draw: DRAW, readColors: readColors };
 })();
+/* Each render's usual footprint in a 360 x 200 tile (centre offset x, y; width; height), measured over every
+   frame of its loop. Every render is scaled and centred into the same share of the tile, so they all read
+   at one size (2026-09-25). The phone (EmptyArt.kt) applies the same table. */
+var ART_FIT = {listen:[18,18.5,149,146],sieve:[-2.5,18.5,204,140],metal:[6,45.5,159,98],published:[-0.5,31,164,117],saved:[0,2,177,131],liked:[0,0.5,177,134],disliked:[0,2,177,131],globe:[-1,16,141,141],orbit:[-0.5,35.5,226,98],layers:[5.5,-8,152,105],bars:[-0.5,29,198,109],meter:[-0.5,13,56,117],cloud:[22.5,9.5,92,114],check:[15,18.5,283,140],broken:[-9,19,219,141]};
+function artFit(g, kind, w, h) {
+  var f = ART_FIT[kind]; if (!f) return;
+  var k = Math.max(0.8, Math.min(1.45, Math.min(0.64 * w / f[2], 0.70 * h / f[3])));
+  g.translate(w / 2, h / 2); g.scale(k, k); g.translate(-(w / 2 + f[0]), -(h / 2 + f[1]));
+}
 var ART = { list: [], raf: 0 };
 /* One loop for every art canvas on the page; canvases off screen are skipped, detached ones dropped. */
 function artCanvas(kind) {
@@ -5232,6 +5241,7 @@ function artFrame(ms) {
     var W = Math.round(r.width * dp), H = Math.round(r.height * dp);
     if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
     var g = c.getContext("2d"); g.setTransform(dp, 0, 0, dp, 0, 0); g.clearRect(0, 0, r.width, r.height);
+    artFit(g, c._kind, r.width, r.height);
     try { EchoArt.draw[c._kind](g, r.width, r.height, t); } catch (err) { /* a bad frame never breaks the page */ }
   });
   ART.raf = requestAnimationFrame(artFrame);
