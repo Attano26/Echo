@@ -527,6 +527,8 @@ body.in .dhead .mark{ animation:railsweep 9s linear infinite }
 /* Beats .askbox's 380px, which is defined later in the sheet at the same specificity.
    Nine rows of label plus count plus size need the extra room. */
 .askbox.stbox{max-width:460px}
+/* Storage as a page inside Settings: the panel body has no side padding, its rows bring their own. */
+.stbox.stpage{padding:14px 18px 4px}
 .stwhen{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-3);margin:0 0 18px}
 .sttotal{display:flex;align-items:baseline;gap:9px}
 .stbig{font-family:var(--fs-title);font-size:30px;font-weight:600;letter-spacing:-.03em;
@@ -3433,12 +3435,25 @@ function storageSlices() {
 
 /* Settings > Storage, as a dialog: total on top, one stacked bar, then the breakdown. */
 function openStorage() {
-  var d = S.data;
-  var slices = storageSlices();
-  var total = slices.reduce(function (t, r) { return t + r[2]; }, 0);
   return askShell(function (box, done) {
     box.className = "askbox stbox";
     box.appendChild(el("h2", "askttl", "What is in your backup"));
+    storageInto(box);
+    var row2 = el("div", "askrow");
+    var ok = el("button", "btn sm", "Close");
+    ok.onclick = function () { done(true); };
+    row2.appendChild(ok);
+    box.appendChild(row2);
+    ok.focus();
+  });
+}
+/* What is in the backup, drawn into any box: the sidebar's dialog, or the Storage page inside Settings
+   (2026-09-24 — a dialog from Settings opened BEHIND the panel, so there it is a page like Profile). */
+function storageInto(box) {
+  var d = S.data;
+  var slices = storageSlices();
+  var total = slices.reduce(function (t, r) { return t + r[2]; }, 0);
+  {
 
     var when = el("div", "stwhen");
     var wdot = el("span", "syncdot");
@@ -3487,14 +3502,7 @@ function openStorage() {
         "The phone measures the same sections before it uploads them, which is why the two can " +
         "differ by a few bytes. Only the phone writes this file."));
     }
-
-    var row2 = el("div", "askrow");
-    var ok = el("button", "btn sm", "Close");
-    ok.onclick = function () { done(true); };
-    row2.appendChild(ok);
-    box.appendChild(row2);
-    ok.focus();
-  });
+  }
 }
 
 /* The full sentence, inside Settings where there is room for it. */
@@ -3627,7 +3635,7 @@ function renderPersonalView(n) {
   n.appendChild(el("div", "dnote", "From your Google account. Change the name or picture in the Echo app on your phone, or in Google."));
 }
 function updateSettingsHeader() {
-  var titles = { main: "Settings", profile: "Profile", personal: "Personal information", apikey: "Gemini API key" };
+  var titles = { main: "Settings", profile: "Profile", personal: "Personal information", apikey: "Gemini API key", storage: "Storage" };
   var t = $("#settingsTitle"); if (t) t.textContent = titles[SET_VIEW] || "Settings";
   var back = $("#btnSettingsBack"); if (back) back.hidden = SET_VIEW === "main";
   var av = $("#settingsAvatar");
@@ -3653,6 +3661,7 @@ function renderDrawerSettings() {
   if (SET_VIEW === "profile") { renderProfileView(n); watchProfileRow(); return; }
   if (SET_VIEW === "personal") { renderPersonalView(n); watchProfileRow(); return; }
   if (SET_VIEW === "apikey") { renderApiKeyView(n); watchProfileRow(); return; }
+  if (SET_VIEW === "storage") { var sb = el("div", "stbox stpage"); storageInto(sb); n.appendChild(sb); watchProfileRow(); return; }
 
   // The profile leads, as on the phone: who is signed in, one tap from Personal information and Sign out.
   var prof = el("button", "sprof");
@@ -3669,7 +3678,7 @@ function renderDrawerSettings() {
   var stTotal = 0;
   try { stTotal = storageSlices().reduce(function (t, r) { return t + r[2]; }, 0); } catch (err) { stTotal = 0; }
   n.appendChild(navRow(SVG_CLOUD2, "Storage", S.data ? (stTotal ? fmtBytes(stTotal) : "") : "Not loaded",
-    function () { openStorage(); }));
+    function () { setSettingsView("storage"); }));
   n.appendChild(el("div", "sdiv"));
   n.appendChild(el("div", "dnote",
     "This page never fetches news - only your phone does. It reads your Drive backup and writes " +
