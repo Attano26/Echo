@@ -685,6 +685,10 @@ body.in .dhead .mark{ animation:railsweep 9s linear infinite }
 
 /* ---------- states ---------- */
 .empty{text-align:center;color:var(--ink-3);padding:56px 20px;font-size:14px;line-height:1.7}
+/* Empty-state art (2026-09-25): the same 3D renders the phone draws, above the sentence. */
+.eart{display:block;width:100%;max-width:440px;height:200px;margin:0 auto 10px}
+.empty:has(.eart){padding-top:24px}
+.dempty .eart{margin-bottom:12px}
 .status{font-size:13px;color:var(--ink-3);padding:10px 0}
 .status:empty{display:none}
 .status.err{color:var(--danger)}
@@ -2988,12 +2992,12 @@ function renderLogs(app, d) {
   if (!runs.length) {
     /* Name WHICH of the two causes it is: an older phone build simply does not send costRuns,
        and that is a different problem from having made no refreshes. */
-    app.appendChild(el("div", "dempty",
-      "No cost log in this backup. Refresh on the phone, then back up - the log travels with it."));
+    app.appendChild(artNote("dempty",
+      "No cost log in this backup. Refresh on the phone, then back up - the log travels with it.", "meter"));
     return;
   }
   if (!inWin.length) {
-    app.appendChild(el("div", "dempty", "No refreshes in this window. Try a longer range."));
+    app.appendChild(artNote("dempty", "No refreshes in this window. Try a longer range.", "meter"));
     return;
   }
 
@@ -4447,9 +4451,11 @@ function newsWall(app, list, opts) {
 }
 
 function wallEmpty(filtering, opts) {
-  return emptyState(filtering
+  var n = emptyState(filtering
     ? "Nothing matches that. Try a shorter search, or clear a filter."
-    : (opts.empty || "Nothing here yet."));
+    : (opts.empty || "Nothing here yet."), filtering ? "sieve" : opts.art);
+  n.classList.add("wallx");   /* so a repaint can find and replace it */
+  return n;
 }
 function fillWall(wall, items, opts) {
   wall.innerHTML = "";
@@ -4519,6 +4525,11 @@ function repaintWall() {
     ? wall._pool.filter(function (a) { return articleHaystack(a).indexOf(q) >= 0; })
     : wall._pool.slice();
   fillWall(wall, shown, wall._opts);
+  /* Typing used to leave a blank page when nothing matched: the empty state was only drawn by a full
+     render. Now the repaint swaps it too (2026-09-25). */
+  var prev = wall.parentNode && wall.parentNode.querySelector(".wallx");
+  if (prev) prev.remove();
+  if (!shown.length) wall.parentNode.insertBefore(wallEmpty(q || true, wall._opts), wall.nextSibling);
   var count = document.querySelector(".ncount");
   if (count) {
     count.textContent = shown.length + " of " + wall._pool.length +
@@ -4526,7 +4537,714 @@ function repaintWall() {
   }
 }
 
-function emptyState(msg) { return el("div", "empty", msg); }
+/* ---- Empty-state art (2026-09-25). The engine and the renders are the phone's (EmptyArt.kt draws the same
+   ones); wrapped so none of its short names (box, bar, rect...) can meet the page's own. ---- */
+var EchoArt = (function () {
+/* Echo empty-state art: a tiny orthographic 3D engine, the traced meeting section, and one animation per empty state.
+   Final designs agreed 24-25 Sep 2026 (sample page echo-empty-states-3d.html). */
+/* ============ tiny orthographic 3D ============ */
+var TAU = Math.PI * 2;
+function clamp(x){ return Math.max(0, Math.min(1, x)); }
+function ease(x){ x = clamp(x); return x < .5 ? 4*x*x*x : 1 - Math.pow(-2*x + 2, 3) / 2; }
+function seg(c, a, b){ return ease((c - a) / (b - a)); }
+var PAL = {};
+function readColors(){
+  var cs = getComputedStyle(document.documentElement);
+  function rgb(v){ v = String(v || "").trim();
+    if (v.charAt(0) === "#") { var h = v.slice(1); if (h.length === 3) h = h.replace(/./g, "$&$&"); var n = parseInt(h, 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
+    var m = v.match(/\d+(\.\d+)?/g); return m ? m.slice(0, 3).map(Number) : [128, 128, 128]; }
+  PAL.card = rgb(cs.getPropertyValue("--paper")); PAL.ink = rgb(cs.getPropertyValue("--ink"));
+  PAL.acc = rgb(cs.getPropertyValue("--accent")); PAL.grey = rgb(cs.getPropertyValue("--ink-3"));
+  PAL.dark = (PAL.card[0] + PAL.card[1] + PAL.card[2]) / 3 < 128;
+}
+function mix(a, b, k){ return [a[0]+(b[0]-a[0])*k, a[1]+(b[1]-a[1])*k, a[2]+(b[2]-a[2])*k]; }
+function css(c, a){ return "rgba(" + (c[0]|0) + "," + (c[1]|0) + "," + (c[2]|0) + "," + (a == null ? 1 : a) + ")"; }
+
+var ZOOM = 1.4;
+function Cam(w, h, s, yaw, pitch, oy){ return { cx: w/2, cy: h/2 + (oy || 0)*ZOOM, s: s*ZOOM, yaw: yaw, pitch: pitch }; }
+function view(p, cam){
+  var c = Math.cos(cam.yaw), s = Math.sin(cam.yaw);
+  var x1 = c*p[0] + s*p[2], z1 = -s*p[0] + c*p[2];
+  var cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
+  return [x1, p[1]*cp - z1*sp, p[1]*sp + z1*cp];
+}
+function scr(v, cam){ return [cam.cx + v[0]*cam.s, cam.cy - v[1]*cam.s]; }
+
+function Scene(){ this.items = []; }
+/* style: {tone:'clay'|'acc'|'glass'|'none', edge:'ink'|'acc'|'grey', ea: edge alpha, dash, lines:[[p..]], lineTone, la} */
+Scene.prototype.face = function (pts, st){ this.items.push({ kind: "f", pts: pts, st: st || {} }); return this; };
+Scene.prototype.line = function (pts, st){ this.items.push({ kind: "l", pts: pts, st: st || {} }); return this; };
+Scene.prototype.dot = function (p, st){ this.items.push({ kind: "d", pts: [p], st: st || {} }); return this; };
+Scene.prototype.render = function (g, cam){
+  var LX = -0.45, LY = 0.8, LZ = 0.4, ln = Math.hypot(LX, LY, LZ); LX /= ln; LY /= ln; LZ /= ln;
+  this.items.forEach(function (it){
+    it.v = it.pts.map(function (p){ return view(p, cam); });
+    var z = 0; it.v.forEach(function (v){ z += v[2]; }); it.z = z / it.v.length + (it.st.bias || 0);
+  });
+  this.items.sort(function (a, b){ return a.z - b.z; });
+  var edgeCol = function (st){ return st.edge === "acc" ? PAL.acc : st.edge === "grey" ? PAL.grey : PAL.ink; };
+  var depthA = function (z){ return 0.55 + 0.45 * clamp((z + 1.1) / 2.2); };
+  this.items.forEach(function (it){
+    var st = it.st, v = it.v;
+    if (it.kind === "d") {
+      var q = scr(v[0], cam); g.beginPath(); g.arc(q[0], q[1], st.r || 3, 0, TAU);
+      g.fillStyle = css(st.col || PAL.acc, st.a == null ? 1 : st.a); g.fill(); return;
+    }
+    g.beginPath();
+    v.forEach(function (p, i){ var q = scr(p, cam); if (i) g.lineTo(q[0], q[1]); else g.moveTo(q[0], q[1]); });
+    if (it.kind === "f") {
+      g.closePath();
+      if (st.tone !== "none") {
+        var a = v[0], b = v[1], c = v[2];
+        var ux = b[0]-a[0], uy = b[1]-a[1], uz = b[2]-a[2], wx = c[0]-a[0], wy = c[1]-a[1], wz = c[2]-a[2];
+        var nx = uy*wz - uz*wy, ny = uz*wx - ux*wz, nz = ux*wy - uy*wx, nl = Math.hypot(nx, ny, nz) || 1;
+        nx /= nl; ny /= nl; nz /= nl; if (nz < 0) { nx = -nx; ny = -ny; nz = -nz; }
+        var lam = Math.max(0, nx*LX + ny*LY + nz*LZ);
+        var fill;
+        if (st.tone === "acc") fill = css(mix(PAL.card, PAL.acc, (PAL.dark ? .30 : .16) + .12*lam), st.fa == null ? 1 : st.fa);
+        else if (st.tone === "glass") fill = css(PAL.acc, (st.fa == null ? .07 : st.fa) * (0.7 + 0.6*lam));
+        else fill = css(mix(PAL.card, PAL.ink, PAL.dark ? .05 + .10*lam : .015 + .07*(1 - lam)), st.fa == null ? 1 : st.fa);
+        g.fillStyle = fill; g.fill();
+      }
+    }
+    var ea = (st.ea == null ? (st.edge === "acc" ? .75 : .30) : st.ea) * depthA(it.z);
+    g.setLineDash(st.dash || []); g.lineWidth = st.lw || 1; g.lineJoin = "round"; g.lineCap = "round";
+    g.strokeStyle = css(edgeCol(st), ea); g.stroke(); g.setLineDash([]);
+    (st.lines || []).forEach(function (pl){
+      g.beginPath();
+      pl.forEach(function (p, i){ var q = scr(view(p, cam), cam); if (i) g.lineTo(q[0], q[1]); else g.moveTo(q[0], q[1]); });
+      g.strokeStyle = css(st.lineTone === "acc" ? PAL.acc : PAL.ink, st.la == null ? .3 : st.la); g.lineWidth = st.llw || 1; g.stroke();
+    });
+  });
+};
+
+/* ---- solids ---- */
+function box(S, x0, y0, z0, x1, y1, z1, st, xf){
+  var P = [[x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0],[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]];
+  if (xf) P = P.map(xf);
+  [[0,1,2,3],[4,5,6,7],[0,1,5,4],[3,2,6,7],[0,3,7,4],[1,2,6,5]].forEach(function (f){
+    S.face(f.map(function (i){ return P[i]; }), st);
+  });
+}
+/* A 2D profile (x, y) extruded along z; the front cap carries the chamber lines. */
+function extrude(S, poly, z0, z1, st, cap, xf, capSt){
+  var id = xf || function (p){ return p; };
+  var back = poly.map(function (p){ return id([p[0], p[1], z0]); });
+  var front = poly.map(function (p){ return id([p[0], p[1], z1]); });
+  S.face(back, st);
+  for (var i = 0; i < poly.length; i++){ var j = (i + 1) % poly.length; S.face([back[i], back[j], front[j], front[i]], st); }
+  var fst = Object.assign({}, st, capSt || {});
+  fst.lines = (cap || []).map(function (pl){ return pl.map(function (p){ return id([p[0], p[1], z1 + 0.001]); }); });
+  S.face(front, fst);
+}
+function rect(x0, y0, x1, y1){ return [[x0,y0],[x1,y0],[x1,y1],[x0,y1],[x0,y0]]; }
+function circle3(cx, cy, cz, r, plane, n){
+  var out = []; n = n || 40;
+  for (var i = 0; i <= n; i++){ var a = i / n * TAU, c = Math.cos(a)*r, s = Math.sin(a)*r;
+    out.push(plane === "xz" ? [cx + c, cy, cz + s] : plane === "yz" ? [cx, cy + c, cz + s] : [cx + c, cy + s, cz]); }
+  return out;
+}
+function rotY(px, pz, a){ return function (p){ var dx = p[0]-px, dz = p[2]-pz, c = Math.cos(a), s = Math.sin(a);
+  return [px + dx*c - dz*s, p[1], pz + dx*s + dz*c]; }; }
+
+/* An aluminium casement profile section: frame + sash, with two chambers each and a polyamide
+   thermal break (the accent) — stylised, not any one maker's system. */
+var PROFILE = [[-0.55,-0.42],[0.55,-0.42],[0.55,-0.05],[0.40,-0.05],[0.40,0.12],[0.55,0.12],[0.55,0.42],[-0.10,0.42],[-0.10,0.30],[-0.55,0.30]];
+var CHAMBERS = [rect(-0.46,-0.33,-0.12,-0.08), rect(0.10,-0.33,0.46,-0.13), rect(-0.46,0.02,-0.12,0.22), rect(0.02,0.20,0.46,0.34)];
+var BREAK = [rect(-0.06,-0.36,0.05,-0.10), rect(-0.06,0.04,0.05,0.26)];
+var PROFILE_B = [[-0.5,-0.45],[0.5,-0.45],[0.5,0.45],[0.15,0.45],[0.15,0.25],[-0.5,0.25]];
+var PROFILE_C = [[-0.55,-0.40],[0.35,-0.40],[0.35,-0.10],[0.55,-0.10],[0.55,0.40],[-0.55,0.40]];
+
+/* ---- a window: frame members + an outward-opening sash hinged on the left ---- */
+function casement(S, open, tone, edge){
+  var w = 1.0, h = 1.3, t = 0.09, d = 0.16, fr = { tone: "clay" };
+  box(S, -w/2, -h/2, -d/2, -w/2+t, h/2, d/2, fr); box(S, w/2-t, -h/2, -d/2, w/2, h/2, d/2, fr);
+  box(S, -w/2+t, h/2-t, -d/2, w/2-t, h/2, d/2, fr); box(S, -w/2+t, -h/2, -d/2, w/2-t, -h/2+t, d/2, fr);
+  var xf = rotY(-w/2+t, d/2, open), xi0 = -w/2+t+0.005, xi1 = w/2-t-0.005, yi0 = -h/2+t+0.005, yi1 = h/2-t-0.005, ts = 0.07, z0 = 0.0, z1 = d/2;
+  var sst = { tone: tone, edge: edge };
+  box(S, xi0, yi0, z0, xi0+ts, yi1, z1, sst, xf); box(S, xi1-ts, yi0, z0, xi1, yi1, z1, sst, xf);
+  box(S, xi0+ts, yi1-ts, z0, xi1-ts, yi1, z1, sst, xf); box(S, xi0+ts, yi0, z0, xi1-ts, yi0+ts, z1, sst, xf);
+  var gz = (z0 + z1) / 2;
+  S.face([[xi0+ts,yi0+ts,gz],[xi1-ts,yi0+ts,gz],[xi1-ts,yi1-ts,gz],[xi0+ts,yi1-ts,gz]].map(xf),
+    { tone: "glass", fa: tone === "acc" ? .10 : .04, edge: edge, ea: .35,
+      lines: [[[xi0+ts+0.12, yi1-ts-0.10, gz],[xi0+ts+0.30, yi1-ts-0.28, gz]].map(xf)], lineTone: edge === "acc" ? "acc" : "ink", la: .35 });
+}
+
+/* ============ the sixteen ============ */
+
+
+/* ============ traced meeting section (outward-opening pair, 148 mm) ============
+   Coordinates are the reference drawing's own pixels (1000 x 1000, 148 mm = x 120..880),
+   traced by eye and simplified; the right half mirrors the left except the centre gasket. */
+var SEC = (function (){
+  var M = function (x){ return 1000 - x; };
+  function R(x0, y0, x1, y1){ return [x0, y0, x1, y1]; }
+  function mirR(r){ return [M(r[2]), r[1], M(r[0]), r[3]]; }
+  function mirP(p){ return p.map(function (q){ return [M(q[0]), q[1]]; }); }
+  /* Aluminium walls (solid) */
+  var alu = [
+    R(120,237,262,245), R(120,237,128,445), R(120,437,166,445), R(254,237,262,345),
+    R(226,245,236,282), R(236,272,246,282), R(240,290,256,298), R(234,318,256,326),
+    R(262,237,378,245), R(262,337,378,345), R(370,237,378,392),
+    R(378,237,440,245), R(462,290,470,392), R(378,382,470,392), R(400,245,410,270), R(410,262,428,270),
+    R(262,595,378,603), R(270,603,278,668), R(120,660,470,668), R(318,640,330,660), R(330,640,352,648),
+    R(390,595,450,603), R(390,603,398,628), R(440,603,450,620), R(462,600,470,668), R(370,620,392,628), R(370,628,378,660),
+    R(120,645,128,668), R(128,648,160,655), R(470,237,478,300), R(478,292,500,300)
+  ];
+  var aluPoly = [
+    [[440,237],[448,237],[478,292],[470,300]],
+    [[285,352],[300,352],[316,375],[372,375],[372,390],[308,390]],
+    [[285,598],[300,598],[316,580],[340,580],[340,590],[308,590]]
+  ];
+  /* Polyamide thermal-break strips: the accent */
+  var pa = [R(258,348,265,598), R(269,348,276,598), R(452,392,459,600), R(463,392,470,600)];
+  /* Cross-hatched: glazing wedge with its teeth, foam blocks, gaskets */
+  var wedge = [[232,340],[258,340],[258,602],[214,648],[172,665],[160,659],[200,612],[212,592]];
+  for (var y = 580; y >= 360; y -= 36){ wedge.push([212, y], [200, y - 8], [200, y - 20], [212, y - 28]); }
+  wedge.push([212, 340]);
+  var hatch = [
+    wedge,
+    [[292,428],[378,428],[386,440],[386,556],[378,568],[292,568],[285,556],[285,440]],
+    [[432,418],[462,418],[468,428],[468,572],[462,582],[432,582],[428,572],[428,428]],
+    [[110,470],[124,446],[150,449],[166,440],[196,452],[202,470],[162,486],[118,486]],
+    [[100,618],[132,615],[166,621],[176,640],[152,660],[124,652]]
+  ];
+  var centre = [[484,392],[505,392],[515,420],[560,440],[568,470],[566,560],[542,585],[520,612],[484,612]];
+  /* PVC insert with its chambers (outline only) */
+  var pvc = [R(368,430,420,552)], pvcIn = [R(378,440,410,470), R(390,478,412,510), R(378,518,410,545)];
+  /* Glass: two panes and the spacer bar */
+  var glass = [R(40,488,205,606)], glassLines = [R(40,488,205,496), R(40,598,205,606)], spacer = [R(140,515,182,588)], spacerIn = [R(148,523,174,580)];
+  function both(list, isRect){ return list.concat(list.map(isRect ? mirR : mirP)); }
+  return {
+    alu: both(alu, true), aluPoly: both(aluPoly, false), pa: both(pa, true),
+    hatch: both(hatch, false).concat([centre]), pvc: both(pvc, true), pvcIn: both(pvcIn, true),
+    glass: both(glass, true), glassLines: both(glassLines, true), spacer: both(spacer, true), spacerIn: both(spacerIn, true),
+    corners: [[120,237],[880,237],[120,668],[880,668],[378,237],[622,237]]
+  };
+})();
+function secPath(rects, polys){
+  var p = new Path2D();
+  (rects || []).forEach(function (r){ p.rect(r[0], r[1], r[2] - r[0], r[3] - r[1]); });
+  (polys || []).forEach(function (pl){ p.moveTo(pl[0][0], pl[0][1]); for (var i = 1; i < pl.length; i++) p.lineTo(pl[i][0], pl[i][1]); p.closePath(); });
+  return p;
+}
+var SECP = {
+  alu: secPath(SEC.alu, SEC.aluPoly), pa: secPath(SEC.pa), hatch: secPath(null, SEC.hatch),
+  pvc: secPath(SEC.pvc), pvcIn: secPath(SEC.pvcIn), glass: secPath(SEC.glass), glassLines: secPath(SEC.glassLines),
+  spacer: secPath(SEC.spacer), spacerIn: secPath(SEC.spacerIn)
+};
+var HATCH = { key: null, pat: null };
+function hatchPattern(g){
+  var key = PAL.dark ? "d" : "l";
+  if (HATCH.key === key) return HATCH.pat;
+  var c = document.createElement("canvas"); c.width = c.height = 10; var x = c.getContext("2d");
+  x.fillStyle = css(mix(PAL.card, PAL.ink, .06)); x.fillRect(0, 0, 10, 10);
+  x.strokeStyle = css(PAL.ink, PAL.dark ? .38 : .42); x.lineWidth = 1;
+  x.beginPath(); x.moveTo(0, 10); x.lineTo(10, 0); x.moveTo(-5, 5); x.lineTo(5, -5); x.moveTo(5, 15); x.lineTo(15, 5);
+  x.moveTo(0, 0); x.lineTo(10, 10); x.moveTo(-5, 5); x.lineTo(5, 15); x.moveTo(5, -5); x.lineTo(15, 5); x.stroke();
+  HATCH.key = key; HATCH.pat = g.createPattern(c, "repeat"); return HATCH.pat;
+}
+/* Map the drawing's pixel plane onto the 3D plane z, through the camera: an affine transform. */
+var S0 = 400;
+/* A plane in 3D: origin o, and the directions the drawing's right (ex) and up (ey) point along. */
+function planeZ(z){ return { o: [0, 0, z], ex: [1, 0, 0], ey: [0, 1, 0] }; }
+function add3(a, b, k){ return [a[0] + b[0]*k, a[1] + b[1]*k, a[2] + b[2]*k]; }
+/* Map the drawing's pixel plane onto a 3D plane, through the camera: an affine transform. */
+function secXform(cam, pl, sc){
+  sc = sc || 1;
+  var O = scr(view(pl.o, cam), cam), A = scr(view(add3(pl.o, pl.ex, 1), cam), cam), B = scr(view(add3(pl.o, pl.ey, 1), cam), cam);
+  var k = sc / S0, a = (A[0] - O[0])*k, b = (A[1] - O[1])*k, c = -(B[0] - O[0])*k, d = -(B[1] - O[1])*k;
+  return [a, b, c, d, O[0] - 500*a - 452*c, O[1] - 500*b - 452*d];
+}
+function secPt(X, Y, pl, sc){ sc = sc || 1; return add3(add3(pl.o, pl.ex, (X - 500) / S0 * sc), pl.ey, -(Y - 452) / S0 * sc); }
+/* mode: 'full' (rendered end face), 'rival' (the same in grey), 'draft' (line drawing on a sheet),
+   'ghost' (outline only), 'accent' (the cut), 'slot' (dashed blue, waiting), 'hidden' (grey dashes).
+   reveal (0..1) wipes the drawing in from the left. */
+function drawSection(g, cam, pl, mode, alpha, sc, reveal){
+  var m = secXform(cam, pl, sc), k = Math.sqrt(Math.abs(m[0]*m[3] - m[1]*m[2])) || 1, a = alpha == null ? 1 : alpha;
+  g.save(); g.transform(m[0], m[1], m[2], m[3], m[4], m[5]); g.lineWidth = 1 / k; g.lineJoin = "round";
+  if (reveal != null) { g.beginPath(); g.rect(0, 0, 40 + 920*reveal, 1000); g.clip(); }
+  if (mode === "full" || mode === "rival") {
+    var rival = mode === "rival";
+    g.fillStyle = css(rival ? PAL.ink : PAL.acc, (rival ? .04 : .08) * a); g.fill(SECP.glass);
+    g.strokeStyle = css(PAL.ink, .35 * a); g.stroke(SECP.glassLines);
+    g.fillStyle = css(mix(PAL.card, PAL.ink, .10), a); g.fill(SECP.spacer); g.stroke(SECP.spacer); g.stroke(SECP.spacerIn);
+    g.globalAlpha = a; g.fillStyle = hatchPattern(g); g.fill(SECP.hatch); g.globalAlpha = 1;
+    g.strokeStyle = css(PAL.ink, .55 * a); g.stroke(SECP.hatch);
+    g.strokeStyle = css(PAL.ink, .5 * a); g.stroke(SECP.pvc); g.stroke(SECP.pvcIn);
+    g.fillStyle = css(mix(PAL.card, PAL.ink, rival ? (PAL.dark ? .45 : .55) : (PAL.dark ? .62 : .80)), a); g.fill(SECP.alu);
+    g.fillStyle = rival ? css(mix(PAL.card, PAL.ink, PAL.dark ? .3 : .35), a) : css(PAL.acc, a); g.fill(SECP.pa);
+  } else if (mode === "draft") {
+    g.strokeStyle = css(PAL.ink, .5 * a); g.stroke(SECP.alu);
+    g.strokeStyle = css(PAL.ink, .3 * a); g.stroke(SECP.hatch); g.stroke(SECP.glassLines); g.stroke(SECP.pvc);
+    g.fillStyle = css(PAL.acc, .9 * a); g.fill(SECP.pa);
+  } else if (mode === "ghost") {
+    g.strokeStyle = css(PAL.ink, .08 * a); g.stroke(SECP.alu);
+  } else if (mode === "accent") {
+    g.fillStyle = css(PAL.acc, .10 * a); g.fill(SECP.alu); g.strokeStyle = css(PAL.acc, .75 * a); g.stroke(SECP.alu); g.stroke(SECP.hatch);
+  } else if (mode === "slot") {
+    g.setLineDash([10, 10]); g.strokeStyle = css(PAL.acc, .8 * a); g.stroke(SECP.alu); g.setLineDash([]);
+  } else {
+    g.setLineDash([6, 6]); g.strokeStyle = css(PAL.grey, .75 * a); g.stroke(SECP.alu);
+    g.strokeStyle = css(PAL.grey, .45 * a); g.stroke(SECP.hatch); g.stroke(SECP.glassLines); g.setLineDash([]);
+  }
+  g.restore();
+}
+function sectionBar(g, cam, D, mode){
+  var back = planeZ(-D), front = planeZ(0);
+  drawSection(g, cam, back, mode === "hidden" ? "hidden" : "ghost", mode === "hidden" ? .45 : 1);
+  g.beginPath();
+  SEC.corners.forEach(function (c){ var p = scr(view(secPt(c[0], c[1], back), cam), cam), q = scr(view(secPt(c[0], c[1], front), cam), cam); g.moveTo(p[0], p[1]); g.lineTo(q[0], q[1]); });
+  g.setLineDash(mode === "hidden" ? [4, 4] : []); g.strokeStyle = css(mode === "hidden" ? PAL.grey : PAL.ink, mode === "hidden" ? .45 : .22); g.lineWidth = 1; g.stroke(); g.setLineDash([]);
+}
+
+/* ---------- v3 helpers ---------- */
+/* Draw in a 3D plane's own units (x right, y DOWN), through the camera. Returns px per unit. */
+function planeCtx(g, cam, pl){
+  var O = scr(view(pl.o, cam), cam), A = scr(view(add3(pl.o, pl.ex, 1), cam), cam), B = scr(view(add3(pl.o, pl.ey, 1), cam), cam);
+  var a = A[0]-O[0], b = A[1]-O[1], c = -(B[0]-O[0]), d = -(B[1]-O[1]);
+  g.transform(a, b, c, d, O[0], O[1]);
+  return Math.sqrt(Math.abs(a*d - b*c)) || 1;
+}
+function rrect(g, x, y, w, h, r){ g.beginPath(); g.moveTo(x+r, y); g.arcTo(x+w, y, x+w, y+h, r); g.arcTo(x+w, y+h, x, y+h, r); g.arcTo(x, y+h, x, y, r); g.arcTo(x, y, x+w, y, r); g.closePath(); }
+/* A section extruded from z0 to z1 at scale sc: faint back outline, corner edges, the chosen face in front. */
+function extrudeSec(g, cam, z0, z1, sc, frontMode, fa){
+  var back = { o: [0, 0, z0], ex: [1, 0, 0], ey: [0, 1, 0] }, front = { o: [0, 0, z1], ex: [1, 0, 0], ey: [0, 1, 0] };
+  drawSection(g, cam, back, "ghost", 2*(fa == null ? 1 : fa), sc);
+  g.beginPath();
+  SEC.corners.forEach(function (c){ var p = scr(view(secPt(c[0], c[1], back, sc), cam), cam), q = scr(view(secPt(c[0], c[1], front, sc), cam), cam); g.moveTo(p[0], p[1]); g.lineTo(q[0], q[1]); });
+  g.strokeStyle = css(PAL.ink, .22*(fa == null ? 1 : fa)); g.lineWidth = 1; g.stroke();
+  drawSection(g, cam, front, frontMode, fa, sc);
+}
+/* The mouse pointer, in screen pixels; press squeezes it a little. */
+function cursorAt(g, x, y, press, a){
+  if (a <= 0) return;
+  var P = [[0,0],[0,17],[4.5,13],[7.5,19.5],[10,18.5],[7,12.2],[12.5,12.2]], k = 1 - 0.12*press;
+  g.save(); g.translate(x, y); g.scale(k, k); g.beginPath();
+  P.forEach(function (p, i){ if (i) g.lineTo(p[0], p[1]); else g.moveTo(p[0], p[1]); }); g.closePath();
+  g.fillStyle = css(PAL.card, a); g.fill(); g.strokeStyle = css(PAL.ink, .85*a); g.lineWidth = 1.1; g.lineJoin = "round"; g.stroke(); g.restore();
+}
+var GLYPH = {
+  save: function (g){ g.beginPath(); g.moveTo(-.034,-.05); g.lineTo(.034,-.05); g.lineTo(.034,.055); g.lineTo(0,.03); g.lineTo(-.034,.055); g.closePath(); },
+  up: function (g){ g.beginPath(); g.rect(-.058,-.004,.022,.06);
+    var P = [[-.026,-.004],[-.002,-.058],[.014,-.054],[.009,-.016],[.052,-.016],[.058,-.004],[.044,.056],[-.026,.056]];
+    g.moveTo(P[0][0], P[0][1]); P.slice(1).forEach(function (p){ g.lineTo(p[0], p[1]); }); g.closePath(); },
+  down: function (g){ g.save(); g.scale(1, -1); GLYPH.up(g); g.restore(); }
+};
+/* E / F / G: a card holding the traced section; the pointer comes in and presses one button. */
+function cardClick(g, w, h, t, kind){
+  var cam = Cam(w, h, 66, -0.32 + 0.06*Math.sin(t*TAU/10.4), 0.2, 2), c = (t % 5.2) / 5.2;
+  var on = seg(c, 0.5, 0.56) * (1 - seg(c, 0.9, 0.99)), lift = kind === "up" ? 0.05*on : 0;
+  var S = new Scene(); box(S, -0.98, -0.64 + lift, -0.05, 0.98, 0.64 + lift, 0, { tone: "clay" }); S.render(g, cam);
+  var sp = { o: [0, 0.1 + lift, 0.002], ex: [1, 0, 0], ey: [0, 1, 0] };
+  if (kind === "down") { drawSection(g, cam, sp, "rival", 1 - on, 0.72); drawSection(g, cam, sp, "hidden", on, 0.72); }
+  else drawSection(g, cam, sp, "full", 1, 0.72);
+  var face = { o: [0, lift, 0.003], ex: [1, 0, 0], ey: [0, 1, 0] }, bx = 0.62, by = -0.47;
+  g.save(); var k = planeCtx(g, cam, face);
+  g.lineWidth = 1.2 / k;
+  rrect(g, bx - 0.2, -by - 0.09, 0.4, 0.18, 0.09);
+  var col = kind === "down" ? PAL.grey : PAL.acc;
+  g.fillStyle = css(on > 0 ? col : PAL.card, on > 0 ? on : 1); g.fill();
+  g.strokeStyle = css(on > 0.5 ? col : PAL.ink, on > 0.5 ? 1 : .35); g.stroke();
+  g.save(); g.translate(bx, -by); g.scale(1.1, 1.1); GLYPH[kind === "save" ? "save" : kind](g);
+  g.strokeStyle = on > 0.5 ? css([255,255,255]) : css(PAL.ink, .7); g.lineWidth = 1.2 / (k*1.1); g.stroke(); g.restore();
+  /* the ripple from the press, in the card's plane */
+  var r = clamp((c - 0.52) / 0.3);
+  if (r > 0 && r < 1) { g.beginPath(); g.ellipse(bx, -by, 0.2 + r*0.35, 0.09 + r*0.25, 0, 0, TAU); g.strokeStyle = css(col, .5*(1 - r)); g.stroke(); }
+  /* Save: a ribbon drops onto the card's top edge */
+  if (kind === "save" && on > 0) { var d = on; g.beginPath(); g.moveTo(0.62, -0.64 - lift); g.lineTo(0.74, -0.64 - lift); g.lineTo(0.74, -0.64 + 0.2*d); g.lineTo(0.68, -0.64 + 0.15*d); g.lineTo(0.62, -0.64 + 0.2*d); g.closePath(); g.fillStyle = css(PAL.acc, d); g.fill(); }
+  g.restore();
+  var B = scr(view([bx, by + lift, 0.003], cam), cam);
+  var inn = seg(c, 0.12, 0.45), out = seg(c, 0.66, 0.9), px = B[0] + 70*(1 - inn) + 60*out, py = B[1] + 55*(1 - inn) + 30*out;
+  cursorAt(g, px - 2, py - 2, Math.sin(clamp((c - 0.48) / 0.08) * Math.PI), inn * (1 - out));
+}
+/* H: land as a dot matrix; rough continent outlines in (lon, lat). */
+var LAND = null;
+function inPoly(x, y, P){ var inside = false; for (var i = 0, j = P.length - 1; i < P.length; j = i++){ var a = P[i], b = P[j];
+  if ((a[1] > y) !== (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]) inside = !inside; } return inside; }
+function landDots(){
+  if (LAND) return LAND;
+  var C = [
+    [[-17,21],[-5,36],[10,37],[32,31],[43,12],[51,12],[40,-15],[35,-25],[20,-35],[12,-17],[8,4],[-8,4],[-17,14]],
+    [[-10,36],[-9,43],[-2,48],[-5,58],[10,63],[25,71],[60,70],[100,78],[140,72],[180,68],[170,60],[142,52],[130,42],[122,31],[120,22],[108,18],[105,10],[100,13],[98,8],[92,22],[88,22],[80,15],[77,8],[72,20],[66,25],[57,25],[52,15],[44,13],[35,30],[28,37],[26,40],[20,40],[12,44],[3,43]],
+    [[-165,65],[-140,70],[-95,72],[-70,63],[-55,52],[-66,44],[-76,35],[-81,25],[-97,25],[-97,18],[-88,15],[-78,8],[-86,12],[-105,20],[-117,32],[-124,40],[-125,50],[-135,58],[-150,60]],
+    [[-80,9],[-60,11],[-50,0],[-35,-7],[-40,-22],[-58,-38],[-66,-55],[-74,-50],[-72,-30],[-70,-18],[-81,-5]],
+    [[114,-22],[130,-12],[142,-11],[153,-27],[146,-39],[135,-35],[115,-34]],
+    [[-55,60],[-20,70],[-25,82],[-60,82],[-72,77]],
+    [[95,5],[105,-6],[120,-9],[140,-3],[150,-8],[140,-10],[118,-10],[105,-8],[98,2]],
+    [[130,31],[140,36],[142,44],[136,38]], [[-6,50],[2,52],[-3,58],[-8,55]], [[44,-13],[50,-15],[48,-25],[44,-22]]
+  ];
+  var IND = [[68,24],[72,20],[77,8],[80,15],[88,22],[92,26],[88,28],[80,32],[74,35],[70,28]];
+  LAND = [];
+  for (var lat = -56; lat <= 80; lat += 3.2){
+    var n = Math.max(8, Math.round(360 * Math.cos(lat*Math.PI/180) / 3.2));
+    for (var i = 0; i < n; i++){ var lon = -180 + i*360/n;
+      if (C.some(function (P){ return inPoly(lon, lat, P); })) LAND.push({ lat: lat*Math.PI/180, lon: lon*Math.PI/180, ind: inPoly(lon, lat, IND) }); }
+  }
+  return LAND;
+}
+function sphere(lat, lon, R){ return [R*Math.cos(lat)*Math.cos(lon), R*Math.sin(lat), -R*Math.cos(lat)*Math.sin(lon)]; }
+/* M: one drawing sheet carrying the section, lying flat. */
+function flatSheet(g, cam, x0, x1, y, z0, z1, a, accent){
+  var S = new Scene(); box(S, x0, y - 0.012, z0, x1, y, z1, accent ? { tone: "clay", edge: "acc", ea: .7*a, fa: a } : { tone: "clay", fa: a, ea: .3*a }); S.render(g, cam);
+  drawSection(g, cam, { o: [(x0 + x1)/2, y + 0.001, (z0 + z1)/2], ex: [1, 0, 0], ey: [0, 0, -1] }, "draft", a, (x1 - x0) / 2.1);
+}
+
+/* ---------- the reworked tiles ---------- */
+
+
+/* ---------- v4 helpers ---------- */
+/* A bar from p0 to p1 in plan (xz), w wide, from y0 to y1. */
+function bar(S, p0, p1, wd, y0, y1, st){
+  var dx = p1[0] - p0[0], dz = p1[1] - p0[1], L = Math.hypot(dx, dz), ca = dx / L, sa = dz / L;
+  box(S, 0, y0, -wd/2, L, y1, wd/2, st, function (p){ return [p0[0] + p[0]*ca - p[2]*sa, p[1], p0[1] + p[0]*sa + p[2]*ca]; });
+}
+/* An n-sided prism along a plan direction: pencils, rolls. Optional pointed tip at the far end. */
+function prism(S, n, r, p0, p1, cy, st, tip, tipSt){
+  var dx = p1[0] - p0[0], dz = p1[1] - p0[1], L = Math.hypot(dx, dz), ca = dx / L, sa = dz / L;
+  function W(lx, ly, lz){ return [p0[0] + lx*ca - lz*sa, cy + ly, p0[1] + lx*sa + lz*ca]; }
+  var A = [], B = [];
+  for (var i = 0; i < n; i++){ var a = i / n * TAU + Math.PI / n; A.push(W(0, Math.sin(a)*r, Math.cos(a)*r)); B.push(W(L, Math.sin(a)*r, Math.cos(a)*r)); }
+  S.face(A.slice(), st);
+  for (var j = 0; j < n; j++){ var k = (j + 1) % n; S.face([A[j], A[k], B[k], B[j]], st); }
+  if (tip) { var T = W(L + tip, 0, 0); for (var m = 0; m < n; m++) S.face([B[m], B[(m + 1) % n], T], tipSt || st); }
+  else S.face(B.slice(), st);
+}
+
+
+
+/* ---------- v5 helpers ---------- */
+function ingotAt(S, cx, cy, st){ var a = 0.2, b = 0.4, a2 = 0.15, b2 = 0.34, hh = 0.14;
+  var Q = [[cx-a,cy,-b],[cx+a,cy,-b],[cx+a,cy,b],[cx-a,cy,b],[cx-a2,cy+hh,-b2],[cx+a2,cy+hh,-b2],[cx+a2,cy+hh,b2],[cx-a2,cy+hh,b2]];
+  [[0,1,2,3],[4,5,6,7],[0,1,5,4],[3,2,6,7],[0,3,7,4],[1,2,6,5]].forEach(function (f){ S.face(f.map(function (i){ return Q[i]; }), st); }); }
+/* A live ribbon chart: a blue top band with a pale area under it, between z0 and z1. */
+function ribbon(S, x0, x1, base, z0, z1, n, yv, grow){
+  var N = n, m = Math.max(1, Math.floor(N*(grow == null ? 1 : grow)));
+  for (var i = 0; i < m; i++){ var u0 = i/N, u1 = (i + 1)/N, xa = x0 + (x1 - x0)*u0, xb = x0 + (x1 - x0)*u1, ya = yv(u0), yb = yv(u1);
+    S.face([[xa,ya,z0],[xb,yb,z0],[xb,yb,z1],[xa,ya,z1]], { tone: "acc", edge: "acc", ea: .35 });
+    S.face([[xa,base,z1],[xb,base,z1],[xb,yb,z1],[xa,ya,z1]], { tone: "glass", fa: .12, ea: 0 }); }
+  return m / N;
+}
+/* One extruded donut segment in the xz plane, from angle a0 to a1. */
+function donutSeg(S, cx, cy, cz, r0, r1, hh, a0, a1, st){
+  var n = Math.max(3, Math.ceil((a1 - a0) / 0.15)), top = [], bot = [], i, a;
+  function P(r, ang, y){ return [cx + Math.cos(ang)*r, y, cz + Math.sin(ang)*r]; }
+  for (i = 0; i <= n; i++){ a = a0 + (a1 - a0)*i/n; top.push(P(r1, a, cy + hh)); }
+  for (i = n; i >= 0; i--){ a = a0 + (a1 - a0)*i/n; top.push(P(r0, a, cy + hh)); }
+  S.face(top, st);
+  for (i = 0; i < n; i++){ var b0 = a0 + (a1 - a0)*i/n, b1 = a0 + (a1 - a0)*(i + 1)/n;
+    S.face([P(r1,b0,cy),P(r1,b1,cy),P(r1,b1,cy+hh),P(r1,b0,cy+hh)], st);
+    S.face([P(r0,b0,cy),P(r0,b1,cy),P(r0,b1,cy+hh),P(r0,b0,cy+hh)], st); }
+  S.face([P(r0,a0,cy),P(r1,a0,cy),P(r1,a0,cy+hh),P(r0,a0,cy+hh)], st);
+  S.face([P(r0,a1,cy),P(r1,a1,cy),P(r1,a1,cy+hh),P(r0,a1,cy+hh)], st);
+}
+function tr(d){ return function (p){ return [p[0] + d[0], p[1] + d[1], p[2] + d[2]]; }; }
+
+
+
+
+
+function comp(f, g2){ return function (p){ return f(g2(p)); }; }
+
+
+var DRAW = {
+ listen: function (g, w, h, t){
+   var cam = Cam(w, h, 54, -0.5 + 0.1*Math.sin(t*TAU/20.8), 0.28, 10), S = new Scene();
+   var FZ = -0.62, cols = 6, rows = 4, fx0 = -1.05, fx1 = 1.05, fy0 = -0.62, fy1 = 0.62, L = [], FACE = FZ + 0.042;
+   for (var i = 0; i <= cols; i++){ var x = fx0 + (fx1 - fx0)*i/cols; L.push([[x, fy0, FZ + 0.041],[x, fy1, FZ + 0.041]]); }
+   for (var j = 0; j <= rows; j++){ var y = fy0 + (fy1 - fy0)*j/rows; L.push([[fx0, y, FZ + 0.041],[fx1, y, FZ + 0.041]]); }
+   box(S, fx0, fy0, FZ, fx1, fy1, FZ + 0.04, { tone: "clay" });
+   S.items[S.items.length - 5].st = { tone: "clay", lines: L, la: .3 };
+   var A = [0.2, 0.02, 0.55];
+   [[-0.15,-0.8,0.8],[0.57,-0.8,0.78],[0.23,-0.8,0.18]].forEach(function (f){ S.line([A, f], { ea: .6, lw: 1.5, bias: 2 }); });
+   var c = (t % 7.8) / 7.8, pass = Math.min(2, Math.floor(c*3)), u = clamp((c*3 - pass) / 0.9);
+   var rowY = function (p){ return fy1 - (p + 0.5) * (fy1 - fy0) / rows; };
+   var N = 12, X = function (k){ return fx0 + (fx1 - fx0) * (k + 0.5) / N; };
+   var hx = X(0) + (X(N - 1) - X(0)) * u, hy = rowY(pass);
+   var dx = hx - A[0], dz = FACE - A[2], dl = Math.hypot(dx, dz), dir = [dx/dl, 0, dz/dl];
+   box(S, A[0]-0.07, 0.02, A[2]-0.07, A[0]+0.07, 0.1, A[2]+0.07, { tone: "clay", bias: 2 });
+   bar(S, [A[0] - dir[0]*0.08, A[2] - dir[2]*0.08], [A[0] + dir[0]*0.2, A[2] + dir[2]*0.2], 0.07, 0.12, 0.2, { tone: "acc", edge: "acc", bias: 2 });
+   S.render(g, cam);
+   var fade = 1 - seg(c, 0.95, 1);
+   for (var p = 0; p <= pass; p++){ var upto = p < pass ? N - 1 : Math.floor(u*(N - 1) + 1e-6);
+     for (var k = 0; k <= upto; k++){ var q = scr(view([X(k), rowY(p), FACE], cam), cam);
+       g.beginPath(); g.arc(q[0], q[1], 1.7, 0, TAU); g.fillStyle = css(PAL.acc, .85*fade); g.fill(); } }
+   var tip = scr(view([A[0] + dir[0]*0.2, 0.16, A[2] + dir[2]*0.2], cam), cam), hit = scr(view([hx, hy, FACE], cam), cam);
+   g.beginPath(); g.moveTo(tip[0], tip[1]); g.lineTo(hit[0], hit[1]); g.strokeStyle = css(PAL.acc, .55*fade); g.lineWidth = 1; g.stroke();
+   g.beginPath(); g.arc(hit[0], hit[1], 3, 0, TAU); g.fillStyle = css(PAL.acc, fade); g.fill();
+ },
+ /* B — a section plane sweeps along a profile bar and finds nothing to keep. */
+ sieve: function (g, w, h, t){
+   var cam = Cam(w, h, 66, 0.5 + 0.2*Math.sin(t*TAU/10.4), 0.30, 18), D = 0.6;
+   var zs = -D + D*ease((Math.sin(t*TAU/5.2) + 1) / 2);
+   sectionBar(g, cam, D, "full");
+   drawSection(g, cam, planeZ(zs), "accent", 0.9);
+   drawSection(g, cam, planeZ(0), "full");
+ },
+ metal: function (g, w, h, t){
+   var cam = Cam(w, h, 56, -0.62 + 0.18*Math.sin(t*TAU/10.4), 0.42, 22), c = (t % 5.2) / 5.2, fade = 1 - seg(c, 0.88, 0.99);
+   var P = new Scene(); box(P, -0.8, -0.5, -0.74, 0.8, -0.42, 0.46, { tone: "clay" });
+   [-0.5, 0, 0.5].forEach(function (x){ box(P, x - 0.08, -0.56, -0.74, x + 0.08, -0.5, 0.46, { tone: "clay" }); });
+   P.render(g, cam);
+   var R = new Scene(), base = -0.42;
+   ribbon(R, -0.78, 0.78, base, -0.7, -0.58, 24, function (u){ return base + 0.3 + 0.09*Math.sin(u*TAU*1.2 + t*0.9) + 0.04*Math.sin(u*TAU*2.6 - t*0.6); }, seg(c, 0, 0.45));
+   R.render(g, cam);
+   function st(k, acc){ return acc ? { tone: "acc", edge: "acc", fa: k > 0 ? fade : 0, ea: .7*fade*(k > 0 ? 1 : 0) } : { tone: "clay", fa: k > 0 ? fade : 0, ea: .3*fade*(k > 0 ? 1 : 0) }; }
+   var bottom = [[-0.48, 1], [0, seg(c, 0.1, 0.3)], [0.48, 1]], top = [[-0.24, seg(c, 0.38, 0.6), true], [0.24, seg(c, 0.55, 0.78), false]];
+   var B = new Scene(); bottom.forEach(function (b){ ingotAt(B, b[0], -0.42 + (1 - b[1])*0.8, st(b[1], false)); }); B.render(g, cam);
+   top.forEach(function (b){ var T = new Scene(); ingotAt(T, b[0], -0.28 + (1 - b[1])*0.8, st(b[1], b[2])); T.render(g, cam); });
+ },
+ /* D — the plotter feeds the sheet out; the drawing travels with the paper, title block first. */
+ published: function (g, w, h, t){
+   var cam = Cam(w, h, 58, -0.55 + 0.12*Math.sin(t*TAU/10.4), 0.3, 6), c = (t % 7.8) / 7.8, S = new Scene(), clay = { tone: "clay" };
+   [-0.82, 0.82].forEach(function (x){ box(S, x - 0.04, -0.8, -0.04, x + 0.04, -0.12, 0.04, clay); box(S, x - 0.04, -0.82, -0.28, x + 0.04, -0.78, 0.28, clay); });
+   box(S, -0.72, -0.5, -0.02, 0.72, -0.47, 0.02, clay);
+   box(S, -1.0, -0.12, -0.24, 1.0, 0.2, 0.24, clay);
+   S.line([[-0.95, 0.2, 0.18],[0.95, 0.2, 0.18]], { ea: .35, bias: 2 });
+   var feeding = c < 0.78, cx = feeding ? 0.8*Math.sin(t*TAU/1.3) : 0.8*Math.sin(0.78*7.8*TAU/1.3);
+   box(S, cx - 0.09, 0.2, 0.08, cx + 0.09, 0.28, 0.24, { tone: "clay", bias: 3 });
+   S.render(g, cam);
+   var led = scr(view([cx + 0.05, 0.24, 0.241], cam), cam);
+   g.beginPath(); g.arc(led[0], led[1], 2.2, 0, TAU); g.fillStyle = css(PAL.acc, feeding ? .6 + .4*Math.abs(Math.sin(t*TAU/0.65)) : .5); g.fill();
+   var FULL = 0.85, Lsh = FULL*clamp((c - 0.04) / 0.74), fade = 1 - seg(c, 0.9, 0.99), ang = 1.0;
+   if (Lsh > 0.005) {
+     var o = [-0.7, -0.02, 0.245], ey = [0, -Math.sin(ang), Math.cos(ang)];
+     var T = new Scene(); T.face([o, [0.7, o[1], o[2]], add3([0.7, o[1], o[2]], ey, Lsh), add3(o, ey, Lsh)], { tone: "clay", fa: fade, ea: .45*fade }); T.render(g, cam);
+     g.save(); var k = planeCtx(g, cam, { o: o, ex: [1, 0, 0], ey: [-ey[0], -ey[1], -ey[2]] });
+     g.beginPath(); g.rect(0, 0, 1.4, Lsh); g.clip();
+     /* sheet-local: the leading edge is at Lsh, the trailing edge at Lsh - FULL */
+     var top = Lsh - FULL;
+     g.lineWidth = 1 / k; g.strokeStyle = css(PAL.ink, .35*fade); g.strokeRect(0.05, top + 0.05, 1.3, FULL - 0.1);
+     g.strokeStyle = css(PAL.acc, .9*fade); g.strokeRect(0.9, Lsh - 0.25, 0.45, 0.2);
+     g.beginPath(); g.moveTo(0.9, Lsh - 0.15); g.lineTo(1.35, Lsh - 0.15); g.moveTo(1.12, Lsh - 0.25); g.lineTo(1.12, Lsh - 0.15); g.stroke();
+     g.restore();
+   }
+ },
+ /* E — a card with the section; the pointer presses Save and a ribbon drops on. */
+ saved: function (g, w, h, t){ cardClick(g, w, h, t, "save"); },
+ liked: function (g, w, h, t){ cardClick(g, w, h, t, "up"); },
+ disliked: function (g, w, h, t){ cardClick(g, w, h, t, "down"); },
+ globe: function (g, w, h, t){
+   var yaw0 = (-90 - 79) * Math.PI/180, cam = Cam(w, h, 64, yaw0 + 0.5*Math.sin(t*TAU/20.8), 0.3, 12), R = 0.78;
+   var C0 = scr(view([0, 0, 0], cam), cam);
+   g.beginPath(); g.arc(C0[0], C0[1], R*cam.s, 0, TAU); g.fillStyle = css(mix(PAL.card, PAL.ink, PAL.dark ? .03 : .015)); g.fill();
+   g.strokeStyle = css(PAL.ink, .16); g.lineWidth = 1; g.stroke();
+   landDots().forEach(function (d){
+     var v = view(sphere(d.lat, d.lon, R), cam); if (v[2] < 0) return;
+     var q = scr(v, cam), f = v[2] / R;
+     g.beginPath(); g.arc(q[0], q[1], d.ind ? 1.35 : 1.1, 0, TAU);
+     g.fillStyle = d.ind ? css(PAL.acc, .55 + .4*f) : css(PAL.ink, .12 + .38*f); g.fill();
+   });
+   var base = sphere(22*Math.PI/180, 79*Math.PI/180, R), tip = [base[0], base[1] + 0.44, base[2]];
+   var b = scr(view(base, cam), cam), p = scr(view(tip, cam), cam), pulse = (t % 2.6) / 2.6;
+   g.beginPath(); g.moveTo(b[0], b[1]); g.lineTo(p[0], p[1]); g.strokeStyle = css(PAL.acc, .9); g.lineWidth = 1.3; g.stroke();
+   g.beginPath(); g.ellipse(b[0], b[1], 3 + pulse*9, (3 + pulse*9)*0.45, 0, 0, TAU); g.strokeStyle = css(PAL.acc, .6*(1 - pulse)); g.lineWidth = 1; g.stroke();
+   g.beginPath(); g.arc(p[0], p[1], 3.6, 0, TAU); g.fillStyle = css(PAL.acc); g.fill();
+ },
+ /* I — rival profile sections stand on a turntable; one slot, dashed, waits for the first. */
+ orbit: function (g, w, h, t){
+   var cam = Cam(w, h, 50, t*TAU/20.8, 0.30, 22), R = 1.3, base = -0.30;
+   var ring = circle3(0, base, 0, R + 0.3, "xz", 72);
+   g.beginPath(); ring.forEach(function (p, i){ var q = scr(view(p, cam), cam); if (i) g.lineTo(q[0], q[1]); else g.moveTo(q[0], q[1]); });
+   g.strokeStyle = css(PAL.ink, .22); g.lineWidth = 1; g.stroke();
+   var parts = [{ a: null, mode: "full", sc: 0.78 }, { a: 0, mode: "rival", sc: 0.5 }, { a: TAU/3, mode: "rival", sc: 0.5 }, { a: 2*TAU/3, mode: "slot", sc: 0.5 }];
+   parts.forEach(function (p){
+     var pos = p.a == null ? [0, 0, 0] : [Math.cos(p.a)*R, 0, Math.sin(p.a)*R];
+     pos[1] = base + 0.54*p.sc;
+     p.ex = p.a == null ? [1, 0, 0] : [-Math.sin(p.a), 0, Math.cos(p.a)];
+     p.n = p.a == null ? [0, 0, 1] : [Math.cos(p.a), 0, Math.sin(p.a)];
+     p.pl = { o: pos, ex: p.ex, ey: [0, 1, 0] }; p.z = view(pos, cam)[2];
+   });
+   parts.sort(function (x, y){ return x.z - y.z; });
+   parts.forEach(function (p){
+     if (p.mode !== "slot") drawSection(g, cam, { o: add3(p.pl.o, p.n, -0.06), ex: p.ex, ey: [0, 1, 0] }, "ghost", 2, p.sc);
+     drawSection(g, cam, p.pl, p.mode, p.mode === "slot" ? .55 + .45*Math.pow(Math.sin(t*TAU/2.6), 2) : 1, p.sc);
+   });
+ },
+ /* J — revisions, centred: the stack sits in the middle of the tile and the new sheet drops onto it. */
+ layers: function (g, w, h, t){
+   var cam = Cam(w, h, 60, -0.55 + 0.1*Math.sin(t*TAU/10.4), 0.62, -12), c = (t % 5.2) / 5.2;
+   var d = seg(c, 0.05, 0.4), fade = 1 - seg(c, 0.84, 0.98);
+   [0, 1].forEach(function (k){ flatSheet(g, cam, -0.7 + k*0.06, 0.7 + k*0.06, -0.34 + k*0.12, -0.45 - k*0.04, 0.45 - k*0.04, 0.55 + 0.2*k); });
+   var y = -0.1 + (1 - d)*0.45;
+   flatSheet(g, cam, -0.58, 0.82, y, -0.53, 0.37, fade, true);
+   g.save(); var k2 = planeCtx(g, cam, { o: [0.62, y + 0.002, 0.27], ex: [1, 0, 0], ey: [0, 0, -1] });
+   g.beginPath(); g.moveTo(0, -0.06); g.lineTo(0.06, 0.045); g.lineTo(-0.06, 0.045); g.closePath();
+   g.strokeStyle = css(PAL.acc, fade); g.lineWidth = 1.3 / k2; g.stroke(); g.restore();
+ },
+ /* K — analytics in the air: a bar grid, a donut, a line panel, a figure panel and a ribbon float
+    around a slowly turning centre, each at its own angle and rhythm. */
+ bars: function (g, w, h, t){
+   var cam = Cam(w, h, 66, t*TAU/31.2, 0.4, 2), R0 = 0.72;
+   var floor = circle3(0, -0.5, 0, R0 + 0.35, "xz", 72);
+   g.beginPath(); floor.forEach(function (p, i){ var q = scr(view(p, cam), cam); if (i) g.lineTo(q[0], q[1]); else g.moveTo(q[0], q[1]); });
+   g.strokeStyle = css(PAL.ink, .14); g.lineWidth = 1; g.stroke();
+   var objs = [0, 1, 2, 3, 4].map(function (i){ var a = i/5*TAU + 0.3, bob = 0.06*Math.sin(t*1.1 + i*1.3);
+     return { i: i, a: a, p: [Math.cos(a)*R0, -0.3 + bob, Math.sin(a)*R0], z: view([Math.cos(a)*R0, 0, Math.sin(a)*R0], cam)[2] }; });
+   objs.sort(function (x, y){ return x.z - y.z; });
+   objs.forEach(function (o){
+     var S = new Scene(), p = o.p, n = [Math.cos(o.a), 0, Math.sin(o.a)], tg = [-Math.sin(o.a), 0, Math.cos(o.a)];
+     if (o.i === 0) {          /* bar grid, 3 x 3 */
+       for (var a1 = 0; a1 < 3; a1++) for (var b1 = 0; b1 < 3; b1++){ var hh = 0.05 + 0.26*(0.5 + 0.5*Math.sin(t*1.6 + a1*0.8 + b1*1.1)), bx = p[0] + (a1 - 1)*0.12, bz = p[2] + (b1 - 1)*0.12;
+         box(S, bx - 0.045, p[1], bz - 0.045, bx + 0.045, p[1] + hh, bz + 0.045, a1 === 1 && b1 === 1 ? { tone: "acc", edge: "acc" } : { tone: "clay" }); }
+       S.render(g, cam);
+     } else if (o.i === 1) {   /* donut, turning on its own */
+       var fr = [0.34, 0.26, 0.22, 0.18], aa = t*0.7;
+       fr.forEach(function (f, j){ donutSeg(S, p[0], p[1], p[2], 0.1, 0.22, 0.05 + j*0.025, aa, aa + f*TAU - 0.05, j === 0 ? { tone: "acc", edge: "acc", ea: .5 } : { tone: "clay" }); aa += f*TAU; });
+       S.render(g, cam);
+     } else if (o.i === 2 || o.i === 3) {   /* standing panels, swaying: a line chart, and the figure */
+       var sw = 0.45*Math.sin(t*0.6 + o.i), ca = Math.cos(sw), sa = Math.sin(sw);
+       var ex = [tg[0]*ca + n[0]*sa, 0, tg[2]*ca + n[2]*sa], nn = [n[0]*ca - tg[0]*sa, 0, n[2]*ca - tg[2]*sa];
+       var half = 0.24, H2 = 0.34, y0 = p[1];
+       bar(S, [p[0] - ex[0]*half, p[2] - ex[2]*half], [p[0] + ex[0]*half, p[2] + ex[2]*half], 0.025, y0, y0 + H2, { tone: "clay" });
+       S.render(g, cam);
+       var face = view(add3(p, nn, 1), cam)[2] - view(p, cam)[2] > 0 ? 1 : -1, fo = add3(add3(p, ex, -half * face), nn, 0.014*face);
+       g.save(); var k = planeCtx(g, cam, { o: [fo[0], y0 + H2, fo[2]], ex: [ex[0]*face, 0, ex[2]*face], ey: [0, 1, 0] }); g.lineWidth = 1 / k;
+       if (o.i === 2) {
+         g.strokeStyle = css(PAL.ink, .3); g.beginPath(); g.moveTo(0.05, H2 - 0.05); g.lineTo(2*half - 0.05, H2 - 0.05); g.stroke();
+         g.beginPath(); for (var s2 = 0; s2 <= 24; s2++){ var ux = 0.05 + s2/24*(2*half - 0.1), uy = H2*0.55 - 0.07*Math.sin(s2*0.55 + t*1.4); if (s2) g.lineTo(ux, uy); else g.moveTo(ux, uy); }
+         g.strokeStyle = css(PAL.acc, .95); g.lineWidth = 1.6 / k; g.stroke();
+       } else {
+         g.save(); g.scale(0.01, 0.01); g.fillStyle = css(PAL.acc, .95); g.font = "300 18px Arial"; g.textBaseline = "top"; g.fillText("0", 6, 5);
+         g.fillStyle = css(PAL.ink, .35); g.fillRect(6, 25, 30, 1.2); g.fillRect(6, 29, 20, 1.2); g.restore();
+       }
+       g.restore();
+     } else {                  /* a small price ribbon on its own plinth */
+       box(S, p[0] - 0.26, p[1] - 0.03, p[2] - 0.1, p[0] + 0.26, p[1], p[2] + 0.1, { tone: "clay" });
+       ribbon(S, p[0] - 0.24, p[0] + 0.24, p[1], p[2] - 0.06, p[2] + 0.02, 14, function (u){ return p[1] + 0.12 + 0.07*Math.sin(u*TAU*1.3 + t*1.2); });
+       S.render(g, cam);
+     }
+   });
+ },
+ /* L — a rupee sign in 3D, floating over ripples: nothing has been spent. */
+ meter: function (g, w, h, t){
+   var cam = Cam(w, h, 64, -0.45 + 0.4*Math.sin(t*TAU/10.4), 0.22, 4), bob = 0.035*Math.sin(t*TAU/2.6), c = (t % 2.6) / 2.6;
+   var gy = -0.62;
+   g.beginPath(); circle3(0, gy, 0, 0.3, "xz", 48).forEach(function (p, i){ var q = scr(view(p, cam), cam); if (i) g.lineTo(q[0], q[1]); else g.moveTo(q[0], q[1]); });
+   g.fillStyle = css(PAL.ink, PAL.dark ? .10 : .06); g.fill();
+   for (var k = 0; k < 3; k++){ var f = (c + k/3) % 1; g.beginPath();
+     circle3(0, gy, 0, 0.18 + f*0.75, "xz", 64).forEach(function (p, i){ var q = scr(view(p, cam), cam); if (i) g.lineTo(q[0], q[1]); else g.moveTo(q[0], q[1]); });
+     g.strokeStyle = css(PAL.acc, .5*(1 - f)*Math.min(1, f*5)); g.lineWidth = 1; g.stroke(); }
+   var sc = 0.82, oy = 0.1 + bob, S = new Scene(), st = { tone: "acc", edge: "acc", ea: .55 };
+   function T(P){ return P.map(function (p){ return [p[0]*sc, p[1]*sc + oy]; }); }
+   function arc(cx, cy, r0, r1){ var o = [], i; for (i = 0; i <= 14; i++){ var a = Math.PI/2 - i/14*Math.PI; o.push([cx + Math.cos(a)*r1, cy + Math.sin(a)*r1]); }
+     for (i = 14; i >= 0; i--){ var b = Math.PI/2 - i/14*Math.PI; o.push([cx + Math.cos(b)*r0, cy + Math.sin(b)*r0]); } return o; }
+   [ [[-0.36,0.42],[0.36,0.42],[0.36,0.5],[-0.36,0.5]],
+     [[-0.36,0.24],[0.36,0.24],[0.36,0.31],[-0.36,0.31]],
+     arc(0.02, 0.26, 0.16, 0.24),
+     [[-0.36,0.02],[0.02,0.02],[0.02,0.1],[-0.36,0.1]],
+     [[-0.36,0.06],[-0.2,0.06],[0.34,-0.5],[0.15,-0.5]]
+   ].forEach(function (P){ extrude(S, T(P), -0.07, 0.07, st); });
+   S.render(g, cam);
+ },
+ /* M — drawing sheets slide into the server rack and settle; clipped at the rack face, so no jitter. */
+ cloud: function (g, w, h, t){
+   var cam = Cam(w, h, 58, 0.62, 0.36, 10), c = (t % 7.8) / 7.8, levels = [0.28, 0.02, -0.24];
+   var idx = Math.min(2, Math.floor(c*3)), part = (c*3) - idx, fadeAll = 1 - seg(c, 0.95, 1);
+   var S = new Scene();
+   box(S, -0.05, -0.55, -0.4, 0.75, 0.5, 0.4, { tone: "clay" });
+   S.items[S.items.length - 2].st = { tone: "clay", lines: levels.map(function (ly){ return [[-0.051, ly, -0.3],[-0.051, ly, 0.3]]; }), la: .6 };
+   levels.forEach(function (ly){ S.line([[0.05, ly - 0.12, 0.401],[0.65, ly - 0.12, 0.401]], { ea: .25, bias: 3 }); });
+   S.render(g, cam);
+   levels.forEach(function (ly, i){ var lit = i < idx || (i === idx && part > 0.8); var q = scr(view([0.66, ly - 0.02, 0.401], cam), cam);
+     g.beginPath(); g.arc(q[0], q[1], 2.4, 0, TAU); g.fillStyle = lit ? css(PAL.acc, fadeAll) : css(PAL.ink, .2); g.fill(); });
+   /* the sheet's front edge travels to the slot and on inside; only the part still outside is drawn */
+   var len = 0.62, head = -1.15 + 1.75*ease(clamp(part / 0.8)), y = levels[idx], face = -0.05;
+   var x1 = Math.min(head, face), x0 = head - len;
+   if (x1 - x0 > 0.005) {
+     var T = new Scene(); box(T, x0, y - 0.01, -0.3, x1, y, 0.3, { tone: "clay", edge: "acc", ea: .7 }); T.render(g, cam);
+     var sc = len / 2.1, cx = (head - len/2);
+     drawSection(g, cam, { o: [cx, y + 0.001, 0], ex: [1, 0, 0], ey: [0, 0, -1] }, "draft", 1, sc, clamp((x1 - x0) / len * 1.02));
+   }
+ },
+ /* N — kept in reserve. A window assembles in reverse exploded view; then the vent opens a little so the
+    friction stays and the limiting stay can be seen working, and closes again. */
+ check: function (g, w, h, t){
+   var cam = Cam(w, h, 56, -0.55 + 0.1*Math.sin(t*TAU/10.4), 0.26, 4), c = (t % 10.4) / 10.4, S = new Scene();
+   var W = 1.0, H = 1.3, T = 0.09, D = 0.14, fr = { tone: "clay" }, hw = { tone: "clay", ea: .6, bias: 3 }, out = seg(c, 0.93, 1.0);
+   var open = 0.6*(seg(c, 0.6, 0.7) - seg(c, 0.8, 0.9));
+   function fly(i, from){ var k = seg(c, 0.03 + i*0.07, 0.17 + i*0.07), m = 1 - k + out; return tr([from[0]*m, from[1]*m, from[2]*m]); }
+   var xi0 = -W/2 + T + 0.005, xi1 = W/2 - T - 0.005, yi0 = -H/2 + T + 0.005, yi1 = H/2 - T - 0.005, ts = 0.07, z0 = 0.0, z1 = D/2;
+   var hinge = rotY(xi0, z1, open);
+   /* 0 outer frame */
+   var f0 = fly(0, [-2.6, -0.6, 0]);
+   box(S, -W/2, -H/2, -D/2, -W/2+T, H/2, D/2, fr, f0); box(S, W/2-T, -H/2, -D/2, W/2, H/2, D/2, fr, f0);
+   box(S, -W/2+T, H/2-T, -D/2, W/2-T, H/2, D/2, fr, f0); box(S, -W/2+T, -H/2, -D/2, W/2-T, -H/2+T, D/2, fr, f0);
+   /* 1 vent frame (and everything on it turns about the hinge line) */
+   var f1 = comp(fly(1, [2.6, 0.9, 0.4]), hinge);
+   box(S, xi0, yi0, z0, xi0+ts, yi1, z1, fr, f1); box(S, xi1-ts, yi0, z0, xi1, yi1, z1, fr, f1);
+   box(S, xi0+ts, yi1-ts, z0, xi1-ts, yi1, z1, fr, f1); box(S, xi0+ts, yi0, z0, xi1-ts, yi0+ts, z1, fr, f1);
+   /* 2 glass */
+   var f2 = comp(fly(2, [0, 0, 3.0]), hinge), gz = 0.035;
+   S.face([[xi0+ts,yi0+ts,gz],[xi1-ts,yi0+ts,gz],[xi1-ts,yi1-ts,gz],[xi0+ts,yi1-ts,gz]].map(f2), { tone: "glass", fa: .12, edge: "acc", ea: .45 });
+   /* 3 hinges: both knuckles sit on the front, on the hinge line, drawn over the frame */
+   var f3 = fly(3, [-2.2, 0, 0.6]);
+   [0.4, -0.4].forEach(function (y){ box(S, xi0 - 0.03, y - 0.07, z1 - 0.005, xi0 + 0.01, y + 0.07, z1 + 0.03, hw, f3); });
+   /* 4 / 5 friction-stay tracks on the frame's top and bottom rebates */
+   var f4 = fly(4, [0, 2.2, 0.3]), f5 = fly(5, [0, -2.2, 0.3]);
+   box(S, xi0 + 0.06, yi1 - 0.004, 0.005, 0.2, yi1 + 0.004, 0.05, hw, f4);
+   box(S, xi0 + 0.06, yi0 - 0.004, 0.005, 0.2, yi0 + 0.004, 0.05, hw, f5);
+   /* 6 handle, on the vent's lock side */
+   var f6 = comp(fly(6, [2.4, 0.2, 1.0]), hinge), ha = { tone: "acc", edge: "acc", bias: 3 };
+   box(S, xi1 - 0.05, -0.08, z1, xi1 - 0.01, 0.08, z1 + 0.03, ha, f6);
+   box(S, xi1 - 0.045, -0.02, z1 + 0.03, xi1 - 0.015, 0.02, z1 + 0.07, ha, f6);
+   box(S, xi1 - 0.04, -0.3, z1 + 0.055, xi1 - 0.02, 0.0, z1 + 0.075, ha, f6);
+   S.render(g, cam);
+   /* the stays' arms and the limiting stay show only while the vent is open */
+   if (open > 0.02) {
+     var a = open / 0.6;
+     [yi1 - 0.006, yi0 + 0.006].forEach(function (y){
+       var slide = [xi0 + 0.1 + 0.12*a, y, 0.03], onVent = hinge([xi0 + 0.42, y, 0.03]), mid = hinge([xi0 + 0.2, y, 0.03]);
+       [[slide, mid], [[xi0 + 0.06, y, 0.03], onVent]].forEach(function (s){ var q0 = scr(view(s[0], cam), cam), q1 = scr(view(s[1], cam), cam);
+         g.beginPath(); g.moveTo(q0[0], q0[1]); g.lineTo(q1[0], q1[1]); g.strokeStyle = css(PAL.ink, .6); g.lineWidth = 1.6; g.stroke(); });
+     });
+     var l0 = scr(view([0.2, yi0 + 0.01, 0.04], cam), cam), l1 = scr(view(hinge([xi1 - 0.12, yi0 + 0.01, 0.04]), cam), cam);
+     g.beginPath(); g.moveTo(l0[0], l0[1]); g.lineTo(l1[0], l1[1]); g.strokeStyle = css(PAL.acc, .8); g.lineWidth = 1.6; g.stroke();
+   }
+ },
+ /* O — the profile drawn in hidden lines only, grey: the part never arrived. */
+ broken: function (g, w, h, t){
+   var cam = Cam(w, h, 66, 0.5 + 0.22*Math.sin(t*TAU/10.4), 0.30, 18);
+   sectionBar(g, cam, 0.6, "hidden"); drawSection(g, cam, planeZ(0), "hidden");
+ }
+};
+
+return { draw: DRAW, readColors: readColors };
+})();
+var ART = { list: [], raf: 0 };
+/* One loop for every art canvas on the page; canvases off screen are skipped, detached ones dropped. */
+function artCanvas(kind) {
+  var c = el("canvas", "eart"); c._kind = kind; c._born = performance.now();
+  c.setAttribute("aria-hidden", "true");
+  ART.list.push(c); if (!ART.raf) ART.raf = requestAnimationFrame(artFrame);
+  return c;
+}
+function artFrame(ms) {
+  ART.raf = 0;
+  ART.list = ART.list.filter(function (c) { return c.isConnected || performance.now() - c._born < 2000; });
+  if (!ART.list.length) return;
+  EchoArt.readColors();
+  var still = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var t = still ? 1.8 : ms / 1000, dp = window.devicePixelRatio || 1, vh = window.innerHeight;
+  ART.list.forEach(function (c) {
+    if (!c.isConnected) return;
+    var r = c.getBoundingClientRect(); if (!r.width || r.bottom < 0 || r.top > vh) return;
+    var W = Math.round(r.width * dp), H = Math.round(r.height * dp);
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    var g = c.getContext("2d"); g.setTransform(dp, 0, 0, dp, 0, 0); g.clearRect(0, 0, r.width, r.height);
+    try { EchoArt.draw[c._kind](g, r.width, r.height, t); } catch (err) { /* a bad frame never breaks the page */ }
+  });
+  ART.raf = requestAnimationFrame(artFrame);
+}
+function emptyState(msg, kind) {
+  var n = el("div", "empty");
+  if (kind && EchoArt.draw[kind]) n.appendChild(artCanvas(kind));
+  n.appendChild(el("div", null, msg));
+  return n;
+}
+function artNote(cls, msg, kind) {
+  var n = el("div", cls); n.appendChild(artCanvas(kind)); n.appendChild(el("div", null, msg)); return n;
+}
 function kv(k, v) {
   var r = el("div", "kv");
   r.appendChild(el("span", "k", k));
@@ -5715,10 +6433,10 @@ function renderDashboard(app, d) {
   /* If the phone has not shipped its analytics yet, say so plainly rather than compute a
      lookalike here — a lookalike is exactly how the two screens would start disagreeing. */
   if (!an || !an[AN_WIN]) {
-    wrap.appendChild(el("div", "dempty",
+    wrap.appendChild(artNote("dempty",
       "Your phone has not sent its analytics yet. Open Settings, then Storage, and press Back " +
       "up. These figures are computed there, so this page waits for them rather than working " +
-      "them out a second way."));
+      "them out a second way.", "bars"));
     app.appendChild(wrap);
     return;
   }
@@ -5779,8 +6497,8 @@ function renderDashboard(app, d) {
   wrap.appendChild(head);
 
   if (!a.totalCount) {
-    wrap.appendChild(el("div", "dempty",
-      "No news in this window. Try a longer range, or refresh on the phone."));
+    wrap.appendChild(artNote("dempty",
+      "No news in this window. Try a longer range, or refresh on the phone.", "bars"));
     app.appendChild(wrap);
     return;
   }
@@ -8214,7 +8932,7 @@ function render() {
     app.appendChild(skeletonFor(S.tab));
     refreshReportBar(); return;
   }
-  if (!d) { app.appendChild(emptyState("Nothing loaded yet.")); refreshReportBar(); return; }
+  if (!d) { app.appendChild(emptyState("Nothing loaded yet.", "cloud")); refreshReportBar(); return; }
 
   if (S.tab === "dashboard") {
     renderDashboard(app, d);
@@ -8231,15 +8949,15 @@ function render() {
     var wg = d.widgets || {};
     if (Object.keys(wg).length) app.appendChild(renderWidgetStrip(wg));
     newsWall(app, alerts(), { verifiable: true, placeholder: "Search alerts",
-      empty: "No alerts. Everything here has been published, or your phone has not backed up yet." });
+      empty: "No alerts. Everything here has been published, or your phone has not backed up yet.", art: "listen" });
   }
   else if (S.tab === "saved") {
     newsWall(app, arr(d.savedNews), { placeholder: "Search saved stories",
-      empty: "Nothing saved." });
+      empty: "Nothing saved.", art: "saved" });
   }
   else if (S.tab === "published") {
     newsWall(app, published(), { publishedPill: true, placeholder: "Search published stories",
-      empty: "Nothing published yet. Verify some alerts, then publish the Monthly Report." });
+      empty: "Nothing published yet. Verify some alerts, then publish the Monthly Report.", art: "published" });
   }
   else if (S.tab === "reports") {
     renderReports(app);
@@ -8256,11 +8974,11 @@ function render() {
     });
     newsWall(app, out, {
       placeholder: S.tab === "liked" ? "Search liked stories" : "Search disliked stories",
-      empty: S.tab === "liked" ? "Nothing liked yet." : "Nothing disliked yet." });
+      empty: S.tab === "liked" ? "Nothing liked yet." : "Nothing disliked yet.", art: S.tab === "liked" ? "liked" : "disliked" });
   }
   else if (S.tab === "restorepoints") {
     var rps = arr(d.restorePoints).slice().sort(function (a, b) { return (b.timestamp || 0) - (a.timestamp || 0); });
-    if (!rps.length) app.appendChild(emptyState("No restore points."));
+    if (!rps.length) app.appendChild(emptyState("No restore points.", "layers"));
     else app.appendChild(ledger(
       [{ t: "Restore point", w: "2fr", cls: "p" }, { t: "Created", w: "1fr", cls: "m" }],
       rps.map(function (rp) {
@@ -8411,7 +9129,7 @@ function renderDatabase(app, d) {
   if (!mk) {
     app.appendChild(el("div", "lbl", "Markets"));
     if (!nations.length && !unassigned.length) {
-      app.appendChild(emptyState("No markets onboarded. Onboard a country on the phone, then its competitors."));
+      app.appendChild(emptyState("No markets onboarded. Onboard a country on the phone, then its competitors.", "globe"));
       return;
     }
     var grid = el("div", "mkgrid");
@@ -8440,7 +9158,7 @@ function renderDatabase(app, d) {
     });
     app.appendChild(el("div", "lbl", "Competitors in " + country.name));
   }
-  if (!list.length) app.appendChild(emptyState("No competitors here yet. Onboard one on the phone."));
+  if (!list.length) app.appendChild(emptyState("No competitors here yet. Onboard one on the phone.", "orbit"));
   else app.appendChild(competitorLedger(d, list));
 }
 
