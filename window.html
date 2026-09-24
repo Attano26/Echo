@@ -3530,7 +3530,7 @@ function renderSyncDetail(label) {
 var SET_VIEW = "main";
 var SVG_PERSON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><circle cx="12" cy="10" r="3.2"/><path d="M6.2 18.4a7 7 0 0 1 11.6 0"/></svg>';
 var SVG_SIGNOUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4H5v16h5"/><path d="M14 8l4 4-4 4M18 12H9"/></svg>';
-var SVG_KEY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2L20 3M16 7l3 3M14 9l2 2"/></svg>';
+var SVG_KEY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="12" r="4"/><path d="M11 12h10M17.5 12v3M20.5 12v2.5"/></svg>';
 var SVG_CLOUD2 = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 0 0 .5-8.97A6 6 0 0 0 6.34 9.5 4 4 0 0 0 6.5 19z"/></svg>';
 
 function profileName() { return S.name || (S.email ? S.email.split("@")[0] : "Signed in"); }
@@ -3683,9 +3683,6 @@ function renderDrawerSettings() {
   n.appendChild(navRow(SVG_CLOUD2, "Storage", S.data ? (stTotal ? fmtBytes(stTotal) : "") : "Not loaded",
     function () { setSettingsView("storage"); }));
   n.appendChild(el("div", "sdiv"));
-  n.appendChild(el("div", "dnote",
-    "This page never fetches news - only your phone does. It reads your Drive backup and writes " +
-    "back only what you verify or publish here."));
 
   /* The Ask key belongs to THIS browser, not the phone, so it stays reachable before the phone has
      ever backed up. It has its own page now (2026-09-24), reached from a row like Storage. */
