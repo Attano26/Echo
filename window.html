@@ -1344,6 +1344,69 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
 #gate h1{font-size:30px;letter-spacing:-.4px}
 #gate p{color:var(--ink-3);font-size:14.5px;line-height:1.7;margin:12px 0 26px}
 
+/* ---------- sign-in, as the phone draws it (2026-09-24) ----------
+   The phone's "Welcome to Echo" sheet: logo, a light heading, what signing in gives you, the accent
+   button. Behind it option A, "Echo": hairline rings leave the logo and fade as they widen. */
+#gate{overflow:hidden}
+#gateRings{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+#gate .in{position:relative;z-index:1;max-width:400px;width:100%}
+#gate h1.gwel{font-family:var(--fs);font-weight:300;font-size:34px;letter-spacing:-.5px;margin:0}
+#gate p.gsub{font-weight:300;margin:10px 0 24px}
+.gperks{text-align:left;background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-box);
+  padding:2px 16px;margin:0 0 26px}
+.gperk{display:flex;align-items:center;gap:13px;padding:13px 0;font-size:14px;font-weight:300;color:var(--ink)}
+.gperk + .gperk{border-top:1px solid var(--line-2)}
+.gperk svg{flex:0 0 19px;width:19px;height:19px;color:var(--accent)}
+.btn.gcta{width:100%;height:50px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  gap:12px;font-family:var(--fs);font-weight:400;font-size:15.5px}
+.btn.gcta .gdot{width:24px;height:24px;border-radius:50%;background:#fff;display:grid;place-items:center}
+.btn.gcta .gdot svg{width:14px;height:14px}
+.gfine{font-size:12px;font-weight:300;color:var(--ink-3);margin-top:12px}
+
+/* ---------- profile (2026-09-24, mirrors the phone's Settings > Profile) ---------- */
+.avatar.pic{background-size:cover;background-position:center;color:transparent;border-color:transparent}
+.sprof{display:flex;align-items:center;gap:15px;width:100%;background:none;border:0;cursor:pointer;
+  text-align:left;padding:14px 18px;font:inherit;color:var(--ink)}
+.sprof:hover{background:var(--surface-2)}
+.sprof .pav{width:50px;height:50px;flex:0 0 50px}
+.sprof .pn{flex:1;min-width:0}
+.sprof .pn b{display:block;font-family:var(--fs);font-weight:400;font-size:16.5px;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.sprof .pn span{display:block;font-size:13px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pav{border-radius:50%;background:var(--surface-2) center/cover no-repeat;display:grid;place-items:center;
+  color:var(--ink-3);font-family:var(--fs);font-size:18px}
+.snav{display:flex;align-items:center;gap:16px;width:100%;background:none;border:0;cursor:pointer;
+  text-align:left;padding:16px 18px;font:inherit;font-size:15px;color:var(--ink)}
+.snav:hover{background:var(--surface-2)}
+.snav svg{width:22px;height:22px;flex:0 0 22px}
+.snav .nl{flex:1}
+.snav .nm{color:var(--ink-3);font-size:13.5px}
+.snav .chev{color:var(--ink-3);font-size:18px;line-height:1}
+.sdiv{height:1px;background:var(--line-2);margin:0 18px}
+.phero{display:flex;flex-direction:column;align-items:center;padding:14px 18px 20px}
+.phero .pav{width:104px;height:104px;font-size:34px}
+.phero b{font-family:var(--fs);font-weight:300;font-size:26px;margin-top:16px}
+.phero span{font-size:14px;color:var(--ink-3);margin-top:4px}
+.pfield{margin:0 18px 14px;background:var(--track);border-radius:8px;padding:15px 16px;font-size:15px;
+  font-weight:300;color:var(--ink)}
+.pfield.dim{color:var(--ink-3)}
+.pfield small{display:block;font-size:11.5px;color:var(--ink-3);margin-bottom:3px}
+.sback{background:none;border:0;cursor:pointer;color:var(--ink);padding:4px 6px 4px 0;font-size:20px;line-height:1}
+#settingsAvatar{width:30px;height:30px;flex:0 0 30px;border:0;padding:0;cursor:pointer;
+  opacity:0;transform:scale(.35) translateY(10px);pointer-events:none;
+  transition:opacity .16s ease,transform .26s cubic-bezier(.3,1.4,.5,1)}
+#settingsAvatar.on{opacity:1;transform:none;pointer-events:auto}
+.askbox.soconf{text-align:center;max-width:340px}
+.soconf .pav{width:64px;height:64px;margin:4px auto 14px;font-size:24px}
+.soconf .askttl{font-family:var(--fs);font-weight:300;font-size:20px}
+.soconf .askrow{justify-content:stretch}
+.soconf .askrow .btn{flex:1;height:44px;border-radius:12px;font-family:var(--fs);font-weight:400;font-size:15px}
+.btn.danger{background:#E5484D;color:#fff}
+
+/* ---------- filter panel: animated, closes on scroll or an outside click (2026-09-24) ---------- */
+.nfilters.nfanim{overflow:hidden;transition:max-height .24s cubic-bezier(.2,.8,.2,1),opacity .2s ease,
+  padding .24s cubic-bezier(.2,.8,.2,1)}
+
 /* ---------- ask (replaces confirm/prompt) ---------- */
 #ask{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.45);
   display:grid;place-items:center;padding:24px}
@@ -1998,12 +2061,18 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
   <!-- The gate is the only screen reachable before sign-in, so the theme control has
        to live here too — otherwise it is unreachable for anyone who cannot get past it. -->
   <button class="iconbtn themebtn" id="btnThemeGate" title="Switch theme" aria-label="Switch theme"></button>
+  <canvas id="gateRings" aria-hidden="true"></canvas>
   <div class="in">
     <div class="mark" id="gateMark"></div>
-    <h1>Echo</h1>
-    <p>Read the market intelligence your phone has gathered, verify what holds up, and turn it into a report.</p>
-    <button class="btn google" id="signin">
-      <span class="glogo" aria-hidden="true">
+    <h1 class="gwel">Welcome to Echo</h1>
+    <p class="gsub">Sign in with Google to read your phone's news, likes and reports, and turn them into a report.</p>
+    <div class="gperks">
+      <div class="gperk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 0 0 .5-8.97A6 6 0 0 0 6.34 9.5 4 4 0 0 0 6.5 19z"/></svg>Reads the backup your phone keeps in Drive</div>
+      <div class="gperk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-15.5 6.2M3 12a9 9 0 0 1 15.5-6.2"/><path d="M18.5 2.5v3.7h-3.7M5.5 21.5v-3.7h3.7"/></svg>The same news on your phone and the web</div>
+      <div class="gperk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Your name and photo from Google</div>
+    </div>
+    <button class="btn gcta" id="signin">
+      <span class="gdot" aria-hidden="true">
         <svg viewBox="0 0 48 48" focusable="false">
           <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
           <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
@@ -2011,8 +2080,9 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
           <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
         </svg>
       </span>
-      Sign in with Google
+      Continue with Google
     </button>
+    <div class="gfine">Echo only sees the files it creates in your Drive.</div>
     <div class="status" id="gateStatus"></div>
   </div>
 </div>
@@ -2082,7 +2152,9 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
 <div id="settingsPanel" hidden>
   <div class="spane">
     <div class="shead">
-      <div class="stitle">Settings</div>
+      <button class="sback" id="btnSettingsBack" title="Back" aria-label="Back" hidden>&#8249;</button>
+      <div class="stitle" id="settingsTitle">Settings</div>
+      <button class="pav" id="settingsAvatar" title="Profile" aria-label="Profile"></button>
       <button class="iconbtn" id="btnSettingsClose" title="Close" aria-label="Close settings"></button>
     </div>
     <div class="sbody" id="drawerSettings"></div>
@@ -2193,7 +2265,7 @@ var S = {
 function save() {
   try {
     localStorage.setItem(K, JSON.stringify({
-      token: S.token, tokenExp: S.tokenExp, email: S.email, name: S.name,
+      token: S.token, tokenExp: S.tokenExp, email: S.email, name: S.name, photo: S.photo,
       theme: S.theme, actions: S.actions
     }));
   } catch (e) { /* private mode: still works, it just forgets on reload */ }
@@ -2205,6 +2277,7 @@ function load() {
     if (o.token && o.tokenExp > Date.now()) { S.token = o.token; S.tokenExp = o.tokenExp; }
     if (o.email) S.email = o.email;
     if (o.name) S.name = o.name;
+    if (o.photo) S.photo = o.photo;
     if (o.theme) S.theme = o.theme;
     if (o.actions) S.actions = Object.assign(S.actions, o.actions);
     // Deliberately NOT restoring o.tab — see the note on S.tab above. Older saved state may still
@@ -2567,11 +2640,11 @@ async function writeJson(name, obj) {
 async function accountIdentity() {
   try {
     var r = await dFetch(
-      "https://www.googleapis.com/drive/v3/about?fields=user(displayName,emailAddress)");
+      "https://www.googleapis.com/drive/v3/about?fields=user(displayName,emailAddress,photoLink)");
     if (!r.ok) return null;
     var j = await r.json();
     if (!j.user) return null;
-    return { name: j.user.displayName || "", email: j.user.emailAddress || "" };
+    return { name: j.user.displayName || "", email: j.user.emailAddress || "", photo: j.user.photoLink || "" };
   } catch (e) { return null; }
 }
 
@@ -3273,6 +3346,7 @@ function renderSyncRow() {
   if (av) {
     var email = (S.data && S.data.settings && S.data.settings.account) || S.email || "";
     av.textContent = email ? email.trim().charAt(0).toUpperCase() : "";
+    paintAvatar(av);
   }
   var d0 = S.data, label;
   if (!d0) label = "Not loaded";
@@ -3442,41 +3516,63 @@ function renderSyncDetail(label) {
 /* The phone's settings list, mirrored READ-ONLY. The phone owns every value, so these
    are stated rather than offered — a control here would imply the web could change the
    phone, which it deliberately cannot. Values arrive in the backup's `settings` block. */
-function renderDrawerSettings() {
-  var n = $("#drawerSettings"); n.innerHTML = "";
-  var g = (S.data && S.data.settings) || null;
+/* ---- Profile (2026-09-24): the phone's Settings > Profile, on the web ----
+   The account IS the Google account this page signed in with; the name and photo come from the same
+   Drive call that already gave the email. Read-only here, like everything else on this page. */
+var SET_VIEW = "main";
+var SVG_PERSON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><circle cx="12" cy="10" r="3.2"/><path d="M6.2 18.4a7 7 0 0 1 11.6 0"/></svg>';
+var SVG_SIGNOUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4H5v16h5"/><path d="M14 8l4 4-4 4M18 12H9"/></svg>';
+var SVG_KEY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2L20 3M16 7l3 3M14 9l2 2"/></svg>';
+var SVG_CLOUD2 = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 0 0 .5-8.97A6 6 0 0 0 6.34 9.5 4 4 0 0 0 6.5 19z"/></svg>';
 
-  // Sync state leads: it tells you how much to trust everything under it.
-  n.appendChild(el("div", "dsec", "Account"));
-  var acct = el("div", "srow");
-  acct.appendChild(el("span", "sk", "Signed in"));
-  acct.appendChild(el("span", "sv", S.email || "this account"));
-  n.appendChild(acct);
-  n.appendChild(el("div", "dnote",
-    "This page never fetches news - only your phone does. It reads your Drive backup and writes " +
-    "back only what you verify or publish here. Signing out forgets the connection in THIS " +
-    "browser only; nothing in your Drive is deleted."));
-  var soRow = el("div", "srow");
-  var so = el("button", "btn sm ghost", "Sign out");
-  so.onclick = function () { closeSettingsPanel(); signOut(); };
-  soRow.appendChild(so);
-  n.appendChild(soRow);
-
-  /* Above the phone's settings, not inside them: this is the one setting that belongs to THIS
-     browser rather than to the phone, and it has to be reachable before the phone has ever
-     backed up — which is why it sits ahead of the early return below. */
-  n.appendChild(el("div", "dsec", "Ask"));
+function profileName() { return S.name || (S.email ? S.email.split("@")[0] : "Signed in"); }
+function paintAvatar(node) {
+  if (S.photo) {
+    node.style.backgroundImage = "url('" + String(S.photo).replace(/'/g, "%27") + "')";
+    node.classList.add("pic");
+  } else {
+    node.style.backgroundImage = "";
+    node.classList.remove("pic");
+    if (!node.textContent) node.textContent = (S.email || "?").trim().charAt(0).toUpperCase();
+  }
+  return node;
+}
+function avatarNode(cls) { return paintAvatar(el("span", "pav" + (cls ? " " + cls : ""))); }
+function navRow(svg, label, meta, onClick) {
+  var b = el("button", "snav");
+  b.innerHTML = svg;
+  b.appendChild(el("span", "nl", label));
+  if (meta) b.appendChild(el("span", "nm", meta));
+  b.appendChild(el("span", "chev", "\u203A"));
+  b.onclick = onClick;
+  return b;
+}
+function setSettingsView(v) {
+  SET_VIEW = v;
+  renderDrawerSettings();
+  var body = $("#drawerSettings"); if (body) body.scrollTop = 0;
+}
+async function confirmSignOut() {
+  // #ask sits at z 60, under the Settings panel (70); lift it for this one dialog.
+  $("#ask").style.zIndex = "80";
+  var ok = await askShell(function (box, done) {
+    box.className = "askbox soconf";
+    box.appendChild(avatarNode());
+    box.appendChild(el("h2", "askttl", "Sign out of Echo?"));
+    box.appendChild(el("p", "askbody", "This browser forgets the connection. Your news, likes and reports " +
+      "stay in Drive and on your phone, and signing back in will not ask again."));
+    var row = el("div", "askrow");
+    var no = el("button", "btn sm ghost", "Cancel"); no.onclick = function () { done(false); };
+    var yes = el("button", "btn sm danger", "Sign out"); yes.onclick = function () { done(true); };
+    row.appendChild(no); row.appendChild(yes); box.appendChild(row);
+    no.focus();
+  });
+  $("#ask").style.zIndex = "";
+  if (ok) { closeSettingsPanel(); signOut(); }
+}
+function renderApiKeyView(n) {
+  // This browser's key, not the phone's: Ask phrases its answers with it. Field first, the why under it.
   var hasKey = !!chKey();
-  n.appendChild(el("div", "dnote", hasKey
-    ? "Ask is phrasing its replies with " + CH_MODEL + ", using your key. The key is held in THIS " +
-      "browser only — never in the page, never in your Drive backup. Finding the stories is still " +
-      "done here for nothing, so when the free quota runs out the answers keep coming, just in the " +
-      "app's own words."
-    : "Ask already answers from your own stories, instantly and at no cost. Give it a Gemini API " +
-      "key and it will phrase those same answers as prose instead. The key stays in THIS browser " +
-      "— never in the page, which is public, and never in your Drive backup, which syncs. Calls " +
-      "carry no Google Search grounding, which is the part that costs money, so they fall under " +
-      "the free tier; when that runs out Ask falls back to its own wording rather than failing."));
   var kr = el("div", "srow keyrow");
   var inp = el("input", "keyin");
   inp.type = "password"; inp.autocomplete = "off"; inp.spellcheck = false;
@@ -3497,10 +3593,98 @@ function renderDrawerSettings() {
     kr.appendChild(bclr);
   }
   n.appendChild(kr);
+  n.appendChild(el("div", "dnote", hasKey
+    ? "Ask is phrasing its replies with " + CH_MODEL + ", using your key. The key is held in THIS " +
+      "browser only — never in the page, never in your Drive backup. Finding the stories is still " +
+      "done here for nothing, so when the free quota runs out the answers keep coming, just in the " +
+      "app's own words."
+    : "Ask already answers from your own stories, instantly and at no cost. Give it a Gemini API " +
+      "key and it will phrase those same answers as prose instead. The key stays in THIS browser " +
+      "— never in the page, which is public, and never in your Drive backup, which syncs. Calls " +
+      "carry no Google Search grounding, which is the part that costs money, so they fall under " +
+      "the free tier; when that runs out Ask falls back to its own wording rather than failing."));
+}
+function renderProfileView(n) {
+  var hero = el("div", "phero");
+  hero.appendChild(avatarNode());
+  hero.appendChild(el("b", null, profileName()));
+  hero.appendChild(el("span", null, S.email || ""));
+  n.appendChild(hero);
+  n.appendChild(el("div", "sdiv"));
+  n.appendChild(navRow(SVG_PERSON, "Personal information", "", function () { setSettingsView("personal"); }));
+  n.appendChild(el("div", "sdiv"));
+  n.appendChild(navRow(SVG_SIGNOUT, "Sign out", "", confirmSignOut));
+  n.appendChild(el("div", "sdiv"));
+  n.appendChild(el("div", "dnote", "Signing out forgets the connection in this browser only. Nothing is deleted."));
+}
+function renderPersonalView(n) {
+  var hero = el("div", "phero");
+  hero.appendChild(avatarNode());
+  n.appendChild(hero);
+  var nm = el("div", "pfield"); nm.appendChild(el("small", null, "Name")); nm.appendChild(document.createTextNode(profileName()));
+  var em = el("div", "pfield dim"); em.appendChild(el("small", null, "Email")); em.appendChild(document.createTextNode(S.email || ""));
+  n.appendChild(nm); n.appendChild(em);
+  n.appendChild(el("div", "dnote", "From your Google account. Change the name or picture in the Echo app on your phone, or in Google."));
+}
+function updateSettingsHeader() {
+  var titles = { main: "Settings", profile: "Profile", personal: "Personal information", apikey: "Gemini API key" };
+  var t = $("#settingsTitle"); if (t) t.textContent = titles[SET_VIEW] || "Settings";
+  var back = $("#btnSettingsBack"); if (back) back.hidden = SET_VIEW === "main";
+  var av = $("#settingsAvatar");
+  if (av) { paintAvatar(av); if (SET_VIEW !== "main") av.classList.remove("on"); }
+}
+/* The small picture in the header: it pops in once the profile row has scrolled out of view, as on the phone. */
+function watchProfileRow() {
+  var body = $("#drawerSettings"), av = $("#settingsAvatar");
+  if (!body || !av) return;
+  body.onscroll = function () {
+    var row = body.querySelector(".sprof");
+    // A hidden panel measures 0 everywhere, which would read as "scrolled past".
+    if (SET_VIEW !== "main" || !row || !body.clientHeight) { av.classList.remove("on"); return; }
+    av.classList.toggle("on", row.getBoundingClientRect().bottom < body.getBoundingClientRect().top + 6);
+  };
+  body.onscroll();
+}
+
+function renderDrawerSettings() {
+  var n = $("#drawerSettings"); n.innerHTML = "";
+  var g = (S.data && S.data.settings) || null;
+  updateSettingsHeader();
+  if (SET_VIEW === "profile") { renderProfileView(n); watchProfileRow(); return; }
+  if (SET_VIEW === "personal") { renderPersonalView(n); watchProfileRow(); return; }
+  if (SET_VIEW === "apikey") { renderApiKeyView(n); watchProfileRow(); return; }
+
+  // The profile leads, as on the phone: who is signed in, one tap from Personal information and Sign out.
+  var prof = el("button", "sprof");
+  prof.appendChild(avatarNode());
+  var pn = el("span", "pn");
+  pn.appendChild(el("b", null, profileName()));
+  pn.appendChild(el("span", null, S.email || "this account"));
+  prof.appendChild(pn);
+  prof.appendChild(el("span", "chev", "\u203A"));
+  prof.onclick = function () { setSettingsView("profile"); };
+  n.appendChild(prof);
+  n.appendChild(el("div", "sdiv"));
+  // Storage shows how much is backed up (the phone's Storage row does the same).
+  var stTotal = 0;
+  try { stTotal = storageSlices().reduce(function (t, r) { return t + r[2]; }, 0); } catch (err) { stTotal = 0; }
+  n.appendChild(navRow(SVG_CLOUD2, "Storage", S.data ? (stTotal ? fmtBytes(stTotal) : "") : "Not loaded",
+    function () { openStorage(); }));
+  n.appendChild(el("div", "sdiv"));
+  n.appendChild(el("div", "dnote",
+    "This page never fetches news - only your phone does. It reads your Drive backup and writes " +
+    "back only what you verify or publish here."));
+
+  /* The Ask key belongs to THIS browser, not the phone, so it stays reachable before the phone has
+     ever backed up. It has its own page now (2026-09-24), reached from a row like Storage. */
+  n.appendChild(navRow(SVG_KEY, "Gemini API key", chKey() ? "Saved" : "Not set",
+    function () { setSettingsView("apikey"); }));
+  n.appendChild(el("div", "sdiv"));
 
   if (!g) {
     n.appendChild(el("div", "dnote",
       "Your phone has not sent its settings yet. Open Settings, then Storage, and press Back up."));
+    watchProfileRow();
     return;
   }
 
@@ -3517,6 +3701,7 @@ function renderDrawerSettings() {
   n.appendChild(el("div", "dnote",
     "These are shown as your phone last reported them. They cannot be changed here — " +
     "the phone owns every setting, which is what stops this page overwriting anything."));
+  watchProfileRow();
 }
 function renderTitle() {
   var t = TAB_TITLE[S.tab] || TAB_TITLE.alerts;
@@ -4149,12 +4334,17 @@ function newsWall(app, list, opts) {
   fbtn.title = st.open ? "Hide filters" : "Show filters";
   fbtn.setAttribute("aria-expanded", st.open ? "true" : "false");
   if (active) fbtn.appendChild(el("span", "badge", String(active)));
-  fbtn.onclick = function () { st.open = !st.open; render(); };
+  fbtn.onclick = function () {
+    if (st.open) { nfClose(); return; }
+    st.open = true; st.nfJustOpened = true; render();
+  };
   field.appendChild(fbtn);
   box.appendChild(field);
 
   if (st.open) {
     var panel = el("div", "nfilters");
+    NF_OPEN = { st: st, panel: panel };
+    if (st.nfJustOpened) { st.nfJustOpened = false; nfAnimateOpen(panel); }
     /* State first: it is the one group whose options are fixed, and the one most reached for on
        a feed you are working through.
 
@@ -9274,9 +9464,10 @@ async function start() {
   applyTheme();
   /* !S.name as well as !S.email, so somebody who signed in before this shipped picks the
      name up on their next open rather than staying on the address forever. */
-  if (!S.email || !S.name) {
+  // photo as well (2026-09-24): the profile shows the Google picture, as the phone does.
+  if (!S.email || !S.name || !S.photo) {
     var who = await accountIdentity();
-    if (who) { S.email = who.email || S.email; S.name = who.name || S.name; save(); }
+    if (who) { S.email = who.email || S.email; S.name = who.name || S.name; S.photo = who.photo || S.photo; save(); }
   }
   try { await loadEverything(); }
   catch (e) { S.loading = false; setStatus(e.message, true); render(); }
@@ -9307,12 +9498,91 @@ async function openSettings() {
 }
 
 function openSettingsPanel() {
+  SET_VIEW = "main";
   renderDrawerSettings();
   renderSyncRow();
   $("#settingsPanel").hidden = false;
+  var sb = $("#drawerSettings"); if (sb && sb.onscroll) sb.onscroll();
   $("#btnSettingsClose").focus();
 }
 function closeSettingsPanel() { $("#settingsPanel").hidden = true; }
+
+/* ---- Filter panel motion (2026-09-24, as on the phone) ----
+   It opens with a short expand and closes the same way; any scroll (wheel or touch) or a click outside
+   the panel and its button closes it, and the click still does what it would have. */
+var NF_OPEN = null;
+function nfAnimateOpen(panel) {
+  requestAnimationFrame(function () {
+    var h = panel.scrollHeight;
+    panel.classList.add("nfanim");
+    panel.style.maxHeight = "0px"; panel.style.opacity = "0";
+    requestAnimationFrame(function () {
+      panel.style.maxHeight = h + "px"; panel.style.opacity = "1";
+      setTimeout(function () { panel.style.maxHeight = ""; panel.classList.remove("nfanim"); }, 260);
+    });
+  });
+}
+function nfClose() {
+  var o = NF_OPEN;
+  if (!o || !o.st.open) return;
+  NF_OPEN = null;
+  var p = o.panel;
+  if (!p.isConnected || window.matchMedia("(prefers-reduced-motion: reduce)").matches) { o.st.open = false; render(); return; }
+  p.style.maxHeight = p.scrollHeight + "px";
+  p.classList.add("nfanim");
+  requestAnimationFrame(function () {
+    p.style.maxHeight = "0px"; p.style.opacity = "0"; p.style.paddingTop = "0px"; p.style.paddingBottom = "0px";
+    setTimeout(function () { o.st.open = false; render(); }, 230);
+  });
+}
+document.addEventListener("pointerdown", function (ev) {
+  if (!NF_OPEN) return;
+  if (ev.target.closest && ev.target.closest(".nfilters, .nfbtn")) return;
+  nfClose();
+}, true);
+window.addEventListener("wheel", function () { if (NF_OPEN) nfClose(); }, { passive: true, capture: true });
+window.addEventListener("touchmove", function (ev) {
+  if (NF_OPEN && !(ev.target.closest && ev.target.closest(".nfilters"))) nfClose();
+}, { passive: true, capture: true });
+
+/* ---- Sign-in rings (option A, "Echo") ----
+   Hairline rings leave the logo every 2.6 s, widen over 8 s and fade out — 1 px, the accent at under a
+   quarter of its strength. Drawn only while the sign-in screen is showing; still under reduced motion. */
+(function gateRings() {
+  var c = document.getElementById("gateRings");
+  if (!c || !c.getContext) return;
+  var ctx = c.getContext("2d"), reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function frame(t) {
+    var gate = document.getElementById("gate");
+    if (!gate || gate.offsetParent === null) {
+      requestAnimationFrame(frame); return;
+    }
+    var r = c.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+    if (c.width !== Math.round(r.width * d) || c.height !== Math.round(r.height * d)) {
+      c.width = Math.round(r.width * d); c.height = Math.round(r.height * d);
+    }
+    ctx.setTransform(d, 0, 0, d, 0, 0);
+    ctx.clearRect(0, 0, r.width, r.height);
+    var m = document.getElementById("gateMark"), mr = m ? m.getBoundingClientRect() : null;
+    if (mr && mr.width) {
+      var cx = mr.left - r.left + mr.width / 2, cy = mr.top - r.top + mr.height / 2;
+      var dark = getComputedStyle(document.documentElement).colorScheme.indexOf("dark") >= 0 ||
+        getComputedStyle(document.body).backgroundColor.replace(/[^\d,]/g, "").split(",").slice(0, 3)
+          .reduce(function (a, b) { return a + (+b); }, 0) < 200;
+      var peak = dark ? 0.22 : 0.16, period = 2.6, life = 8, max = Math.max(r.width, r.height) * 0.75;
+      var secs = reduce ? 3.2 : t / 1000;
+      for (var k = 0; k < 4; k++) {
+        var age = (secs + k * period) % (period * 4);
+        if (age > life) continue;
+        var f = age / life, a = peak * Math.pow(1 - f, 1.6) * Math.min(1, age * 2);
+        ctx.beginPath(); ctx.arc(cx, cy, 30 + f * max, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(31,87,245," + a.toFixed(3) + ")"; ctx.lineWidth = 1; ctx.stroke();
+      }
+    }
+    if (!reduce) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
 
 /* ============================================================
    WIRING
@@ -9361,6 +9631,9 @@ document.addEventListener("click", function () {
 });
 
 $("#btnProfile").onclick  = openSettingsPanel;   // the one way in, from the rail
+$("#btnSettingsBack").onclick = function () { setSettingsView(SET_VIEW === "personal" ? "profile" : "main"); };
+$("#settingsAvatar").onclick  = function () { setSettingsView("profile"); };
+$("#btnSettingsClose").innerHTML = ICON_X;   // it had no icon at all before 2026-09-24
 $("#btnSettingsClose").onclick = closeSettingsPanel;
 $("#settingsPanel").onclick = function (e) {
   // Backdrop only: a click that started inside the pane must not dismiss it.
