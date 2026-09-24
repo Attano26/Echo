@@ -3667,11 +3667,14 @@ function renderDrawerSettings() {
   var prof = el("button", "sprof");
   prof.appendChild(avatarNode());
   var pn = el("span", "pn");
-  pn.appendChild(el("b", null, profileName()));
-  pn.appendChild(el("span", null, S.email || "this account"));
+  // Signed out, the row offers sign-in (the gate's own flow) rather than a Profile of nobody.
+  var signedIn = !!S.email;
+  pn.appendChild(el("b", null, signedIn ? profileName() : "Sign in"));
+  pn.appendChild(el("span", null, signedIn ? S.email : "Read your phone's backup with Google"));
   prof.appendChild(pn);
   prof.appendChild(el("span", "chev", "\u203A"));
-  prof.onclick = function () { setSettingsView("profile"); };
+  prof.onclick = signedIn ? function () { setSettingsView("profile"); }
+                          : function () { closeSettingsPanel(); $("#signin").click(); };
   n.appendChild(prof);
   n.appendChild(el("div", "sdiv"));
   // Storage shows how much is backed up (the phone's Storage row does the same).
