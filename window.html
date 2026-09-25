@@ -2356,6 +2356,20 @@ var CLIENT_ID    = "653924371691-687hjiimvicq77nbk4l6osqoaio3nl4b.apps.googleuse
 var SCOPE        = "https://www.googleapis.com/auth/drive.file";
 var DATA_FILE    = "echo-data.json";
 var ACTIONS_FILE = "echo-web-actions.json";
+/* The address bar shows the short link, not window.html (user, 25 Sep 2026). Every link forwards here;
+   once loaded, the address is put back to /Echo/ or /Echo/<app>/ without a reload. Both of those forward
+   back to this page, so a reload or a bookmark still works. The app is remembered so the tidy address
+   keeps opening the same backup. */
+var ECHO_LINK_APP = null;   // the app the short link named, kept after the address is tidied
+(function () {
+  try {
+    if (!/window\.html$/i.test(location.pathname)) return;
+    var app = new URLSearchParams(location.search).get("app");
+    var ok = app && /^(windows|facade|sliders)$/.test(app);
+    if (ok) { ECHO_LINK_APP = app; localStorage.setItem("echo.web.vertical", app); }
+    history.replaceState(history.state, "", (ok ? "./" + app + "/" : "./") + location.hash);
+  } catch (e) {}
+})();
 /* Which Echo app's backup this page shows (2026-09-25). The three apps write to the signed-in person's OWN
    Drive under their own names, so the windows app never overwrites a façade backup. Colleagues who use only
    the façade or sliders app have no echo-data.json at all, so the page looks for all three: one found = that
@@ -2386,7 +2400,8 @@ async function pickVertical() {
   /* A short link names its app (/Echo/facade/ opens window.html?app=facade): that app, even before its
      first backup exists, so a colleague sees "Nothing in Drive yet" for THEIR app rather than someone
      else's. Without it: the choice remembered in this browser, else the one backup found. */
-  var asked = null; try { asked = new URLSearchParams(location.search).get("app"); } catch (e) {}
+  var asked = ECHO_LINK_APP; try { asked = asked || new URLSearchParams(location.search).get("app") ||
+    ((location.pathname.match(/\/(windows|facade|sliders)\/?$/) || [])[1]) || null; } catch (e) {}
   var byLink = VERTICALS.filter(function (v) { return v.key === asked; })[0];
   if (byLink) { useVertical(byLink); return; }
   var saved = null; try { saved = localStorage.getItem("echo.web.vertical"); } catch (e) {}
