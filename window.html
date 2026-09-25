@@ -250,6 +250,7 @@
   }
 }
 /* An explicit choice wins over the system, in both directions. Same list as above. */
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
 :root[data-theme="dark"]{
   /* The same nine hues re-stepped for the dark surface -- not a mechanical lightening of the
      light row; each was chosen against #0E0E0E and re-validated there. */
@@ -2471,7 +2472,24 @@ function applyTheme() {
     b.title = lbl;
   });
 }
-function toggleTheme() { S.theme = isDark() ? "light" : "dark"; save(); applyTheme(); }
+/* The theme ripple, as on the phone (build 89): the page in the new theme is revealed through a circle growing
+   from the button, so every element changes as the edge reaches it rather than under a flat colour wash.
+   View Transitions do the photograph-and-cut; without them (or with reduced motion) it switches at once. */
+function toggleTheme(ev) {
+  var next = isDark() ? "light" : "dark", done = false;
+  var go = function () { if (done) return; done = true; S.theme = next; save(); applyTheme(); };
+  var b = ev && ev.currentTarget;
+  if (!document.startViewTransition || !b || !b.getBoundingClientRect ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches) return go();
+  var r = b.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+  var far = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+  setTimeout(go, 400);   /* a tab that is not painting never runs the transition: never let the switch wait on it */
+  document.startViewTransition(go).ready.then(function () {
+    document.documentElement.animate(
+      { clipPath: ["circle(0px at " + x + "px " + y + "px)", "circle(" + far + "px at " + x + "px " + y + "px)"] },
+      { duration: 760, easing: "cubic-bezier(.4,0,.2,1)", pseudoElement: "::view-transition-new(root)" });
+  }).catch(function () {});
+}
 
 /* ============================================================
    GOOGLE SIGN-IN
