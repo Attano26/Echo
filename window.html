@@ -2064,6 +2064,162 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
 </head>
 <body>
 
+<!-- The launch film, as on the phone (EchoLaunchFilm, builds 85-88): the Echo mark is extruded, turns to face
+     you, and the camera flies through its sparkle onto the page underneath. It plays on every load and refresh,
+     in the page's theme. A click or a key skips it; with reduced motion it never plays. It sits first in <body>
+     so it is on screen before the rest of the page has drawn. -->
+<canvas id="launchFilm" aria-hidden="true" style="position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:2147483000;display:block;cursor:pointer"></canvas>
+<script>
+(function () {
+  var cv = document.getElementById("launchFilm");
+  function gone() { if (cv && cv.parentNode) cv.parentNode.removeChild(cv); }
+  var dark;
+  try { var th = (JSON.parse(localStorage.getItem("echo.web.v1") || "{}") || {}).theme; dark = th ? th === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; }
+  catch (e) { dark = true; }
+  var BG = dark ? "#0E0E0E" : "#F5F5F7", light = !dark;
+  cv.style.background = BG;
+  try { if (matchMedia("(prefers-reduced-motion: reduce)").matches) { gone(); return; } } catch (e) {}
+  var acc = [31, 87, 245];
+  try {
+    var a = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim().match(/^#([0-9a-f]{6})$/i);
+    if (a) acc = [parseInt(a[1].slice(0, 2), 16), parseInt(a[1].slice(2, 4), 16), parseInt(a[1].slice(4, 6), 16)];
+  } catch (e) {}
+
+  /* The mark's five pieces and the sparkle between them, in the logo's own 1024 grid (favicon.svg). */
+  function arc(cx, cy, r, a0, a1, n) { var o = []; for (var i = 0; i <= n; i++) { var t = (a0 + (a1 - a0) * i / n) * Math.PI / 180; o.push([cx + Math.cos(t) * r, cy + Math.sin(t) * r]); } return o; }
+  var MARK = [
+    [[112, 110], [912, 110], [912, 336], [112, 336]],
+    [[112, 398]].concat(arc(112, 398, 226, 0, 90, 12)),
+    [[400, 398], [912, 398], [912, 624]].concat(arc(626, 398, 226, 90, 180, 12)),
+    [[112, 686]].concat(arc(112, 912, 226, -90, 0, 12)).concat([[112, 912]]),
+    [[400, 912]].concat(arc(626, 912, 226, 180, 270, 12)).concat([[912, 686], [912, 912]])
+  ];
+  var STAR = [[338, 398], [400, 398]].concat(arc(626, 398, 226, 180, 90, 12)).concat([[626, 686]])
+    .concat(arc(626, 912, 226, 270, 180, 12)).concat([[338, 912]]).concat(arc(112, 912, 226, 0, -90, 12))
+    .concat([[112, 624]]).concat(arc(112, 398, 226, 90, 0, 12));
+  function mp(p) { return [(p[0] - 512) / 1024 * 1.3, -(p[1] - 512) / 1024 * 1.3]; }
+  var MARKM = MARK.map(function (s) { return s.map(mp); }), STARM = STAR.map(mp), STARC = mp([369, 655]);
+  function clamp(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+  function seg(t, a, b) { var u = clamp((t - a) / (b - a)); return u * u * (3 - 2 * u); }
+  function lerp(a, b, u) { return a + (b - a) * u; }
+  function rgba(a, r, g, b) { return "rgba(" + (r | 0) + "," + (g | 0) + "," + (b | 0) + "," + clamp(a) + ")"; }
+
+  function frame(g, W, H, t) {
+    var L = 1.15 * seg(t, 0.35, 1.6) + 0.001;
+    var turn = seg(t, 0.9, 2.1), yaw = lerp(1.05, 0, turn), pitch = lerp(0.42, 0, turn);
+    var dieZ = -2.6 * seg(t, 1.9, 2.4), dieA = (1 - seg(t, 1.9, 2.35)) * seg(t, 0, 0.45);
+    var hot = 1 - seg(t, 1.3, 2.3);
+    var dive = clamp((t - 2.85) / 0.8), du = dive * dive * dive, lk = seg(t, 2.8, 3.2);
+    var look = [lerp(0, STARC[0], lk), lerp(0, STARC[1], lk), L];
+    var dist = 3.2 * Math.pow(0.02 / 3.2, du), Zc = L + dist, F = 560, cx = W / 2, cy = H / 2 - 20;
+    var cyw = Math.cos(yaw), syw = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+    function P(x, y, z) {
+      x -= look[0]; y -= look[1]; z -= look[2] - L;
+      var x1 = cyw * x + syw * z, z1 = -syw * x + cyw * z, y2 = cp * y - sp * z1, z2 = sp * y + cp * z1;
+      var d = Zc - z2; if (d < 0.004) d = 0.004;
+      return [cx + x1 * F / d, cy - y2 * F / d, d];
+    }
+    function poly(pts, z) { pts.forEach(function (p, i) { var q = P(p[0], p[1], z); if (i) g.lineTo(q[0], q[1]); else g.moveTo(q[0], q[1]); }); g.closePath(); }
+
+    g.globalCompositeOperation = "source-over"; g.globalAlpha = 1;
+    g.fillStyle = BG; g.fillRect(0, 0, W, H);
+
+    /* the die: a plate with the mark's shape through it, glowing at the rim while hot */
+    if (dieA > 0.01) {
+      g.save();
+      g.beginPath(); poly([[-1.2, -1.2], [1.2, -1.2], [1.2, 1.2], [-1.2, 1.2]], dieZ); MARKM.forEach(function (s) { poly(s, dieZ); });
+      var pg = g.createLinearGradient(0, 0, W, H);
+      if (light) { pg.addColorStop(0, rgba(dieA, 226, 226, 231)); pg.addColorStop(1, rgba(dieA, 208, 208, 214)); }
+      else { pg.addColorStop(0, rgba(dieA, 29, 29, 33)); pg.addColorStop(1, rgba(dieA, 17, 17, 19)); }
+      g.fillStyle = pg; g.fill("evenodd");
+      g.lineWidth = 1; g.strokeStyle = light ? rgba(0.10 * dieA, 0, 0, 0) : rgba(0.08 * dieA, 255, 255, 255); g.stroke();
+      g.beginPath(); MARKM.forEach(function (s) { poly(s, dieZ); });
+      g.shadowColor = rgba(0.9 * hot * dieA, 255, 120, 40); g.shadowBlur = 18 * hot;
+      g.strokeStyle = rgba((0.85 * hot + 0.05) * dieA, 255, 140, 60); g.lineWidth = 1.4; g.stroke();
+      g.restore();
+    }
+
+    /* the profile: side walls in slices along its length (hot near the die), then the end face */
+    var faces = [], NS = 5, LX = -0.4, LY = 0.6, LZ = 0.7, ln = Math.hypot(LX, LY, LZ);
+    MARKM.forEach(function (S) {
+      for (var i = 0; i < S.length; i++) {
+        var a = S[i], b = S[(i + 1) % S.length], ex = b[0] - a[0], ey = b[1] - a[1], el = Math.hypot(ex, ey) || 1;
+        var nx = ey / el, ny = -ex / el, rx = cyw * nx, rz = -syw * nx, ry = cp * ny - sp * rz, rz2 = sp * ny + cp * rz;
+        var lam = Math.abs(rx * LX + ry * LY + rz2 * LZ) / ln;
+        for (var k = 0; k < NS; k++) {
+          var z0 = L * k / NS, z1 = L * (k + 1) / NS;
+          var q = [P(a[0], a[1], z0), P(b[0], b[1], z0), P(b[0], b[1], z1), P(a[0], a[1], z1)];
+          var heat = hot * clamp(1 - (L - (z0 + z1) / 2) / 0.7) + hot * 0.25;
+          faces.push({ q: q, d: (q[0][2] + q[1][2] + q[2][2] + q[3][2]) / 4, lam: lam, heat: clamp(heat) });
+        }
+      }
+    });
+    faces.sort(function (x, y) { return y.d - x.d; });
+    g.lineWidth = 0.6; g.strokeStyle = "rgba(0,0,0,.18)";
+    faces.forEach(function (f) {
+      var s = 0.28 + 0.62 * f.lam;
+      var r = lerp(178 * s + 30, 255, f.heat), gg = lerp(184 * s + 30, 118 + 70 * f.heat, f.heat), bb = lerp(196 * s + 34, 40 + 40 * f.heat, f.heat);
+      g.beginPath(); f.q.forEach(function (p, i) { if (i) g.lineTo(p[0], p[1]); else g.moveTo(p[0], p[1]); }); g.closePath();
+      g.fillStyle = "rgb(" + (r | 0) + "," + (gg | 0) + "," + (bb | 0) + ")"; g.fill(); g.stroke();
+    });
+    /* end face: brushed silver, a glint once it has cooled */
+    g.save();
+    g.beginPath(); MARKM.forEach(function (s) { poly(s, L); });
+    var capG = g.createLinearGradient(0, cy - 140, 0, cy + 140); capG.addColorStop(0, "#E9EBF0"); capG.addColorStop(1, "#AEB3BD");
+    g.fillStyle = capG; g.fill();
+    if (hot > 0.01) { g.fillStyle = rgba(0.55 * hot, 255, 130, 50); g.fill(); }
+    g.clip();
+    var gl = seg(t, 2.05, 2.7);
+    if (gl > 0 && gl < 1) {
+      var bx = lerp(-80, W + 80, gl), sg = g.createLinearGradient(bx - 70, 0, bx + 70, 0);
+      sg.addColorStop(0, "rgba(255,255,255,0)"); sg.addColorStop(0.5, "rgba(255,255,255,.75)"); sg.addColorStop(1, "rgba(255,255,255,0)");
+      g.fillStyle = sg; g.fillRect(0, 0, W, H);
+    }
+    g.restore();
+    /* the sparkle lights up in the accent */
+    var star = new Path2D(); STARM.forEach(function (p, i) { var q = P(p[0], p[1], L); if (i) star.lineTo(q[0], q[1]); else star.moveTo(q[0], q[1]); }); star.closePath();
+    var glow = seg(t, 2.4, 2.75) * (1 - seg(t, 2.9, 3.15));
+    if (glow > 0.01) { g.save(); g.shadowColor = rgba(0.9, acc[0], acc[1], acc[2]); g.shadowBlur = 26 * glow; g.fillStyle = rgba(glow, acc[0], acc[1], acc[2]); g.fill(star); g.restore(); }
+    /* the wordmark */
+    var wa = seg(t, 2.25, 2.7) * (1 - seg(t, 2.85, 3.0));
+    if (wa > 0.01) {
+      var fb = P(0, -0.72, L);
+      g.fillStyle = light ? rgba(wa, 17, 17, 20) : rgba(wa, 242, 242, 244);
+      g.font = "300 26px 'Arial Nova', Arial, sans-serif"; g.textAlign = "center"; g.fillText("Echo", cx, fb[1] + 26);
+    }
+    /* the first 0.45 s: everything rises out of the page colour, so the blank page becomes the film */
+    var fadeIn = seg(t, 0, 0.45);
+    if (fadeIn < 1) { g.globalAlpha = 1 - fadeIn; g.fillStyle = BG; g.fillRect(0, 0, W, H); g.globalAlpha = 1; }
+    /* fly-through: the page is seen through the sparkle */
+    if (t > 2.85) { g.globalCompositeOperation = "destination-out"; g.fillStyle = "rgba(0,0,0," + seg(t, 2.85, 3.05) + ")"; g.fill(star); g.globalCompositeOperation = "source-over"; }
+  }
+
+  var t = 0, last = 0, raf = 0, ended = false;
+  function end() {
+    if (ended) return; ended = true; cancelAnimationFrame(raf);
+    removeEventListener("keydown", end, true); gone();
+  }
+  cv.addEventListener("pointerdown", end);
+  addEventListener("keydown", end, true);
+  function tick(ms) {
+    if (ended) return;
+    /* A stall while the rest of the page loads pauses the film instead of skipping part of it. */
+    if (last) t += Math.min(ms - last, 50) / 1000;
+    last = ms;
+    if (t > 3.65) { end(); return; }
+    var dp = window.devicePixelRatio || 1, W = innerWidth, H = innerHeight;
+    if (cv.width !== Math.round(W * dp) || cv.height !== Math.round(H * dp)) { cv.width = Math.round(W * dp); cv.height = Math.round(H * dp); }
+    var g = cv.getContext("2d"); g.setTransform(dp, 0, 0, dp, 0, 0);
+    frame(g, W, H, t);
+    cv.style.background = "transparent";   /* the canvas paints its own page colour now; the hole must show through */
+    raf = requestAnimationFrame(tick);
+  }
+  raf = requestAnimationFrame(tick);
+  /* Whatever happens to frames (a background tab, a stalled load), the page is never covered for long. */
+  setTimeout(end, 9000);
+})();
+</script>
+
 <div id="gate">
   <!-- The gate is the only screen reachable before sign-in, so the theme control has
        to live here too — otherwise it is unreachable for anyone who cannot get past it. -->
