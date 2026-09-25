@@ -480,6 +480,10 @@ body.in .dhead .mark{ animation:railsweep 9s linear infinite }
   to{background-position:0% 50%}
 }
 .dhead .nm{font-family:var(--fs-title);font-size:16px;font-weight:600;letter-spacing:-.2px;flex:1}
+/* The logo and name are the way home: News alerts, from anywhere (user, 25 Sep). */
+.dhead .mark,.dhead .nm{cursor:pointer}
+.dhead .nm{flex:0 0 auto}
+.dhead .home-sp{flex:1}
 .dsec{font-family:var(--fs-title);font-size:12px;font-weight:600;color:var(--ink-3);
   padding:16px 18px 7px}
 .drow{display:flex;align-items:center;gap:11px;width:100%;text-align:left;
@@ -2296,8 +2300,9 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
 <div id="scrim" hidden></div>
 <nav id="drawer" aria-label="Main navigation">
   <div class="dhead">
-    <div class="mark" id="drawerMark" aria-hidden="true"></div>
-    <div class="nm">Echo</div>
+    <div class="mark" id="drawerMark" aria-hidden="true" title="News alerts"></div>
+    <div class="nm" id="drawerName" role="link" tabindex="0" title="News alerts">Echo</div>
+    <div class="home-sp"></div>
     <button class="iconbtn" id="btnClose" title="Close" aria-label="Close menu"></button>
   </div>
   <div id="drawerNav"></div>
@@ -10541,6 +10546,11 @@ $("#signin").onclick = async function () {
   catch (e) { setGateStatus(e.message, true); }
 };
 document.querySelectorAll(".themebtn").forEach(function (b) { b.onclick = toggleTheme; });
+/* The logo is home: News alerts, from wherever you are. */
+function goHome() { S.tab = "alerts"; save(); render(); $("#scroll").scrollTop = 0; closeDrawer(); }
+$("#drawerMark").onclick = goHome;
+$("#drawerName").onclick = goHome;
+$("#drawerName").onkeydown = function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goHome(); } };
 /* One listener for every Usage popover there will ever be, rather than one per turn: the log
    grows without bound and per-turn listeners would grow with it. */
 document.addEventListener("click", function () {
