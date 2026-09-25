@@ -10530,7 +10530,14 @@ document.addEventListener("keydown", function (e) {
 
 $("#signin").onclick = async function () {
   setGateStatus("Opening Google sign-in…");
-  try { await signIn(); setGateStatus(""); await start(); }
+  /* Coming in through sign-in is a visit, not a refresh: it always lands on News alerts, even if this tab
+     was on Ask before (the reload-keeps-Ask rule is for a refresh while signed in; user, 25 Sep). */
+  try {
+    await signIn(); setGateStatus("");
+    S.tab = "alerts";
+    try { sessionStorage.removeItem("echo.ask.tab"); } catch (e2) {}
+    await start();
+  }
   catch (e) { setGateStatus(e.message, true); }
 };
 document.querySelectorAll(".themebtn").forEach(function (b) { b.onclick = toggleTheme; });
