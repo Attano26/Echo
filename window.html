@@ -250,6 +250,8 @@
   }
 }
 /* An explicit choice wins over the system, in both directions. Same list as above. */
+.vertrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 4px}
+.vertrow .vertlbl{font-size:13px;color:var(--ink-3);margin-right:4px}
 ::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
 :root[data-theme="dark"]{
   /* The same nine hues re-stepped for the dark surface -- not a mechanical lightening of the
@@ -2354,6 +2356,36 @@ var CLIENT_ID    = "653924371691-687hjiimvicq77nbk4l6osqoaio3nl4b.apps.googleuse
 var SCOPE        = "https://www.googleapis.com/auth/drive.file";
 var DATA_FILE    = "echo-data.json";
 var ACTIONS_FILE = "echo-web-actions.json";
+/* Which Echo app's backup this page shows (2026-09-25). The three apps write to the signed-in person's OWN
+   Drive under their own names, so the windows app never overwrites a façade backup. Colleagues who use only
+   the façade or sliders app have no echo-data.json at all, so the page looks for all three: one found = that
+   one; several = Settings offers a switch, remembered in this browser. Everything the page reads or writes
+   (backup, the verify/publish file, report downloads, the subtitle) follows the chosen app. */
+var VERTICALS = [
+  { key: "windows", label: "Windows", data: "echo-data.json", actions: "echo-web-actions.json",
+    report: "echo-report-", sub: "Window market intelligence" },
+  { key: "facade", label: "Fa\u00e7ade", data: "echo-facade-data.json", actions: "echo-facade-web-actions.json",
+    report: "echo-facade-report-", sub: "Fa\u00e7ade market intelligence" },
+  { key: "sliders", label: "Sliders", data: "echo-sliders-data.json", actions: "echo-sliders-web-actions.json",
+    report: "echo-sliders-report-", sub: "Sliding doors market intelligence" }
+];
+var VERT = VERTICALS[0], VERT_FOUND = [];
+function useVertical(v) {
+  VERT = v; DATA_FILE = v.data; ACTIONS_FILE = v.actions;
+  if (typeof TAB_TITLE !== "undefined") TAB_TITLE.alerts[1] = v.sub;
+  try { localStorage.setItem("echo.web.vertical", v.key); } catch (e) {}
+}
+async function pickVertical() {
+  var found = [];
+  for (var i = 0; i < VERTICALS.length; i++) {
+    var v = VERTICALS[i], f = await findFile(v.data);
+    if (!f && LEGACY_NAME[v.data]) f = await findFile(LEGACY_NAME[v.data]);
+    if (f) found.push(v);
+  }
+  VERT_FOUND = found;
+  var saved = null; try { saved = localStorage.getItem("echo.web.vertical"); } catch (e) {}
+  useVertical(found.filter(function (v) { return v.key === saved; })[0] || found[0] || VERTICALS[0]);
+}
 var K = "echo.web.v1";
 
 /* ============================================================
@@ -3873,6 +3905,22 @@ function renderDrawerSettings() {
   n.appendChild(navRow(SVG_CLOUD2, "Storage", S.data ? (stTotal ? fmtBytes(stTotal) : "") : "Not loaded",
     function () { setSettingsView("storage"); }));
   n.appendChild(el("div", "sdiv"));
+
+  /* Several Echo apps backed up to this Drive: choose which one this page shows. */
+  if (VERT_FOUND.length > 1) {
+    var vr = el("div", "vertrow");
+    vr.appendChild(el("span", "vertlbl", "Showing"));
+    VERT_FOUND.forEach(function (v) {
+      var b = el("button", "btn sm" + (v.key === VERT.key ? "" : " ghost"), v.label);
+      b.onclick = function () {
+        if (v.key === VERT.key) return;
+        useVertical(v); closeSettingsPanel(); loadEverything();
+      };
+      vr.appendChild(b);
+    });
+    n.appendChild(vr);
+    n.appendChild(el("div", "sdiv"));
+  }
 
   /* The Ask key belongs to THIS browser, not the phone, so it stays reachable before the phone has
      ever backed up. It has its own page now (2026-09-24), reached from a row like Storage. */
@@ -9410,9 +9458,9 @@ var R_DOC_ORDER = [];      // newest last; only a few documents are kept parsed
 var MR_PDF = { sheets: [], io: null, timer: 0 };
 
 function reportFile(id, kind) {
-  return kind === "docx" ? "echo-report-" + id + ".docx"
-       : kind === "word" ? "echo-report-" + id + "-word.pdf"
-       : "echo-report-" + id + ".pdf";
+  return kind === "docx" ? VERT.report + id + ".docx"
+       : kind === "word" ? VERT.report + id + "-word.pdf"
+       : VERT.report + id + ".pdf";
 }
 /* Fetch once, keep the object URL. Returns null when the phone has not uploaded it yet, which
    is a normal state rather than an error: the files appear on the next backup. */
@@ -10328,7 +10376,7 @@ async function loadEverything() {
   S.loading = true; render();
   setStatus("Loading from Drive…");
   var data = null;
-  try { data = await readJson(DATA_FILE); }
+  try { await pickVertical(); data = await readJson(DATA_FILE); }
   finally { S.loading = false; }
 
   if (!data) {
