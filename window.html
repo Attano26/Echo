@@ -782,11 +782,14 @@ body.in .dhead .mark{ animation:railsweep 9s linear infinite }
    against that, so anything taller must clip rather than push into the description. */
 .w-head{height:calc(40 * var(--u));flex:0 0 auto;display:flex;align-items:flex-start;
   overflow:hidden}
-.w-hero{display:flex;align-items:center;gap:calc(6 * var(--u))}
+.w-hero{display:flex;align-items:center;gap:calc(9 * var(--u))}
 /* Every hero figure in Arial Nova Light: one numeric voice across all eight. A light face at
    display size needs looser tracking than a bold one would. */
 .w-num{font-family:var(--fs);font-size:calc(34 * var(--u));font-weight:300;
-  letter-spacing:-.018em;line-height:1;font-variant-numeric:tabular-nums}
+  letter-spacing:-.018em;line-height:1;font-variant-numeric:tabular-nums;
+  /* A two-digit slot (user, 25 Sep): 7 and 42 leave the words beside them in the same place, and a
+     third digit pushes them right, still a full gap away instead of touching "152articles". */
+  min-width:2ch;flex:none}
 .w-num.sm{font-size:calc(27 * var(--u))}
 .w-unit{font-size:calc(10.5 * var(--u));font-weight:500;color:var(--ink-2);line-height:1.15}
 /* The descriptive line. margin-top:auto pushes it to the BOTTOM of the free space, so it ends
