@@ -1917,22 +1917,9 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
 .chghost{position:absolute;inset:0;pointer-events:none;white-space:pre;overflow:hidden;
   font-size:15px;font-weight:300;line-height:40px;color:var(--ink-3);opacity:.75}
 .chghost .t{color:transparent}
+.chghost .g{pointer-events:auto;cursor:pointer}
 .chghost .k{display:inline-block;margin-left:8px;padding:0 5px;border:1px solid var(--line);border-radius:4px;
   font-size:10px;line-height:15px;vertical-align:2px;opacity:.8}
-/* Type-ahead suggestions FLOAT over the conversation, anchored to the box. They used to sit in the
-   dock's own layout: appearing and vanishing moved the Basic/Smart/Clear line, so a press on Clear
-   blurred the box, the list collapsed, the line jumped, and the release landed on nothing. */
-.chacpop{position:absolute;left:0;right:0;bottom:calc(100% + 8px);z-index:9;display:none;
-  background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh-2);
-  padding:5px;max-height:240px;overflow-y:auto}
-.chacpop.on{display:block}
-.chaci{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;cursor:pointer;
-  font:inherit;font-size:14px;font-weight:300;text-align:left;padding:8px 10px;border-radius:9px;color:var(--ink-3)}
-.chaci .tx{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.chaci .tx b{font-weight:500;color:var(--ink)}
-.chaci em{flex:none;font-style:normal;font-size:11px;color:var(--ink-3)}
-.chaci:hover,.chaci.sel{background:var(--surface-2)}
-.chaci.sel{box-shadow:inset 0 0 0 1px var(--line)}
 .chmenu .chmi{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;cursor:pointer;
   font:inherit;text-align:left;padding:8px 6px;border-radius:10px;color:var(--ink)}
 .chmenu .chmi:hover{background:var(--surface-2);text-decoration:none}
@@ -11271,10 +11258,6 @@ function renderAsk(app) {
     dock.appendChild(menu);
   }
 
-  var acRow = el("div", "chacpop");
-  acRow.id = "chAcPop";
-  acRow.setAttribute("role", "listbox");
-
   var box = el("div", "chbox" + (chSmart() ? " smart" : ""));
   var plus = el("button", "chplus" + (CH_PLUS_OPEN ? " on" : ""));
   plus.innerHTML = ICON_PLUS;
@@ -11300,53 +11283,24 @@ function renderAsk(app) {
   input.value = CH_DRAFT;
   var ghost = el("div", "chghost");
   ghost.setAttribute("aria-hidden", "true");
-  var AC = { ghost: "", options: [] }, acSel = -1;
+  var AC = { ghost: "", options: [] };
 
-  /* Type-ahead: grey text to accept with Tab (or →), and up to three chips above the box for touch. */
-  var acUpdate = function (focusing) {
-    var v = input.value, focused = focusing === true || document.activeElement === input;
-    AC = focused || v ? chComplete(v) : { ghost: "", options: [] };
-    /* An empty, focused box offers what you asked most. */
-    if (!v && focused) {
-      AC = { ghost: "", options: chHistLoad().slice(0, 3).map(function (x) { return { text: x.q, label: x.q, hint: "asked before" }; }) };
-    }
+  /* Type-ahead is INLINE ONLY (user, 30 Sep: no list above the box). It appears once something is
+     typed and never on an empty box: grey text after the caret, taken with Tab or →, or by tapping it
+     on a phone, where there is no Tab key. */
+  var acUpdate = function () {
+    var v = input.value;
+    AC = v.trim() ? chComplete(v) : { ghost: "", options: [] };
     var atEnd = input.selectionStart === v.length && input.selectionEnd === v.length;
     var fits = input.scrollWidth <= input.clientWidth + 1;
     ghost.innerHTML = "";
-    if (AC.ghost && atEnd && fits) {
+    if (AC.ghost && atEnd && fits && document.activeElement === input) {
       ghost.appendChild(el("span", "t", v));
-      ghost.appendChild(document.createTextNode(AC.ghost));
+      var gs = el("span", "g", AC.ghost);
+      gs.title = "Tap to use";
+      gs.onmousedown = function (e) { e.preventDefault(); accept(); };
+      ghost.appendChild(gs);
       if (railIsPermanent()) ghost.appendChild(el("span", "k", "Tab"));
-    }
-    acRow.innerHTML = "";
-    acSel = -1;
-    AC.options.forEach(function (o) {
-      if (key(o.text).trim() === key(v).trim()) return;
-      /* The whole question as it would read, with what you have NOT typed yet in weight — the part
-         you are choosing between is the part that differs. */
-      var b = el("button", "chaci");
-      b.setAttribute("role", "option");
-      var tx = el("span", "tx");
-      var full = o.text.replace(/\s+$/, "");
-      if (v && key(full).indexOf(key(v)) === 0) {
-        tx.appendChild(document.createTextNode(full.slice(0, v.length)));
-        tx.appendChild(el("b", null, full.slice(v.length)));
-      } else tx.appendChild(el("b", null, full));
-      b.appendChild(tx);
-      if (o.hint) b.appendChild(el("em", null, o.hint));
-      b.onmousedown = function (e) { e.preventDefault(); };
-      b.onclick = function () {
-        input.value = o.text; CH_DRAFT = o.text; input.focus();
-        input.setSelectionRange(o.text.length, o.text.length); sync(); acUpdate();
-      };
-      acRow.appendChild(b);
-    });
-    acRow.classList.toggle("on", !!acRow.firstChild);
-    /* Lifted above the Basic/Smart/Clear line (and any panel open above the box), so that line is
-       never covered while you type and Clear is always one click. */
-    if (acRow.firstChild) {
-      var lift = box.getBoundingClientRect().top - ctx.getBoundingClientRect().top;
-      acRow.style.bottom = "calc(100% + " + Math.max(8, Math.round(lift) + 6) + "px)";
     }
   };
   var accept = function () {
@@ -11368,28 +11322,15 @@ function renderAsk(app) {
     box.classList.toggle("live",
       chSmart() && (document.activeElement === input || !!input.value.trim()));
   };
-  input.onfocus = function () { sync(); acUpdate(true); };
-  /* Hidden at once on blur: the list floats, so hiding it moves nothing else on the screen. */
-  input.onblur = function () { sync(); ghost.innerHTML = ""; acRow.innerHTML = ""; acRow.classList.remove("on"); };
+  input.onfocus = function () { sync(); acUpdate(); };
+  input.onblur = function () { sync(); ghost.innerHTML = ""; };
   input.oninput = function () { CH_DRAFT = input.value; sync(); acUpdate(); };
   input.onkeyup = function (e) { if (e.key === "ArrowLeft" || e.key === "Home" || e.key === "End") acUpdate(); };
   input.onkeydown = function (e) {
     if (e.key === "Tab" && !e.shiftKey && AC.ghost) { e.preventDefault(); accept(); return; }
     if (e.key === "ArrowRight" && AC.ghost && input.selectionStart === input.value.length) { e.preventDefault(); accept(); return; }
-    /* Up/down walk the chips; Enter then takes the highlighted one into the box. */
-    var chips = acRow.querySelectorAll(".chaci");
-    if ((e.key === "ArrowDown" || e.key === "ArrowUp") && chips.length) {
-      e.preventDefault();
-      acSel = (acSel + (e.key === "ArrowDown" ? 1 : chips.length - 1) + (acSel < 0 && e.key === "ArrowUp" ? 1 : 0)) % chips.length;
-      chips.forEach(function (c, i) { c.classList.toggle("sel", i === acSel); });
-      return;
-    }
-    if (e.key === "Escape") { ghost.innerHTML = ""; acRow.innerHTML = ""; acRow.classList.remove("on"); AC = { ghost: "", options: [] }; return; }
-    if (e.key === "Enter") {
-      e.preventDefault();
-      if (acSel >= 0 && chips[acSel]) { chips[acSel].click(); return; }
-      chAsk(input.value);
-    }
+    if (e.key === "Escape") { ghost.innerHTML = ""; AC = { ghost: "", options: [] }; return; }
+    if (e.key === "Enter") { e.preventDefault(); chAsk(input.value); }
   };
   go.onclick = function () { chAsk(input.value); };
   sync();
@@ -11399,7 +11340,6 @@ function renderAsk(app) {
   inw.appendChild(input);
   box.appendChild(inw);
   box.appendChild(go);
-  box.appendChild(acRow);
   dock.appendChild(box);
   pane.appendChild(dock);
   app.appendChild(pane);
