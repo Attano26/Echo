@@ -1843,6 +1843,35 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
 .chfail button{border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;
   font-size:12.5px;padding:4px 13px;border-radius:999px;cursor:pointer}
 .chfail button:active{transform:scale(.97)}
+/* How a follow-up was understood. Quiet, but always there when a reference was resolved, so a
+   wrong reading is visible rather than silently answered. */
+.chread{margin:-3px 0 9px;font-size:12px;line-height:1.45;color:var(--ink-3)}
+.chread b{font-weight:500;color:var(--ink-2)}
+/* Tables in a reply: one surface down, like the stat tiles. Scrolls sideways inside itself on a
+   phone rather than pushing the page wider. */
+.chtbl{margin-top:14px;background:var(--surface-2);border:1px solid var(--line-2);border-radius:var(--r-box);overflow:hidden}
+.chlead + .chtbl,.chfail + .chtbl{margin-top:13px}
+.chtblh{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px 7px;
+  font-size:12px;font-weight:500;letter-spacing:.01em;color:var(--ink-2)}
+.chtblcp{background:none;border:0;padding:2px 0;font:inherit;font-size:10.5px;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--ink-3);opacity:.7;cursor:pointer;flex:none}
+.chtblcp:hover{opacity:1;color:var(--ink-2)}
+.chtblw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.chtbl table{width:100%;border-collapse:collapse;font-size:13px;line-height:1.4}
+.chtbl th{font-weight:400;font-size:11.5px;color:var(--ink-3);text-align:left;padding:6px 12px;
+  border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2);white-space:nowrap}
+.chtbl td{padding:7px 12px;border-top:1px solid var(--line-2);color:var(--ink);vertical-align:top;position:relative}
+.chtbl tbody tr:first-child td{border-top:0}
+.chtbl td:first-child{color:var(--ink-2);min-width:96px}
+.chtbl .n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.chtbl td .v{position:relative}
+.chtbl td .chbar{position:absolute;right:12px;bottom:4px;height:2px;border-radius:2px;background:var(--accent);opacity:.55}
+.chtbl td.unv .v{border-bottom:1px dotted var(--ink-3);cursor:help}
+.chtbl.plain th{display:none}
+.chtbl.plain td:first-child{width:38%;min-width:0;color:var(--ink-3)}
+.chtbln{padding:7px 12px 9px;border-top:1px solid var(--line-2);font-size:11.5px;line-height:1.5;color:var(--ink-3)}
+.chlead .chtbl{margin:6px 0 10px}
+.chlead .chtbl td.unv{text-decoration:underline dotted var(--ink-3);cursor:help}
 
 @media (max-width:640px){
   .chsug{grid-template-columns:1fr}
@@ -7181,6 +7210,17 @@ function chIndex() {
   if (CH_IX && CH_IX.stamp === stamp) return CH_IX;
 
   var docs = chCorpus(), df = {}, vocab = {}, i, j;
+  /* Each story's markets (the phone's verdict, as the Context panel reads it) and the tracked
+     companies it names (the filter chips' rule). Worked out once per snapshot; every table,
+     comparison and filter below reads these rather than matching text again. */
+  var mkAll = reportMarketList();
+  var compNames = arr((S.data || {}).competitors).filter(function (c) { return c && c.name; })
+    .map(function (c) { return c.name; });
+  docs.forEach(function (doc) {
+    doc.mk = mkAll.length ? reportMarketsOf(doc.raw, mkAll) : [];
+    var hay = doc.title + " " + doc.summary + " " + doc.source + " " + doc.company;
+    doc.cm = compNames.filter(function (n) { return compMentioned(hay, n); });
+  });
   /* Field weights: a term in the headline says more about the story than the same term
      buried in a summary. The retired advisory field is not among them, so every ranking can
      be accounted for by text the reader can actually see. */
@@ -7281,11 +7321,911 @@ function chNear(q) {
 function chEntities(q) {
   var ix = chIndex(), hay = chFold(q);
   var pick = function (list) {
-    return list.filter(function (e) {
-      return e.terms.some(function (t) { return t.length >= 4 && hay.indexOf(t) >= 0; });
-    });
+    /* In the order the question names them, so "Fenesta vs Reynaers" puts Fenesta first. */
+    return list.map(function (e) {
+      var at = -1;
+      e.terms.forEach(function (t) {
+        var i = t.length >= 4 ? hay.indexOf(t) : -1;
+        if (i >= 0 && (at < 0 || i < at)) at = i;
+      });
+      return { e: e, at: at };
+    }).filter(function (x) { return x.at >= 0; })
+      .sort(function (a, b) { return a.at - b.at; }).map(function (x) { return x.e; });
   };
   return { comps: pick(ix.comps), lands: pick(ix.lands) };
+}
+
+/* ============================================================
+   ASK — understanding the question (2026-09-30)
+   ------------------------------------------------------------
+   Three things the first version could not do, added together because they share one idea: the
+   question is PARSED once into {intent words, subject words, entities, time range}, and every
+   answer below reads that parse rather than re-reading the raw string.
+
+     chTimeRange   "this month", "last 2 weeks", "in August", "Q3" -> a date window
+     chFollow      "and Germany?", "the second one", "compare them" -> resolved against the turns above
+     chAnsCompare  this versus that: companies, markets or periods, side by side in a table
+     chAnsBreakdown  by competitor / market / theme / source / month / week, one or two at once
+     chAnsDigest   what happened in a period, grouped by theme
+
+   All of it is counting over the stories already held. Nothing here fetches, and nothing here
+   estimates: a figure in a table is a count of stories the reader can open.
+   ============================================================ */
+
+/* ---------- time ---------- */
+var CH_MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+var CH_NUMW = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
+                eleven: 11, twelve: 12, a: 1 };
+function chDay0(t) { var x = new Date(t); x.setHours(0, 0, 0, 0); return x.getTime(); }
+function chMonth0(y, m) { return new Date(y, m, 1).getTime(); }
+function chShort(ms) {
+  return ms ? new Date(ms).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "";
+}
+function chMonLabel(ms) {
+  return new Date(ms).toLocaleDateString("en-GB", { month: "short", year: "numeric" });
+}
+
+/* Every period named in the question, in the order written. Each is {from, to, label, text}: `to` is
+   exclusive, `text` is the words as typed, so they can be taken out of the search. */
+function chTimeRanges(q) {
+  var s = String(q || "").toLowerCase(), now = Date.now(), today = chDay0(now), out = [];
+  var d = new Date(today), Y = d.getFullYear(), M = d.getMonth();
+  var dow = (d.getDay() + 6) % 7;                         // Monday = 0
+  var add = function (m, from, to, label) {
+    out.push({ at: m.index, end: m.index + m[0].length, text: m[0], from: from, to: to, label: label });
+  };
+  var rx, m;
+  var each = function (re, fn) { re.lastIndex = 0; while ((m = re.exec(s))) fn(m); };
+
+  each(/\btoday\b/g, function (m) { add(m, today, today + 864e5, "today"); });
+  each(/\byesterday\b/g, function (m) { add(m, today - 864e5, today, "yesterday"); });
+  each(/\b(this|current) week\b/g, function (m) { add(m, today - dow * 864e5, today + 864e5, "this week"); });
+  each(/\b(last|previous) week\b/g, function (m) { add(m, today - (dow + 7) * 864e5, today - dow * 864e5, "last week"); });
+  each(/\bpast week\b/g, function (m) { add(m, today - 6 * 864e5, today + 864e5, "the past 7 days"); });
+  each(/\b(this|current) month\b/g, function (m) { add(m, chMonth0(Y, M), today + 864e5, "this month"); });
+  each(/\b(last|previous) month\b/g, function (m) { add(m, chMonth0(Y, M - 1), chMonth0(Y, M), "last month"); });
+  each(/\bpast month\b/g, function (m) { add(m, today - 29 * 864e5, today + 864e5, "the past 30 days"); });
+  each(/\b(this|current) quarter\b/g, function (m) {
+    var q0 = M - M % 3; add(m, chMonth0(Y, q0), today + 864e5, "this quarter");
+  });
+  each(/\b(last|previous) quarter\b/g, function (m) {
+    var q0 = M - M % 3; add(m, chMonth0(Y, q0 - 3), chMonth0(Y, q0), "last quarter");
+  });
+  each(/\bq([1-4])(?:\s*(20\d\d))?\b/g, function (m) {
+    var qy = m[2] ? +m[2] : Y, q0 = (+m[1] - 1) * 3;
+    if (!m[2] && chMonth0(qy, q0) > now) qy--;
+    add(m, chMonth0(qy, q0), chMonth0(qy, q0 + 3), "Q" + m[1] + " " + qy);
+  });
+  each(/\b(this|current) year\b/g, function (m) { add(m, chMonth0(Y, 0), today + 864e5, "this year"); });
+  each(/\blast year\b/g, function (m) { add(m, chMonth0(Y - 1, 0), chMonth0(Y, 0), "last year"); });
+  each(/\b(?:last|past|previous)\s+(\d{1,3}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|a)\s+(days?|weeks?|months?)\b/g, function (m) {
+    var n = /\d/.test(m[1]) ? +m[1] : CH_NUMW[m[1]], u = m[2].charAt(0);
+    if (!n) return;
+    var from = u === "d" ? today - (n - 1) * 864e5
+             : u === "w" ? today - (n * 7 - 1) * 864e5
+             : new Date(Y, M - n, d.getDate()).getTime();
+    add(m, from, today + 864e5, "the last " + n + " " + m[2].replace(/s$/, "") + (n === 1 ? "" : "s"));
+  });
+  /* Month names. "may" and "mar" are ordinary words too, so they count only next to a year or after
+     a word that introduces a date ("in May", "since March", "May vs June"). */
+  each(/\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\b(?:\s+(20\d\d))?/g, function (m) {
+    var word = m[1], before = s.slice(Math.max(0, m.index - 8), m.index);
+    var shaky = /^(may|mar)$/.test(word);
+    if (shaky && !m[2] && !/(in|since|from|during|of|for|and|vs|to|until|till|between)\s+$/.test(before) &&
+        !/^\s*(vs|versus|and|to)\b/.test(s.slice(m.index + m[0].length))) return;
+    var mi = CH_MONTHS.indexOf(word.slice(0, 3));
+    var yy = m[2] ? +m[2] : (mi > M ? Y - 1 : Y);
+    add(m, chMonth0(yy, mi), chMonth0(yy, mi + 1),
+        new Date(yy, mi, 1).toLocaleDateString("en-GB", { month: "long" }) + (m[2] || yy !== Y ? " " + yy : ""));
+  });
+  /* A bare year, when no month or quarter already used it. */
+  each(/\b(20[12]\d)\b/g, function (m) {
+    if (out.some(function (r) { return m.index >= r.at && m.index < r.end; })) return;
+    add(m, chMonth0(+m[1], 0), chMonth0(+m[1] + 1, 0), m[1]);
+  });
+
+  /* "since X" runs from X to now. */
+  out.forEach(function (r) {
+    if (/since\s+(the\s+)?$/.test(s.slice(Math.max(0, r.at - 7), r.at))) {
+      r.to = today + 864e5; r.label = "since " + r.label; r.text = "since " + r.text;
+      r.at = Math.max(0, r.at - 6);
+    }
+  });
+  /* Overlaps: keep the longer phrase ("last 2 weeks" over a stray "2026"). */
+  out.sort(function (a, b) { return a.at - b.at || (b.end - b.at) - (a.end - a.at); });
+  var kept = [];
+  out.forEach(function (r) {
+    var last = kept[kept.length - 1];
+    if (last && r.at < last.end) return;
+    kept.push(r);
+  });
+  return kept;
+}
+function chTimeRange(q) { var r = chTimeRanges(q); return r.length ? r[0] : null; }
+function chInRange(doc, r) { return !r || (doc.ms && doc.ms >= r.from && doc.ms < r.to); }
+function chRangeSpan(r) {
+  if (!r) return "";
+  return chShort(r.from) + " – " + chShort(Math.min(r.to, chDay0(Date.now()) + 864e5) - 1);
+}
+
+/* ---------- vocabulary that steers rather than searches ----------
+   Words that choose the ANSWER'S FORM ("compare", "by market", "summarise") are not the subject.
+   Left in, they are searched for, and "stories by competitor" becomes a hunt for the word
+   "competitor" in headlines. */
+var CH_META = (function () {
+  var o = {}, w = ("compare comparison compared comparing versus against difference differences side head stack " +
+    "stacks relative better worse breakdown split splits distribution mix share shares rank ranked " +
+    "busier bigger louder quieter stronger weaker higher lower active " +
+    "ranking rankings league leaderboard top most least busiest loudest quietest biggest smallest leading leads " +
+    "ahead behind which table tables tabulate chart graph volume volumes count counts total totals number numbers " +
+    "competitor company brand rival player maker manufacturer market country region geography category theme " +
+    "topic type segment subject source publisher outlet publication site website media month monthly week weekly " +
+    "daily quarter quarterly year yearly summary summarise summarize summarising recap digest overview brief " +
+    "briefing highlight highlights catch miss missed happened happening story article item everything anything " +
+    "held hold show list give tell per each across between both them those these two all whole period news " +
+    "since today yesterday last past previous current day days weeks months years " +
+    "saved save published publish alert alerts inbox unread liked disliked " +
+    "talk talks talking say says said mention mentions mentioned discuss discusses discussed cover covers " +
+    "covered write writes wrote feature features featured").split(" ");
+  for (var i = 0; i < w.length; i++) o[chStem(w[i])] = 1;
+  return o;
+})();
+function chSubjectTokens(text) {
+  return chTokens(text).filter(function (t) { return !CH_META[t] && !CH_ROUTE_WORDS[t]; });
+}
+
+/* ---------- the parse ---------- */
+function chStrip(q, ranges) {
+  var s = String(q || "");
+  /* Right to left, so earlier positions stay valid. */
+  ranges.slice().sort(function (a, b) { return b.at - a.at; }).forEach(function (r) {
+    s = s.slice(0, r.at) + " " + s.slice(r.end);
+  });
+  return s.replace(/\s+/g, " ").trim();
+}
+function chParse(q) {
+  var ranges = chTimeRanges(q);
+  var text = chStrip(q, ranges);
+  return { q: q, text: text, ents: chEntities(text), range: ranges[0] || null, ranges: ranges };
+}
+
+/* ---------- follow-ups ----------
+   The conversation above is context. Three kinds of reference are resolved here, locally, in both
+   modes — so Basic answers "and Germany?" correctly too, and Smart's retrieval pulls the RIGHT
+   stories for the model instead of the model being handed stories for the literal words "and
+   Germany". Whatever is resolved is shown on the turn ("Read as …"), so a wrong guess is visible. */
+var CH_FOLLOW_LEAD = /^(and|or|but|also|so|now|then|ok(ay)? and|what about|how about|and what about|same for|same with|same but|now for|and for|and in|what of|vs\.?|versus|compared? (to|with)|against|only|just)\b/;
+/* The only words a bare follow-up may carry besides a name or a period: "Fenesta in Germany?". */
+var CH_FILLER = (function () {
+  var o = {}, w = "and or in for the a an about of on now then same also only just please pls".split(" ");
+  for (var i = 0; i < w.length; i++) o[w[i]] = 1;
+  return o;
+})();
+var CH_ORD = { first: 0, "1st": 0, top: 0, second: 1, "2nd": 1, third: 2, "3rd": 2, fourth: 3, "4th": 3,
+               fifth: 4, "5th": 4, sixth: 5, "6th": 5 };
+
+function chPrevData() {
+  for (var i = CH_LOG.length - 1; i >= 0 && i >= CH_LOG.length - 6; i--) {
+    var t = CH_LOG[i];
+    if (t && t.P && !t.social) return t;
+  }
+  return null;
+}
+
+function chFollow(q) {
+  var prev = chPrevData();
+  if (!prev) return null;
+  var t = key(q).replace(/[?!.]+$/, "").trim();
+  var P = chParse(q);
+  var named = P.ents.comps.length + P.ents.lands.length;
+
+  /* 1. A story from the last answer: "the second one", "tell me more about #3", "open it". */
+  var items = prev.refItems || prev.items || [];
+  if (items.length && !named) {
+    var idx = -1;
+    var mo = /\b(first|second|third|fourth|fifth|sixth|1st|2nd|3rd|4th|5th|6th|top)\b\s*(one|story|article|item|piece|result|card|link|headline)?/.exec(t);
+    var mn = /(?:#|\bnumber\s*|\bno\.?\s*|\bstory\s*|\bitem\s*)([1-6])\b/.exec(t);
+    var ml = /\b(last|bottom)\s+(one|story|article|item|card|headline)\b/.exec(t);
+    var asks = /\b(more|expand|elaborate|details?|detail|summari[sz]e|explain|open|say|says|about|read|what('s| is) in|what does|tell me|go deeper|dig into|unpack)\b/.test(t);
+    if (mn) idx = +mn[1] - 1;
+    else if (mo && (mo[2] || asks)) idx = CH_ORD[mo[1]];
+    else if (ml) idx = items.length - 1;
+    else if (/^(tell me more|more on (it|that|this)|expand on (it|that|this)|what does (it|that|this|the story|the article) say|summari[sz]e (it|that|this)|explain (it|that|this)|open (it|that|this)|more about (it|that|this)|elaborate)$/.test(t)) idx = 0;
+    if (idx >= 0 && idx < items.length) {
+      return { doc: items[idx], idx: idx, prevP: prev.P, prevItems: items, base: prev.base || prev.q,
+               readAs: "story " + (idx + 1) + " above, “" + items[idx].title + "”" };
+    }
+  }
+
+  var PP = prev.P;
+  var lead = CH_FOLLOW_LEAD.exec(t);
+  var rest = lead ? t.slice(lead[0].length).trim() : t;
+  var restTok = chSubjectTokens(chStrip(rest, chTimeRanges(rest)));
+  var restNamed = chEntities(rest);
+  var newNamed = restNamed.comps.length + restNamed.lands.length;
+  /* Subject words that are only the entity names themselves ("and Fenesta") are not a new subject. */
+  var entWords = {};
+  restNamed.comps.concat(restNamed.lands).forEach(function (e) {
+    chTokens(e.name).forEach(function (w) { entWords[w] = 1; });
+    e.terms.forEach(function (x) { chTokens(x).forEach(function (w) { entWords[w] = 1; }); });
+  });
+  var freshWords = restTok.filter(function (w) { return !entWords[w]; });
+
+  /* 2. "compare them", "which is bigger", "how do they compare": the entities of the last few turns. */
+  if (!named && /\b(compare|comparison|vs|versus|which (one )?is (bigger|busier|louder|ahead|more active|stronger)|who is (ahead|bigger|louder|busier)|how do (they|the two|both) (compare|stack up)|side by side|difference)\b/.test(t)
+      && /\b(them|they|both|the two|those|these|each other|which|who)\b/.test(t)) {
+    var cs = [], ls = [], seenC = {}, seenL = {};
+    /* Oldest first, in the order they were first named, so the table reads as the talk did. */
+    for (var i = Math.max(0, CH_LOG.length - 4); i < CH_LOG.length; i++) {
+      var T = CH_LOG[i]; if (!T || !T.P) continue;
+      T.P.ents.comps.forEach(function (c) { if (!seenC[c.name]) { seenC[c.name] = 1; cs.push(c); } });
+      T.P.ents.lands.forEach(function (c) { if (!seenL[c.name]) { seenL[c.name] = 1; ls.push(c); } });
+    }
+    var pick = cs.length >= 2 ? cs : ls.length >= 2 ? ls : null;
+    if (pick) {
+      pick = pick.slice(-3);
+      var rng = P.ranges.length ? P.ranges : PP.ranges;
+      var txt = "compare " + pick.map(function (e) { return e.name; }).join(" with ");
+      var np = { q: txt + (rng[0] ? " " + rng[0].text : ""), text: txt,
+                 ents: { comps: cs.length >= 2 ? pick : [], lands: cs.length >= 2 ? [] : pick },
+                 range: rng[0] || null, ranges: rng.slice(0, 1), forceCompare: true };
+      return { P: np, readAs: chCap(txt) + (rng[0] ? ", " + rng[0].label : "") };
+    }
+  }
+
+  var prevBase = prev.base || prev.q;
+  /* A figure question ("how much have I spent") or a count of a collection has no subject to
+     re-aim, so "and Fenesta?" after one is a new question, not a follow-up. */
+  if (prev.compact || prev.kind === "metric" || prev.kind === "help") return null;
+
+  /* 3. The same question, re-aimed: "and Germany?", "what about last month?", "same for Fenesta". */
+  var short = restTok.length <= 4;
+  /* Without a lead-in ("and", "what about"), only a bare name or period counts: "Germany?",
+     "last month?". "Stories by competitor this month" has words of its own and is a new question. */
+  var bare = newNamed <= 1 && !CH_COMPARE.test(" " + t + " ") &&
+    !chStrip(t, chTimeRanges(t)).split(/[^a-z0-9À-ɏ]+/).some(function (w) {
+      if (!w || CH_FILLER[w]) return false;
+      var tk = chTokens(w);
+      return !tk.length || !entWords[tk[0]];
+    });
+  if (!(lead && short && rest) && !(bare && (newNamed || P.ranges.length))) {
+    /* 4. "more" / "why": the same subject, carried forward. */
+    if (/^(more|show more|any more|anything else|what else|others|go on|continue|keep going|next|and)$/.test(t)) {
+      return { P: PP, page: (prev.page || 0) + 1, base: prevBase, readAs: "More on “" + prevBase + "”" };
+    }
+    if (/^(why|why so|why is that|how come|so what|what does (that|this|it) mean|what are the implications|meaning)$/.test(t)) {
+      return { P: PP, why: true, base: prevBase, readAs: "Why — about “" + prevBase + "”" };
+    }
+    return null;
+  }
+
+  var ents = { comps: PP.ents.comps.slice(), lands: PP.ents.lands.slice() };
+  if (restNamed.comps.length) ents.comps = restNamed.comps;
+  if (restNamed.lands.length) {
+    ents.lands = restNamed.lands;
+    /* "and Germany?" after a question about a market swaps the market; after a question about a
+       company it narrows that company to the market — both are the natural reading. */
+  }
+  var ranges = P.ranges.length ? P.ranges : PP.ranges;
+  /* The old subject words, minus the old entities' own names — those are replaced, not added. */
+  var drop = {};
+  PP.ents.comps.concat(PP.ents.lands).forEach(function (e) {
+    var swapped = (restNamed.comps.length && PP.ents.comps.indexOf(e) >= 0) ||
+                  (restNamed.lands.length && PP.ents.lands.indexOf(e) >= 0);
+    if (!swapped) return;
+    chTokens(e.name).forEach(function (w) { drop[w] = 1; });
+    e.terms.forEach(function (x) { chTokens(x).forEach(function (w) { drop[w] = 1; }); });
+  });
+  /* A new subject ("what about pricing?") replaces the old subject words but keeps the old
+     entities and the words that chose the answer's form. */
+  var keepEnt = {};
+  ents.comps.concat(ents.lands).forEach(function (e) {
+    chTokens(e.name).forEach(function (w) { keepEnt[w] = 1; });
+    e.terms.forEach(function (x) { chTokens(x).forEach(function (w) { keepEnt[w] = 1; }); });
+  });
+  var keepText = PP.text.split(/\s+/).filter(function (w) {
+    var tk = chTokens(w);
+    if (!tk.length) return true;
+    if (drop[tk[0]]) return false;
+    if (freshWords.length && !CH_META[tk[0]] && !CH_ROUTE_WORDS[tk[0]] && !keepEnt[tk[0]]) return false;
+    return true;
+  }).join(" ");
+  var addText = rest.replace(/\b(the same|same|for|in|with|about|but)\b/g, " ");
+  addText = chStrip(addText, chTimeRanges(addText));
+  var text = (keepText + " " + addText).replace(/\s+/g, " ").trim();
+  var np2 = { q: PP.q + " " + rest, text: text, ents: ents, range: ranges[0] || null, ranges: ranges.slice(),
+              forceCompare: PP.forceCompare };
+  var parts = [];
+  if (restNamed.comps.length || restNamed.lands.length) parts.push(chList(restNamed.comps.concat(restNamed.lands).map(function (e) { return e.name; })));
+  if (P.ranges.length) parts.push(P.ranges[0].label);
+  if (freshWords.length) parts.push(rest.split(/[^a-z0-9À-ɏ]+/).filter(function (w) {
+    var tk = chTokens(w); return tk.length && freshWords.indexOf(tk[0]) >= 0;
+  }).join(" ") || freshWords.join(" "));
+  var now = parts.join(", ") || rest;
+  return { P: np2, base: prevBase.replace(/\?+$/, "") + " · " + now,
+           readAs: "“" + prevBase.replace(/\?+$/, "") + "”, now for " + now };
+}
+
+/* ---------- selections ---------- */
+function chCompFilter(c) { return function (doc) { return doc.cm.indexOf(c.name) >= 0; }; }
+function chLandFilter(l) { return function (doc) { return doc.mk.indexOf(l.name) >= 0; }; }
+function chAll(fs) {
+  fs = fs.filter(Boolean);
+  return function (doc) { for (var i = 0; i < fs.length; i++) if (!fs[i](doc)) return false; return true; };
+}
+function chAny(fs) {
+  return function (doc) { for (var i = 0; i < fs.length; i++) if (fs[i](doc)) return true; return false; };
+}
+/* The base selection for a parse: entities as hard filters (any company AND any market), the range,
+   and — when subject words are left over — only stories retrieval scores above the floor. */
+var CH_BASE_BUCKETS = [
+  [/\bsaved\b/, function (doc) { return doc.buckets.indexOf("saved") >= 0; }],
+  [/\bpublish(ed)?\b/, function (doc) { return doc.published; }],
+  [/\b(alerts?|inbox|unread)\b/, function (doc) { return doc.buckets.indexOf("alerts") >= 0; }],
+  [/\bliked\b/, function (doc) { return doc.liked; }],
+  [/\bdisliked\b/, function (doc) { return doc.disliked; }]
+];
+function chBase(P, opt) {
+  opt = opt || {};
+  var ix = chIndex(), fs = [];
+  /* "saved stories by market": saved is a filter on what the reader did, not a word to search for. */
+  var tl = " " + key(P.text) + " ";
+  CH_BASE_BUCKETS.forEach(function (b) { if (b[0].test(tl)) fs.push(b[1]); });
+  if (!opt.noComps && P.ents.comps.length) fs.push(chAny(P.ents.comps.map(chCompFilter)));
+  if (!opt.noLands && P.ents.lands.length) fs.push(chAny(P.ents.lands.map(chLandFilter)));
+  if (!opt.noRange && P.range) { var r = P.range; fs.push(function (doc) { return chInRange(doc, r); }); }
+  var f = chAll(fs);
+  var subj = chSubjectTokens(P.text).filter(function (w) {
+    return !P.ents.comps.concat(P.ents.lands).some(function (e) {
+      return e.terms.some(function (t) { return chTokens(t).indexOf(w) >= 0; }) || chTokens(e.name).indexOf(w) >= 0;
+    });
+  });
+  if (subj.length && !opt.noSubject) {
+    var hits = chAbove(chSearch(subj.join(" "), f)).map(function (h) { return h.doc; });
+    /* Shown as the reader typed it ("recycling"), not as its stem ("recycl"). */
+    var raw = String(P.text).split(/[^A-Za-z0-9À-ɏ]+/).filter(function (w) {
+      var tk = chTokens(w); return tk.length && subj.indexOf(tk[0]) >= 0;
+    });
+    return { docs: hits, subject: (raw.length ? raw : subj).join(" "), filter: f };
+  }
+  return { docs: ix.docs.filter(f).sort(function (a, b) { return (b.ms || 0) - (a.ms || 0); }), subject: "", filter: f };
+}
+
+function chCountBy(docs, fn) {
+  var o = {};
+  docs.forEach(function (doc) { fn(doc).forEach(function (v) { if (v) o[v] = (o[v] || 0) + 1; }); });
+  return o;
+}
+function chTop(o, n) {
+  return Object.keys(o).map(function (k) { return [k, o[k]]; })
+    .sort(function (a, b) { return b[1] - a[1] || (a[0] < b[0] ? -1 : 1); }).slice(0, n || 99);
+}
+function chPct(n, of) { return of ? Math.round(n * 100 / of) + "%" : "—"; }
+function chSigned(n) { return n > 0 ? "+" + n : n < 0 ? "−" + Math.abs(n) : "0"; }
+function chClip(s, n) { s = String(s || ""); return s.length > n ? s.slice(0, n - 1).replace(/\s+\S*$/, "") + "…" : s; }
+
+/* ---------- dimensions ---------- */
+var CH_DIMS = [
+  { k: "competitor", label: "Competitor", re: /\b(competitors?|compan(y|ies)|brands?|rivals?|players?|makers?|manufacturers?|who)\b/,
+    of: function (doc) { return doc.cm; } },
+  { k: "market", label: "Market", re: /\b(markets?|countr(y|ies)|regions?|geograph\w*|where)\b/,
+    of: function (doc) { return doc.mk; } },
+  { k: "category", label: "Theme", re: /\b(categor(y|ies)|themes?|topics?|types?|segments?|subjects?|kinds?)\b/,
+    of: function (doc) { return [doc.category || "Uncategorised"]; } },
+  { k: "source", label: "Source", re: /\b(sources?|publishers?|outlets?|publications?|sites?|websites?|media|press)\b/,
+    of: function (doc) { return doc.source ? [doc.source] : []; } },
+  { k: "month", label: "Month", re: /\b(months?|monthly|month on month)\b/, time: true,
+    of: function (doc) { return doc.ms ? [chMonLabel(doc.ms)] : []; },
+    order: function (a) { return Date.parse("1 " + a) || 0; } },
+  { k: "week", label: "Week of", re: /\b(weeks?|weekly|week on week)\b/, time: true,
+    of: function (doc) {
+      if (!doc.ms) return [];
+      var d0 = new Date(chDay0(doc.ms)); d0.setDate(d0.getDate() - (d0.getDay() + 6) % 7);
+      return [d0.toLocaleDateString("en-GB", { day: "numeric", month: "short" })];
+    },
+    order: function (a) { return Date.parse(a + " " + new Date().getFullYear()) || 0; } }
+];
+var CH_BREAK = /\b(by|per|each|across|split|splits|breakdown|break ?down|broken down|distribution|mix|share|rank(ed|ing|ings)?|league|leaderboard|top|most|least|busiest|loudest|quietest|biggest|leading|leads|ahead|which|table|tabulate|chart|volume|how many|count)\b/;
+
+function chDimsOf(text) {
+  var t = " " + key(text).replace(/[^a-z0-9 ]+/g, " ") + " ", found = [];
+  CH_DIMS.forEach(function (dm) {
+    var m = dm.re.exec(t);
+    if (!m) return;
+    /* "who" is a competitor only when the sentence ranks ("who is loudest"), never in "who benefits". */
+    if (m[0] === "who" && !/\bwho\b.*\b(most|loudest|busiest|leading|leads|top|biggest|ahead|quietest)\b/.test(t)) return;
+    if (m[0] === "where" && !/\bwhere\b.*\b(most|busiest|biggest|top)\b/.test(t)) return;
+    found.push({ dm: dm, at: m.index });
+  });
+  return found.sort(function (a, b) { return a.at - b.at; }).map(function (x) { return x.dm; });
+}
+
+/* ---------- tables ----------
+   {title, cols, rows, bars: "col" | "row" | null, note}. Cells are plain strings; the renderer
+   escapes them. Every number in a local table is a count of held stories. */
+function chTableText(t) {
+  return [t.title || ""].concat([t.cols.join(" | ")], t.rows.map(function (r) { return r.join(" | "); })).join("\n");
+}
+
+function chScopeLabel(P, base) {
+  var bits = [];
+  if (base && base.subject) bits.push("“" + base.subject + "”");
+  if (P.range) bits.push(P.range.label);
+  return bits.join(", ");
+}
+function chNewest(docs) {
+  var best = null;
+  docs.forEach(function (x) { if (x.ms && (!best || x.ms > best.ms)) best = x; });
+  return best;
+}
+/* Interleave the newest stories of several groups, so the cards under a comparison show both sides. */
+function chWeave(groups, n) {
+  var out = [], seen = {}, i = 0, more = true;
+  groups = groups.map(function (g) { return g.slice().sort(function (a, b) { return (b.ms || 0) - (a.ms || 0); }); });
+  while (out.length < n && more) {
+    more = false;
+    groups.forEach(function (g) {
+      if (i < g.length) { more = true; if (!seen[g[i].k] && out.length < n) { seen[g[i].k] = 1; out.push(g[i]); } }
+    });
+    i++;
+  }
+  return out;
+}
+
+/* ---------- this versus that ---------- */
+function chCompareTargets(P) {
+  var comps = P.ents.comps, lands = P.ents.lands;
+  if (comps.length >= 2) return { type: "competitor", list: comps.slice(0, 4).map(function (c) { return { label: c.name, f: chCompFilter(c), ent: c }; }) };
+  if (lands.length >= 2) return { type: "market", list: lands.slice(0, 4).map(function (c) { return { label: c.name, f: chLandFilter(c), ent: c }; }) };
+  if (P.ranges.length >= 2) return { type: "period", list: P.ranges.slice(0, 4).map(function (r) {
+    return { label: chCap(r.label), f: function (doc) { return chInRange(doc, r); }, range: r };
+  }) };
+  /* One company or market named with a compare word: set it against its nearest rivals — the two
+     others with the most stories in the same selection. */
+  var one = comps[0] || lands[0];
+  if (one) {
+    var isComp = !!comps[0], ix = chIndex();
+    var pool = isComp ? ix.comps : ix.lands;
+    var rf = P.range ? function (doc) { return chInRange(doc, P.range); } : function () { return true; };
+    var mk = isComp ? chCompFilter : chLandFilter;
+    var ranked = pool.filter(function (e) { return e.name !== one.name; }).map(function (e) {
+      var f = mk(e);
+      return { e: e, n: ix.docs.filter(function (doc) { return rf(doc) && f(doc); }).length };
+    }).filter(function (x) { return x.n > 0; }).sort(function (a, b) { return b.n - a.n; }).slice(0, isComp ? 2 : 1);
+    if (!ranked.length) return null;
+    return { type: isComp ? "competitor" : "market", auto: true,
+             list: [{ label: one.name, f: mk(one), ent: one }].concat(ranked.map(function (x) { return { label: x.e.name, f: mk(x.e), ent: x.e }; })) };
+  }
+  return null;
+}
+
+function chAnsCompare(q, P, d, ix, T) {
+  /* The selection every side is drawn from: the other entity type, the range (unless the periods ARE
+     the comparison), and any subject words ("on sustainability"). */
+  var base = chBase(P, { noComps: T.type === "competitor", noLands: T.type === "market", noRange: T.type === "period" });
+  var pool = base.docs;
+  var sides = T.list.map(function (t) { return { t: t, docs: pool.filter(t.f) }; });
+  var total = sides.reduce(function (s, x) { return s + x.docs.length; }, 0);
+  var cols = [""].concat(sides.map(function (x) { return x.t.label; }));
+  var rows = [];
+  var row = function (label, fn) { rows.push([label].concat(sides.map(fn))); };
+  var now = chDay0(Date.now()) + 864e5, D30 = 30 * 864e5;
+  var n = function (f) { return function (x) { return String(x.docs.filter(f).length); }; };
+  var top1 = function (fn) {
+    return function (x) { var t = chTop(chCountBy(x.docs, fn), 1)[0]; return t ? t[0] + " (" + t[1] + ")" : "—"; };
+  };
+
+  row(T.type === "period" ? "Stories" : "Stories" + (P.range ? " (" + P.range.label + ")" : " held"),
+      function (x) { return String(x.docs.length); });
+  if (T.type !== "period" && !P.range) {
+    row("Last 30 days", n(function (z) { return z.ms >= now - D30; }));
+    row("30 days before", n(function (z) { return z.ms >= now - 2 * D30 && z.ms < now - D30; }));
+  }
+  row("Still in alerts", n(function (z) { return z.buckets.indexOf("alerts") >= 0; }));
+  row("Saved", n(function (z) { return z.buckets.indexOf("saved") >= 0; }));
+  row("Published", n(function (z) { return z.published; }));
+  if (arr(d.likedTitles).length) row("Liked", n(function (z) { return z.liked; }));
+  if (T.type !== "competitor") {
+    row("Competitors named", function (x) { return String(Object.keys(chCountBy(x.docs, function (z) { return z.cm; })).length); });
+    row("Most named", top1(function (z) { return z.cm; }));
+  }
+  row("Main theme", top1(function (z) { return [z.category || "Uncategorised"]; }));
+  row("Top source", top1(function (z) { return z.source ? [z.source] : []; }));
+  row("Newest story", function (x) { var nw = chNewest(x.docs); return nw ? chShort(nw.ms) : "—"; });
+
+  /* The phone's own figures, where it computed them for exactly these sides. */
+  var an = d.analytics && d.analytics[AN_WIN];
+  if (T.type === "competitor" && an && arr(an.sov).length) {
+    row("Share of voice, phone (" + anPhrase(AN_WIN) + ")", function (x) {
+      var hit = arr(an.sov).filter(function (s) { return sameName(s.n, x.t.label) || compMentioned(s.n, x.t.label); })[0];
+      return hit ? String(hit.c) : "—";
+    });
+  }
+  if (T.type === "market" && d.analyticsByMarket) {
+    row("Stories, phone (" + anPhrase(AN_WIN) + ")", function (x) {
+      var a = d.analyticsByMarket[x.t.label] && d.analyticsByMarket[x.t.label][AN_WIN];
+      return a && a.totalCount != null ? String(a.totalCount) : "—";
+    });
+  }
+
+  var scope = chScopeLabel(P, base);
+  var tables = [{ title: sides.map(function (x) { return x.t.label; }).join(" vs ") +
+                         (scope && T.type !== "period" ? " · " + scope : (base.subject && T.type === "period" ? " · “" + base.subject + "”" : "")),
+                  cols: cols, rows: rows, bars: "row",
+                  note: "Counts of stories you hold" + (/phone/.test(rows.map(function (r) { return r[0]; }).join(" ")) ? "; rows marked phone are the phone's own figures" : "") + (T.auto ? "; the rivals are the two with the most stories in the same selection" : "") + "." }];
+
+  /* The theme mix, side by side — the part of a comparison that says what each side is ABOUT. */
+  if (total >= 6) {
+    var inAny = pool.filter(chAny(T.list.map(function (t) { return t.f; })));
+    var mix = chTop(chCountBy(inAny, function (z) { return [z.category || "Uncategorised"]; }), 6);
+    if (mix.length >= 2) {
+      tables.push({ title: "Themes, side by side", cols: ["Theme"].concat(sides.map(function (x) { return x.t.label; })), bars: "row",
+        rows: mix.map(function (m) {
+          return [m[0]].concat(sides.map(function (x) {
+            return String(x.docs.filter(function (z) { return (z.category || "Uncategorised") === m[0]; }).length);
+          }));
+        }) });
+    }
+  }
+
+  var ranked = sides.slice().sort(function (a, b) { return b.docs.length - a.docs.length; });
+  var a0 = ranked[0], a1 = ranked[1];
+  var when = P.range && T.type !== "period" ? ", " + esc(P.range.label) : "";
+  var lead;
+  if (!total) {
+    lead = "Nothing on " + chList(sides.map(function (x) { return "<b>" + esc(x.t.label) + "</b>"; })) +
+           (scope ? " for " + esc(scope) : "") + " in your data.";
+  } else if (a0.docs.length === a1.docs.length) {
+    lead = "Level: <b>" + esc(a0.t.label) + "</b> and <b>" + esc(a1.t.label) + "</b> have " +
+           chPl(a0.docs.length, "story", "stories") + " each" + when + ".";
+  } else {
+    lead = "<b>" + esc(a0.t.label) + "</b> leads with " + chPl(a0.docs.length, "story", "stories") + " to " +
+           esc(a1.t.label) + "’s " + a1.docs.length +
+           (ranked.length > 2 ? ", then " + chList(ranked.slice(2).map(function (x) { return esc(x.t.label) + " (" + x.docs.length + ")"; })) : "") +
+           when + ".";
+  }
+  var themes = sides.filter(function (x) { return x.docs.length >= 2; }).map(function (x) {
+    var t = chTop(chCountBy(x.docs, function (z) { return [z.category || "Uncategorised"]; }), 1)[0];
+    return t ? esc(x.t.label) + " leans to " + esc(t[0]) : "";
+  }).filter(Boolean);
+  if (themes.length >= 2) lead += " " + chCap(themes.join("; ")) + ".";
+
+  return { q: q, kind: "compare", shapeHint: "compare", lead: lead, stats: [], tables: tables,
+           items: chWeave(sides.map(function (x) { return x.docs; }), 6),
+           context: chWeave(sides.map(function (x) { return x.docs; }), 24),
+           why: "Each side counts the stories that name it, by the same rule as the filter chips.",
+           note: base.subject && !pool.length ? "Nothing matched “" + esc(base.subject) + "”." : "" };
+}
+
+/* ---------- by X ---------- */
+function chAnsBreakdown(q, P, d, ix, dims) {
+  var base = chBase(P);
+  var docs = base.docs, scope = chScopeLabel(P, base);
+  var d1 = dims[0], d2 = dims[1] && dims[1] !== dims[0] ? dims[1] : null;
+  var counts = chCountBy(docs, d1.of);
+  /* Tracked companies and markets with NO stories belong in the table: silence is a finding. */
+  if (d1.k === "competitor") ix.comps.forEach(function (c) { if (!counts[c.name]) counts[c.name] = 0; });
+  /* Markets the Context panel switched off are hidden on purpose, not silent. */
+  var onM = chOnMarkets(chCtx());
+  if (d1.k === "market") ix.lands.forEach(function (c) {
+    if (!counts[c.name] && onM.some(function (x) { return sameName(x, c.name); })) counts[c.name] = 0;
+  });
+  var keys = chTop(counts);
+  if (d1.time) keys.sort(function (a, b) { return d1.order(a[0]) - d1.order(b[0]); });
+  var shown = d1.time ? keys.slice(-12) : keys.slice(0, 12);
+  var rest = d1.time ? [] : keys.slice(12);
+  var N = docs.length;
+  var tables = [], lead;
+  var docsOf = function (v) { return docs.filter(function (z) { return d1.of(z).indexOf(v) >= 0; }); };
+
+  if (!d2) {
+    var rows = shown.map(function (kv) {
+      var nw = chNewest(docsOf(kv[0]));
+      return [kv[0], String(kv[1]), chPct(kv[1], N), nw ? chShort(nw.ms) : "—"];
+    });
+    if (rest.length) {
+      var rn = rest.reduce(function (s, kv) { return s + kv[1]; }, 0);
+      rows.push(["Others (" + rest.length + ")", String(rn), chPct(rn, N), ""]);
+    }
+    tables.push({ title: "Stories by " + d1.label.toLowerCase().replace(" of", "") + (scope ? " · " + scope : ""),
+                  cols: [d1.label, "Stories", "Share", "Newest"], rows: rows, bars: "col",
+                  note: d1.k === "competitor" || d1.k === "market"
+                    ? "A story naming two " + (d1.k === "competitor" ? "companies" : "markets") + " counts for both, so shares can add up past 100%."
+                    : "" });
+  } else {
+    var c2 = chTop(chCountBy(docs, d2.of));
+    if (d2.time) c2.sort(function (a, b) { return d2.order(a[0]) - d2.order(b[0]); });
+    var colsK = (d2.time ? c2.slice(-6) : c2.slice(0, 6)).map(function (kv) { return kv[0]; });
+    tables.push({ title: d1.label.replace(" of", "") + " × " + d2.label.toLowerCase().replace(" of", "") + (scope ? " · " + scope : ""),
+      cols: [d1.label].concat(colsK, ["Total"]), bars: "col",
+      rows: shown.map(function (kv) {
+        var sub = docsOf(kv[0]);
+        return [kv[0]].concat(colsK.map(function (c) {
+          return String(sub.filter(function (z) { return d2.of(z).indexOf(c) >= 0; }).length);
+        }), [String(kv[1])]);
+      }),
+      note: c2.length > colsK.length ? "The " + colsK.length + " largest of " + c2.length + " columns." : "" });
+  }
+
+  var live = keys.filter(function (kv) { return kv[1] > 0; });
+  if (!N) {
+    lead = "Nothing to break down" + (scope ? " for " + esc(scope) : "") + " — no stories match.";
+  } else if (d1.time) {
+    var peak = live.slice().sort(function (a, b) { return b[1] - a[1]; })[0];
+    lead = "Busiest " + (d1.k === "week" ? "week" : "month") + ": <b>" + esc(peak[0]) + "</b> with " +
+           chPl(peak[1], "story", "stories") + ", out of " + N + (scope ? " for " + esc(scope) : "") + ".";
+  } else {
+    var zero = keys.filter(function (kv) { return !kv[1]; }).map(function (kv) { return kv[0]; });
+    lead = live.length
+      ? "<b>" + esc(live[0][0]) + "</b> leads with " + chPl(live[0][1], "story", "stories") + " (" + chPct(live[0][1], N) + " of " + N + ")" +
+        (live[1] ? ", then " + chList(live.slice(1, 3).map(function (kv) { return esc(kv[0]) + " (" + kv[1] + ")"; })) : "") +
+        (scope ? ", " + esc(scope) : "") + "."
+      : "None of the " + N + " stories name a " + d1.label.toLowerCase() + ".";
+    if (zero.length && zero.length <= 4) lead += " Silent: " + esc(chList(zero)) + ".";
+    else if (zero.length) lead += " " + chCap(chNum(zero.length)) + " tracked " + (d1.k === "market" ? "markets have" : "companies have") + " none.";
+  }
+
+  var leadKey = live[0] && live[0][0];
+  if (d1.time && live.length) leadKey = live[live.length - 1][0];
+  var items = leadKey ? docsOf(leadKey).slice(0, 6) : [];
+  var ctx = chWeave(shown.slice(0, 8).map(function (kv) { return docsOf(kv[0]); }), 30);
+  return { q: q, kind: "breakdown", shapeHint: "breakdown", lead: lead, stats: [], tables: tables,
+           items: items, context: ctx,
+           why: leadKey ? (d1.time ? "The stories from the latest " + (d1.k === "week" ? "week" : "month") + "." : "The stories under the top row.") : "",
+           note: d1.k === "competitor" ? "A story counts for a company when it names it — the filter chips’ rule." : "" };
+}
+
+/* ---------- what happened ---------- */
+function chAnsDigest(q, P, d, ix) {
+  var fallback = false, P2 = P;
+  if (!P.range) {
+    var today = chDay0(Date.now());
+    P2 = Object.assign({}, P, { range: { from: today - 29 * 864e5, to: today + 864e5, label: "the last 30 days", text: "" } });
+  }
+  var base = chBase(P2), docs = base.docs;
+  if (!docs.length && !P.range) {
+    base = chBase(P); docs = base.docs.slice(0, 40); fallback = true; P2 = P;
+  }
+  var scope = chScopeLabel(P2, base);
+  if (!docs.length) {
+    var newest = chNewest(ix.docs);
+    return { q: q, kind: "none", lead: "Nothing" + (scope ? " for " + esc(scope) : "") + " in your data.", stats: [], items: [],
+             why: "", note: (newest ? "Your newest story is dated " + chWhen(newest.ms) + ". " : "") +
+                            "Try a longer period, or widen the Context panel." };
+  }
+  var byCat = chTop(chCountBy(docs, function (z) { return [z.category || "Uncategorised"]; }), 8);
+  var pickOf = function (cat) {
+    return docs.filter(function (z) { return (z.category || "Uncategorised") === cat; })
+      .sort(function (a, b) { return (b.published - a.published) || (b.liked - a.liked) || ((b.ms || 0) - (a.ms || 0)); })[0];
+  };
+  var rows = byCat.map(function (kv) { return [kv[0], String(kv[1]), chClip(pickOf(kv[0]).title, 90)]; });
+  /* The companies the question already named are not news about the period. */
+  var named0 = P.ents.comps.map(function (c) { return c.name; });
+  var comps = chTop(chCountBy(docs, function (z) { return z.cm.filter(function (n) { return named0.indexOf(n) < 0; }); }), 3);
+  var lands = chTop(chCountBy(docs, function (z) { return z.mk; }), 4);
+  var lead = (fallback ? "Nothing dated in the last 30 days, so here are your newest " + docs.length + ". "
+                       : "<b>" + chPl(docs.length, "story", "stories") + "</b>" + (scope ? " for " + esc(scope) : "") + ". ") +
+             "The busiest theme is <b>" + esc(byCat[0][0]) + "</b> (" + byCat[0][1] + ")" +
+             (comps.length ? "; the most-named competitor is <b>" + esc(comps[0][0]) + "</b> (" + comps[0][1] + ")" : (named0.length ? "; no other tracked competitor is named" : "; no tracked competitor is named")) + ".";
+  var stats = [
+    ["Stories", String(docs.length), P2.range ? chRangeSpan(P2.range) : "newest held"],
+    ["Competitors named", String(Object.keys(chCountBy(docs, function (z) { return z.cm; })).length), comps.length ? "most: " + comps[0][0] : ""],
+    ["Published", String(docs.filter(function (z) { return z.published; }).length), "already in a report"]
+  ];
+  var tables = [{ title: "By theme" + (scope ? " · " + scope : ""), cols: ["Theme", "Stories", "The one to read"], rows: rows, bars: "col" }];
+  if (lands.length >= 2) {
+    tables.push({ title: "By market", cols: ["Market", "Stories", "Share"], bars: "col",
+                  rows: lands.map(function (kv) { return [kv[0], String(kv[1]), chPct(kv[1], docs.length)]; }) });
+  }
+  var items = byCat.slice(0, 6).map(function (kv) { return pickOf(kv[0]); }).filter(Boolean);
+  return { q: q, kind: "digest", shapeHint: "summary", lead: lead, stats: stats, tables: tables,
+           items: items, context: docs.slice(0, 60), digestDocs: docs, range: P2.range,
+           why: "One story per theme: published first, then liked, then newest.", note: "" };
+}
+
+/* ---------- one story, from the answer above ---------- */
+function chAnsStory(q, fol, ix, d) {
+  var doc = fol.doc, where = [];
+  if (doc.buckets.indexOf("alerts") >= 0) where.push("in alerts");
+  if (doc.buckets.indexOf("saved") >= 0) where.push("saved");
+  if (doc.published) where.push("published");
+  if (doc.liked) where.push("liked");
+  if (doc.disliked) where.push("disliked");
+  var lead = "<p><b>" + esc(doc.title) + "</b>" + (chCite(doc) ? " — " + chCite(doc) + "." : ".") + "</p>" +
+             (doc.summary ? "<p>" + esc(doc.summary) + "</p>" : "<p>The phone stored no summary for this one.</p>");
+  var rows = [["Source", doc.source || "—"], ["Date", doc.ms ? chWhen(doc.ms) : "undated"],
+              ["Theme", doc.category || "—"], ["Markets", doc.mk.join(", ") || "—"],
+              ["Competitors named", doc.cm.join(", ") || "none"], ["Where it is", where.join(", ") || "stored"]];
+  var related = chAbove(chSearch(doc.title)).map(function (h) { return h.doc; })
+    .filter(function (x) { return x.k !== doc.k; }).slice(0, 4);
+  return { q: q, kind: "story", shapeHint: "story", lead: lead, stats: [],
+           tables: [{ title: "About this story", cols: ["", ""], rows: rows, bars: null, plain: true }],
+           items: [doc].concat(related), context: [doc].concat(related), story: doc,
+           why: related.length ? "The story, then the closest others you hold." : "", note: "" };
+}
+
+/* ---------- facts for the model ----------
+   Figures the app counted, handed over so the model QUOTES rather than counts. Language models
+   miscount lists of a few hundred lines; these are exact. They are also the reference set a
+   model-built table is checked against. */
+function chFacts(P) {
+  var ix = chIndex(), rng = P && P.range;
+  var docs = ix.docs.filter(function (x) { return chInRange(x, rng); }), N = docs.length, L = [];
+  var now = chDay0(Date.now()) + 864e5, D30 = 30 * 864e5;
+  var fmt = function (o, n, withPct) {
+    return chTop(o, n).map(function (kv) { return kv[0] + " " + kv[1] + (withPct ? " (" + chPct(kv[1], N) + ")" : ""); }).join(", ");
+  };
+  var cnt = function (f) { return docs.filter(f).length; };
+  L.push("FACTS — counted by the app over the stories in scope" + (rng ? ", " + rng.label + " (" + chRangeSpan(rng) + ")" : "") + ". Exact.");
+  L.push("- Stories: " + N + " (in alerts " + cnt(function (x) { return x.buckets.indexOf("alerts") >= 0; }) +
+         ", saved " + cnt(function (x) { return x.buckets.indexOf("saved") >= 0; }) +
+         ", published " + cnt(function (x) { return x.published; }) +
+         ", liked " + cnt(function (x) { return x.liked; }) +
+         ", disliked " + cnt(function (x) { return x.disliked; }) +
+         ", undated " + cnt(function (x) { return !x.ms; }) + ")");
+  var cc = chCountBy(docs, function (x) { return x.cm; });
+  ix.comps.forEach(function (c) { if (!cc[c.name]) cc[c.name] = 0; });
+  L.push("- By competitor (stories naming them; % of " + N + "): " + fmt(cc, 20, true));
+  if (ix.lands.length >= 2) L.push("- By market: " + fmt(chCountBy(docs, function (x) { return x.mk; }), 10, true));
+  L.push("- By theme: " + fmt(chCountBy(docs, function (x) { return [x.category || "Uncategorised"]; }), 12, true));
+  L.push("- By source (top 10): " + fmt(chCountBy(docs, function (x) { return x.source ? [x.source] : []; }), 10, false));
+  var mo = chCountBy(docs, function (x) { return x.ms ? [chMonLabel(x.ms)] : []; });
+  L.push("- By month: " + Object.keys(mo).sort(function (a, b) { return Date.parse("1 " + a) - Date.parse("1 " + b); })
+         .slice(-8).map(function (k) { return k + " " + mo[k]; }).join(", "));
+  if (!rng) {
+    var a = docs.filter(function (x) { return x.ms >= now - D30; }), b = docs.filter(function (x) { return x.ms >= now - 2 * D30 && x.ms < now - D30; });
+    var ca = chCountBy(a, function (x) { return x.cm; }), cb = chCountBy(b, function (x) { return x.cm; });
+    L.push("- Last 30 days vs the 30 before: " + a.length + " vs " + b.length + " (" + chSigned(a.length - b.length) + ")");
+    L.push("  by competitor: " + ix.comps.map(function (c) {
+      var x = ca[c.name] || 0, y = cb[c.name] || 0; return c.name + " " + x + " vs " + y + " (" + chSigned(x - y) + ")";
+    }).join(", "));
+    var ta = chCountBy(a, function (x) { return [x.category || "Uncategorised"]; }), tb = chCountBy(b, function (x) { return [x.category || "Uncategorised"]; });
+    L.push("  by theme: " + chTop(ta, 8).map(function (kv) { var y = tb[kv[0]] || 0; return kv[0] + " " + kv[1] + " vs " + y + " (" + chSigned(kv[1] - y) + ")"; }).join(", "));
+  } else {
+    var len = rng.to - rng.from;
+    var before = ix.docs.filter(function (x) { return x.ms >= rng.from - len && x.ms < rng.from; }).length;
+    L.push("- The same length of time just before (" + chShort(rng.from - len) + " – " + chShort(rng.from - 1) + "): " + before +
+           " stories (" + chSigned(N - before) + ")");
+  }
+  return L.join("\n");
+}
+
+function chPhoneFacts(d) {
+  var a = d.analytics && d.analytics[AN_WIN], st = d.settings || {}, L = [];
+  if (a) {
+    L.push("PHONE ANALYTICS — computed on the phone over " + anPhrase(AN_WIN) + ". Quote them as the phone's figures; they can differ from FACTS, which count what is held here.");
+    L.push("- Stories in the window: " + (a.totalCount != null ? a.totalCount : "—") + "; in the feed now: " + (a.inFeed != null ? a.inFeed : "—") +
+           "; distinct sources: " + (a.distinctSources != null ? a.distinctSources : "—"));
+    if (arr(a.weekLabels).length) L.push("- Stories per week: " + arr(a.weekLabels).map(function (w, i) { return w + " " + (arr(a.totalPerWeek)[i] || 0); }).join(", "));
+    if (arr(a.sov).length) L.push("- Share of voice (stories): " + arr(a.sov).slice(0, 10).map(function (s) { return s.n + " " + s.c; }).join(", "));
+    if (a.topMover) L.push("- Top mover: " + a.topMover + (a.emergingTopic ? "; emerging topic: " + a.emergingTopic : ""));
+    var kw = arr(a.keywords);
+    var up = kw.filter(function (k) { return k.d > 0; }).sort(function (x, y) { return y.d - x.d; }).slice(0, 5);
+    var dn = kw.filter(function (k) { return k.d < 0; }).sort(function (x, y) { return x.d - y.d; }).slice(0, 5);
+    if (up.length) L.push("- Rising terms: " + up.map(function (k) { return k.n + " " + chSigned(k.d); }).join(", "));
+    if (dn.length) L.push("- Cooling terms: " + dn.map(function (k) { return k.n + " " + chSigned(k.d); }).join(", "));
+    var cv = a.conversion;
+    if (cv) L.push("- Funnel: surfaced " + (cv.surfaced || 0) + ", liked " + (cv.liked || 0) + ", saved " + (cv.saved || 0) +
+                   ", verified " + (cv.verified || 0) + ", published " + (cv.published || 0) + ", deleted " + (cv.deleted || 0));
+    var bm = d.analyticsByMarket || {};
+    Object.keys(bm).forEach(function (m) {
+      var x = bm[m] && bm[m][AN_WIN];
+      if (x) L.push("- " + m + ": " + (x.totalCount != null ? x.totalCount : "—") + " stories in the window, " +
+                    (x.inFeed != null ? x.inFeed : "—") + " in the feed" + (x.topMover ? ", top mover " + x.topMover : ""));
+    });
+  }
+  if (st.spendMonth != null || st.spendToday != null) {
+    L.push("- Spend (phone's estimate): today ≈ ₹" + (Number(st.spendToday) || 0).toFixed(2) + ", this month ≈ ₹" +
+           (Number(st.spendMonth) || 0).toFixed(2) + (st.dailyCostCap ? ", daily cap ₹" + Math.round(st.dailyCostCap) : ""));
+  }
+  return L.join("\n");
+}
+
+/* ---------- tables, drawn ----------
+   Local tables are counts and need no checking. A MODEL-BUILT table is checked cell by cell: every
+   number in it must appear in the figures the model was handed (FACTS, phone analytics, the app's
+   tables, or a story's own text). One that does not is kept but marked, with a footnote — the tab's
+   whole promise is that nothing in it is made up, so an unsupported figure is never shown as fact. */
+var CH_NUM_RX = /\d[\d,]*(?:\.\d+)?/g;
+function chNumKey(s) { var v = parseFloat(String(s).replace(/,/g, "")); return isNaN(v) ? null : String(v); }
+function chNumbersIn(text, into) {
+  var m; CH_NUM_RX.lastIndex = 0;
+  while ((m = CH_NUM_RX.exec(String(text || "")))) { var k = chNumKey(m[0]); if (k != null) into[k] = 1; }
+  return into;
+}
+var CH_DATEISH = /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b|\b\d{4}-\d{2}(-\d{2})?\b|\b\d{1,2}\/\d{1,2}(\/\d{2,4})?\b|\bw\d{1,2}\b|\bq[1-4]\b/i;
+function chCellNumeric(s) {
+  return /^\s*[-+−]?\s*[₹$€£]?\s*\d[\d,]*(\.\d+)?\s*(%|k|pts?|x)?\s*(\([^)]*\))?\s*$/i.test(String(s || ""));
+}
+function chUnverified(cell, known, allowSmall) {
+  var s = String(cell || "");
+  if (!known || CH_DATEISH.test(s)) return false;
+  var m, bad = false; CH_NUM_RX.lastIndex = 0;
+  while ((m = CH_NUM_RX.exec(s))) {
+    var k = chNumKey(m[0]);
+    if (k == null || known[k]) continue;
+    if (k === "0" || (allowSmall && +k <= allowSmall)) continue;
+    bad = true;
+  }
+  return bad;
+}
+
+function chTableEl(t, opt) {
+  opt = opt || {};
+  var cols = arr(t.cols).map(String), rows = arr(t.rows).map(function (r) { return arr(r).map(function (c) { return c == null ? "" : String(c); }); });
+  var width = Math.max(cols.length, rows.reduce(function (w, r) { return Math.max(w, r.length); }, 0));
+  var box = el("div", "chtbl" + (t.plain ? " plain" : ""));
+  var head = el("div", "chtblh");
+  head.appendChild(el("span", null, t.title || ""));
+  var cp = el("button", "chtblcp", "Copy");
+  cp.title = "Copy as a table you can paste into a spreadsheet";
+  cp.onclick = function () {
+    var tsv = [cols].concat(rows).map(function (r) { return r.map(function (c) { return String(c).replace(/[\t\n]+/g, " "); }).join("\t"); }).join("\n");
+    var ok = function () { toast("Table copied"); };
+    try { navigator.clipboard.writeText(tsv).then(ok, function () { toast("Copy was blocked by the browser"); }); }
+    catch (e) { toast("Copy was blocked by the browser"); }
+  };
+  head.appendChild(cp);
+  box.appendChild(head);
+
+  /* Which columns hold figures: most cells numeric. Those align right and can carry a bar. */
+  var numCol = [];
+  for (var c = 0; c < width; c++) {
+    var cells = rows.map(function (r) { return r[c]; }).filter(function (x) { return x != null && x !== "" && x !== "—"; });
+    numCol[c] = c > 0 && cells.length > 0 && cells.filter(chCellNumeric).length / cells.length >= 0.6;
+  }
+  var val = function (s) { var m = /\d[\d,]*(\.\d+)?/.exec(String(s)); return m ? parseFloat(m[0].replace(/,/g, "")) : 0; };
+  var colMax = [], rowMax = [];
+  for (c = 0; c < width; c++) colMax[c] = numCol[c] ? Math.max.apply(null, rows.map(function (r) { return chCellNumeric(r[c]) ? val(r[c]) : 0; }).concat([0])) : 0;
+  rows.forEach(function (r, i) {
+    rowMax[i] = Math.max.apply(null, r.map(function (x, j) { return numCol[j] && chCellNumeric(x) ? val(x) : 0; }).concat([0]));
+  });
+  /* Row bars only compare like with like: a row whose cells are figures across the SAME measure. */
+  var bars = rows.length >= 2 || t.bars === "row" ? t.bars : null;
+  var rankHead = /^(#|rank|no\.?)$/i.test(cols[0] || "");
+  var unv = 0;
+
+  var wrap = el("div", "chtblw"), table = el("table");
+  if (cols.some(function (x) { return x; })) {
+    var thead = el("thead"), tr = el("tr");
+    for (c = 0; c < width; c++) tr.appendChild(el("th", numCol[c] ? "n" : null, cols[c] || ""));
+    thead.appendChild(tr); table.appendChild(thead);
+  }
+  var tbody = el("tbody");
+  rows.forEach(function (r, i) {
+    var tr2 = el("tr");
+    for (var j = 0; j < width; j++) {
+      var s = r[j] == null ? "" : r[j];
+      var td = el("td", numCol[j] ? "n" : null);
+      var v = el("span", "v", s);
+      if (opt.known && chUnverified(s, opt.known, (j === 0 && rankHead) ? rows.length : 0)) {
+        td.classList.add("unv"); v.title = "Not in the figures Echo gave the model — the model's own number"; unv++;
+      }
+      /* Column bars on the first figure column only: a bar under "Share" beside one under
+         "Stories" says the same thing twice. */
+      if (numCol[j] && bars && chCellNumeric(s) && (bars === "row" || j === numCol.indexOf(true))) {
+        var mx = bars === "row" ? rowMax[i] : colMax[j];
+        var f = mx ? Math.max(0, Math.min(1, val(s) / mx)) : 0;
+        if (f > 0) {
+          var bar = el("span", "chbar");
+          bar.style.width = "calc((100% - 24px) * " + f.toFixed(3) + ")";
+          td.appendChild(bar);
+        }
+      }
+      td.appendChild(v);
+      tr2.appendChild(td);
+    }
+    tbody.appendChild(tr2);
+  });
+  table.appendChild(tbody);
+  wrap.appendChild(table);
+  box.appendChild(wrap);
+  var notes = [];
+  if (t.note) notes.push(String(t.note));
+  if (unv) notes.push(chPl(unv, "figure", "figures") + " with a dotted line " + (unv === 1 ? "was" : "were") +
+                      " worked out by the model, not taken from your data as given. Check before quoting.");
+  if (notes.length) box.appendChild(el("div", "chtbln", notes.join(" ")));
+  return box;
 }
 
 /* ---------- router ----------
@@ -7305,22 +8245,89 @@ function chRoute(q) {
    ============================================================ */
 function chAnswer(q) {
   var d = S.data || {}, ix = chIndex();
-  var kind = chRoute(q);
-  var ents = chEntities(q);
 
   /* Before anything else. A greeting or a "thanks" is neither a data question nor an off-beat
      one, and it used to fall through retrieval to "Nothing on that, I am afraid" — the worst
      possible answer to the most likely opening message. */
-  if (chSocial(q)) return chAnsSocial(q, ix, d);
+  if (chSocial(q)) { var ms = chAnsSocial(q, ix, d); ms.P = chParse(q); return ms; }
 
-  /* Then: a question that is not about this beat gets a straight answer with a voice, rather than
+  /* The turns above are context: "the second one", "and Germany?", "compare them". */
+  var fol = chFollow(q), m;
+  if (fol && fol.doc) {
+    m = chAnsStory(q, fol, ix, d);
+    m.P = fol.prevP; m.refItems = fol.prevItems;
+  } else {
+    var P = fol ? fol.P : chParse(q);
+    m = chAnswerP(q, P, d, ix, fol || {});
+    m.P = P;
+  }
+  if (fol) { m.readAs = fol.readAs; m.base = fol.base || fol.readAs; m.page = fol.page || 0; m.whyAsked = !!fol.why; }
+  /* "more" on an answer that is not a search: the next stories behind it. */
+  if (fol && fol.page && m.kind !== "find") {
+    var pool = arr(m.context).length ? m.context : arr(m.items), pg = fol.page;
+    var sl = pool.slice(pg * 6, pg * 6 + 6);
+    m.lead = sl.length ? "More of the stories behind that answer: " + (pg * 6 + 1) + "–" + (pg * 6 + sl.length) + " of " + pool.length + "."
+                       : "That was every story behind that answer.";
+    m.items = sl; m.context = sl; m.tables = []; m.stats = []; m.kind = "find"; m.shapeHint = "find";
+  }
+  if (m.whyAsked && !chSmart()) {
+    m.note = "Basic finds and counts; it does not reason about why. Switch to Smart for that — this is what it was based on.";
+  }
+  m.q = q;                             /* the reader's own words, whatever the answer searched for */
+  return m;
+}
+
+var CH_COMPARE = /\b(compare|comparison|compared|comparing|versus|vs|against|difference|differences|side by side|head to head|stack up|stacks up|relative to)\b/;
+var CH_DIGEST = /\b(summar\w*|recap|digest|overview|brief|briefing|highlights?|catch me up|what did i miss|what have i missed|what i missed|what happened|whats new|what s new|what is new|key (news|stories|developments)|round ?up|wrap ?up|rundown|headlines)\b/;
+
+function chAnswerP(q, P, d, ix, fol) {
+  var iq = P.q;                         /* the words that choose the FORM of the answer */
+  var kind = chRoute(iq);
+  var t = " " + key(iq).replace(/[^a-z0-9 ]+/g, " ") + " ";
+  var tx = " " + key(P.text).replace(/[^a-z0-9 ]+/g, " ") + " ";
+  var fresh = !fol.P;
+  var named = P.ents.comps.length + P.ents.lands.length;
+  var subj = chSubjectTokens(P.text);
+
+  /* A question that is not about this beat gets a straight answer with a voice, rather than
      being run through retrieval so it can come back with a shrug. */
-  if (chOffbeat(q)) return chAnsOffbeat(q, ix, d);
+  if (fresh && chOffbeat(q)) return chAnsOffbeat(q, ix, d);
+
+  /* THIS VERSUS THAT. Two companies, two markets or two periods — or one of them with a compare
+     word, set against its nearest rivals. */
+  var wantsCompare = P.forceCompare || CH_COMPARE.test(t) ||
+    ((P.ents.comps.length >= 2 || P.ents.lands.length >= 2) && /\b(which|who|busier|bigger|louder|ahead|behind|more active|or)\b/.test(t)) ||
+    (P.ranges.length >= 2 && /\b(vs|versus|and|with|to|against|or|compared)\b/.test(t));
+  if (wantsCompare && kind !== "metric") {
+    var T = chCompareTargets(P);
+    if (T) return chAnsCompare(q, P, d, ix, T);
+    /* "compare them" with nothing to compare, and no collection or dimension named either. */
+    if (!chDimsOf(P.text).length && !chBucket(iq) && !chSubjectTokens(P.text).length) {
+      return { q: q, kind: "none", lead: "Compare what with what? Name two companies, two markets or two periods.",
+               stats: [], items: [], why: "",
+               note: "For example: “" + (ix.comps[1] ? ix.comps[0].name + " vs " + ix.comps[1].name : "this month vs last month") +
+                     "”, or “this month vs last month”." };
+    }
+  }
+
+  /* BY X. "by competitor", "which market", "top sources", "who is loudest", "per month". */
+  var dims = chDimsOf(P.text);
+  if (dims.length && kind !== "metric" && CH_BREAK.test(tx) && !/\b(how many|count)\b/.test(tx.replace(/\b(per|by|each|across)\b.*$/, ""))) {
+    return chAnsBreakdown(q, P, d, ix, dims);
+  }
+  if (dims.length && kind !== "metric" && /\b(by|per|each|across)\b/.test(tx)) return chAnsBreakdown(q, P, d, ix, dims);
+
+  /* WHAT HAPPENED. A summary of a period, grouped by theme. */
+  if (CH_DIGEST.test(t) && kind !== "metric" && !/\b(status|where do i stand)\b/.test(t)) {
+    var dg = chAnsDigest(q, P, d, ix);
+    if (P.ents.comps.length === 1) dg.shapeHint = "competitor";
+    return dg;
+  }
 
   /* Then: "how many saved", "how many competitors". These are questions about the app's own
      collections and are answered by COUNTING them. Retrieval used to take them, search story text
      for the word "saved", and report however many stories happened to contain it. */
-  var buckets = chBucket(q);
+  var buckets = chBucket(iq);
   if (buckets) return chAnsBucket(q, d, ix, buckets);
 
   /* Then: the reader asking about themselves. Their name is in the app from the Google sign-in,
@@ -7328,22 +8335,27 @@ function chAnswer(q) {
   var me = chAsksAboutMe(q);
   if (me) return chAnsMe(q, ix, d, me);
 
+  /* The app's own figures before the unknown-subject test: "spent" is a word about the app, not a
+     subject the stories should contain, and testing it first answered the Spend chip with
+     "Nothing on spent". */
+  if (kind === "help") return chAnsHelp(q, ix);
+  if (kind === "metric") return chAnsMetric(iq, d, ix);
+  if (kind === "trend") return chAnsTrend(q, d);
+
   /* Then: a subject the corpus has never seen. "I like KTM" used to match the word "like" in 22
      stories and answer about Indian trade, never once mentioning KTM. */
-  var subject = chUnknownSubject(q);
+  var subject = fresh ? chUnknownSubject(P.text) : null;
   if (subject) return chAnsOffCorpus(q, ix, d, subject);
 
-  if (kind === "help") return chAnsHelp(q, ix);
-  if (kind === "metric") return chAnsMetric(q, d, ix);
-  if (kind === "trend") return chAnsTrend(q, d);
+  /* A period and nothing else ("last week", "news from August") is a request for what happened. */
+  if (P.range && !named && !subj.length) return chAnsDigest(q, P, d, ix);
 
   /* A count question that NAMES something is a count over retrieval; one that names nothing —
      "what is the status", "how many stories do I have" — is the global figure. */
-  var named = ents.comps.length || ents.lands.length;
-  var body = chTokens(q).filter(function (t) { return !CH_ROUTE_WORDS[t]; });
-  if (kind === "count" && !named && !body.length) return chAnsMetric(q, d, ix);
+  var body = chTokens(P.text).filter(function (w) { return !CH_ROUTE_WORDS[w]; });
+  if (kind === "count" && !named && !body.length && !P.range) return chAnsMetric(iq, d, ix);
 
-  return chAnsFind(q, d, ix, ents, kind === "count");
+  return chAnsFind(q, d, ix, P, kind === "count", fol.page || 0, !!fol.why);
 }
 
 /* ---------- who is signed in ----------
@@ -7387,7 +8399,7 @@ function chAnsMe(q, ix, d, me) {
    word happened to come along with them. */
 function chUnknownSubject(q) {
   var ix = chIndex();
-  var toks = chTokens(q);
+  var toks = chSubjectTokens(q);
   if (!toks.length) return null;
   var unknown = toks.filter(function (t) { return ix.vocab[t] === undefined; });
   if (!unknown.length) return null;
@@ -7616,8 +8628,10 @@ function chAnsHelp(q, ix) {
   return {
     q: q, kind: "help",
     lead: "I answer from what your phone has already fetched — nothing else. I can find stories " +
-          "by company, market, theme or wording; count what you hold; report your spend and " +
-          "tokens; and tell you what is heating up or cooling down.",
+          "by company, market, theme or wording; compare two companies, markets or periods side by " +
+          "side; break anything down by competitor, market, theme, source, month or week; sum up a " +
+          "period (“this month”, “last 2 weeks”, “in August”); count what you hold; and report your " +
+          "spend. Follow-ups work too: “and Germany?”, “the second one”, “compare them”, “more”.",
     stats: [
       ["Stories I can read", String(ix.docs.length), "across alerts, saved, published and stored"],
       ["Companies tracked", String(ix.comps.length), "as onboarded on the phone"],
@@ -7710,37 +8724,56 @@ function chAnsTrend(q, d) {
   var seed = rising.concat(cooling).map(function (k) { return k.n; }).join(" ") + " " + (w.moverName || "");
   var items = chAbove(chSearch(seed)).slice(0, 4).map(function (h) { return h.doc; });
 
-  return { q: q, kind: "trend", lead: lead.join(" "), stats: stats, items: items,
+  /* The phone's figures, as it computed them — shown, never recomputed. */
+  var tables = [];
+  if (sov.length >= 2) {
+    tables.push({ title: "Share of voice · phone, " + anPhrase(AN_WIN), cols: ["Company", "Stories"], bars: "col",
+                  rows: sov.slice(0, 10).map(function (s) { return [s.n, String(s.c)]; }) });
+  }
+  if (rising.length || cooling.length) {
+    tables.push({ title: "Terms moving · phone, " + anPhrase(AN_WIN), cols: ["Term", "Change"], bars: null,
+                  rows: kw.filter(function (k) { return k.d; }).sort(function (x, y) { return y.d - x.d; }).slice(0, 10)
+                    .map(function (k) { return [k.n, chSigned(k.d)]; }) });
+  }
+
+  return { q: q, kind: "trend", lead: lead.join(" "), stats: stats, items: items, tables: tables,
            why: items.length ? "The stories behind those movements." : "",
            note: "Computed on the phone over " + anPhrase(AN_WIN) + " — switch the window on the Dashboard." };
 }
 
-function chAnsFind(q, d, ix, ents, wantCount) {
-  var filter = null, scopeBits = [];
+function chAnsFind(q, d, ix, P, wantCount, page, whyAsked) {
+  var ents = P.ents, fs = [], scopeBits = [];
 
   /* An onboarded name is an exact fact about the story, not a fuzzy one — so when the question
-     names a company or a market, that becomes a hard filter and retrieval only ranks within it. */
+     names a company or a market, that becomes a hard filter and retrieval only ranks within it.
+     Companies by the filter chips' rule, markets by the phone's own verdict on each story (the
+     Context panel's rule) — a German-language story about Germany rarely says "Germany". */
   if (ents.comps.length) {
-    var terms = [];
-    ents.comps.forEach(function (c) { terms = terms.concat(c.terms); });
     scopeBits.push(chList(ents.comps.map(function (c) { return esc(c.name); })));
-    filter = function (doc) {
-      var hay = chFold(doc.title + " " + doc.summary + " " + doc.company);
-      return terms.some(function (t) { return hay.indexOf(t) >= 0; });
-    };
+    fs.push(chAny(ents.comps.map(chCompFilter)));
   }
   if (ents.lands.length) {
-    var lt = ents.lands.map(function (c) { return chFold(c.name); });
-    var prev = filter;
     scopeBits.push(chList(ents.lands.map(function (c) { return esc(c.name); })));
-    filter = function (doc) {
-      if (prev && !prev(doc)) return false;
-      var hay = chFold(doc.title + " " + doc.summary + " " + doc.region);
-      return lt.some(function (t) { return hay.indexOf(t) >= 0; });
-    };
+    fs.push(chAny(ents.lands.map(chLandFilter)));
   }
+  if (P.range) {
+    var rr = P.range;
+    scopeBits.push(esc(rr.label));
+    fs.push(function (doc) { return chInRange(doc, rr); });
+  }
+  var filter = fs.length ? chAll(fs) : null;
+  q = P.text || q;
 
-  var hits = chAbove(chSearch(q, filter));
+  /* "Any news from Germany?" names a market and nothing else, so the answer is every Germany story,
+     newest first — not the handful whose text happens to contain the word "Germany". */
+  var own = {};
+  ents.comps.concat(ents.lands).forEach(function (e) {
+    chTokens(e.name).forEach(function (w) { own[chFold(w)] = 1; });
+    e.terms.forEach(function (x) { chTokens(x).forEach(function (w) { own[chFold(w)] = 1; }); });
+  });
+  var onlyNames = filter && !chSubjectTokens(q).some(function (w) { return !own[chFold(w)]; });
+
+  var hits = onlyNames ? [] : chAbove(chSearch(q, filter));
 
   /* Naming a tracked company with no other useful words is still a valid question:
      fall back to everything that mentions it, newest first. */
@@ -7781,6 +8814,16 @@ function chAnsFind(q, d, ix, ents, wantCount) {
   var n = docs.length, cite = chCite(top), quoted = chQuote(top);
   var tail = cite ? " — " + cite + "." : ".";
   var lead;
+  page = page || 0;
+
+  /* "more": the next six of the same answer. */
+  if (page > 0) {
+    var slice = docs.slice(page * 6, page * 6 + 6);
+    return { q: q, kind: "find", lead: slice.length
+               ? "Stories " + (page * 6 + 1) + "–" + (page * 6 + slice.length) + " of " + n + " on " + scope + "."
+               : "That was all of them — " + chPl(n, "story", "stories") + " on " + scope + ".",
+             stats: [], items: slice, context: slice, why: "", note: "" };
+  }
 
   /* The SHAPE of the answer picks the sentence. One hit and forty hits are different pieces of
      news about your own data, and a person says them differently; a single template with the
@@ -7844,7 +8887,8 @@ function chAnsFind(q, d, ix, ents, wantCount) {
      drawn from six of forty matches is a summary of the wrong thing — so the extras ride along
      for grounding and are not drawn. */
   return { q: q, kind: "find", lead: lead, stats: stats,
-           items: docs.slice(0, 6), context: docs.slice(0, 24), why: why, note: "" };
+           items: docs.slice(0, 6), context: docs.slice(0, 24), why: why,
+           note: n > 6 ? "Say “more” for the next six." : "" };
 }
 
 
@@ -7978,10 +9022,16 @@ var CH_RULES = [
   "You are Echo, the assistant inside a personal market-intelligence app for the outward-opening",
   "aluminium window and facade industry. The reader is a product manager at Schüco.",
   "",
-  "GROUNDING. Two blocks follow. INVENTORY is the COMPLETE list of stories the reader holds; if a",
-  "company, market, product or event is not in it, they do not have it, and the honest answer is to",
-  "say so. DETAIL carries the full text of the stories that best match this question, and is where",
-  "substance should come from. Never state a fact that is not traceable to one of those lines.",
+  "GROUNDING. The latest message carries blocks. FACTS and PHONE ANALYTICS are exact figures, counted",
+  "for you — quote them, never recount. APP TABLES are exact tables built for this question.",
+  "INVENTORY, DIGEST and DETAIL together list EVERY story the reader holds (titles in INVENTORY,",
+  "summaries in DIGEST and DETAIL); if a company, market, product or event is in none of them, they",
+  "do not have it, and the honest answer is to say so. Substance comes from DIGEST and DETAIL. Never",
+  "state a fact that is not traceable to one of those lines.",
+  "",
+  "CONVERSATION. Earlier turns come first. Use them to understand 'it', 'them', 'the second one',",
+  "'and Germany?' — READ AS says how the app resolved the latest one. Answer only the latest",
+  "question, and take every fact from the latest message's blocks, which are current.",
   "Never invent a company, figure, headline, date or source, and never answer from your own",
   "knowledge of the industry — the reader is asking what THEIR data says, not what is true in",
   "general. If the material is thin, say it is thin."
@@ -8003,7 +9053,20 @@ var CH_VOICE = [
   "VOICE. Write the way a well-briefed colleague speaks: answer first, plain British English,",
   "contractions welcome, no preamble and no sign-off. Never open by restating the question. Use",
   "only the headings and bullets your shape asks for — '## ' for a heading, '- ' for a bullet,",
-  "'**bold**' for the few phrases that carry the point. Keep the whole answer under 200 words.",
+  "'**bold**' for the few phrases that carry the point. Keep the prose under 200 words; tables do",
+  "not count towards that.",
+  "",
+  "CHOOSE THE FORM YOURSELF, from what the question needs — the SHAPE line is the app's first guess,",
+  "not an order. One fact: a sentence. Two or more things set against each other ('X vs Y', 'this",
+  "month or last', 'Germany or India'): a TABLE with one column per side and one row per measure,",
+  "then what the difference means. A ranking or a breakdown ('by competitor', 'which market', 'top",
+  "sources'): a TABLE ranked by the figure. A period summary: a sentence, then a table of themes.",
+  "Events in order: dated bullets. Tables go in the `tables` field — never as '|' pipes inside the",
+  "answer. At most three tables, twelve rows, six columns, short cells. When an APP TABLE already",
+  "answers it, put its number in `appTables` instead of rebuilding it. EVERY NUMBER IN A TABLE must",
+  "come from FACTS, PHONE ANALYTICS, APP TABLES, FIGURES or a story's own text; if you do not have a",
+  "figure, write '—'. Never estimate. Numbers you did not get from those are flagged to the reader.",
+  "The prose does not repeat the table; it says what the table means.",
   "",
   "Name a story when it is doing the work of your claim. Do not list stories back for their own",
   "sake and never close with a roll-call of everything you read — the reader can open the sources",
@@ -8053,15 +9116,26 @@ var CH_SHAPES = {
   ],
   compare: [
     "SHAPE. A comparison.",
-    "Open with the difference that matters most, in a sentence. Then one '## ' heading per company",
-    "or market being compared, two bullets each, on the SAME dimensions in the same order so the",
-    "two can be read against one another. Say plainly if the data is much thicker on one side."
+    "Open with the difference that matters most, in a sentence. Then a table: one column per side,",
+    "one row per measure, the same measures for every side (an APP TABLE if one fits). Then",
+    "'## What it means' with one or two bullets on the read-across to Schüco. Say plainly if the data",
+    "is much thicker on one side."
+  ],
+  breakdown: [
+    "SHAPE. A breakdown or ranking.",
+    "Lead with the top of the ranking and anything notably silent. The ranking itself is a table (an",
+    "APP TABLE if one fits). Then one or two sentences on what stands out. No headings."
   ],
   summary: [
     "SHAPE. A summary or digest.",
-    "Open with the single most important thing in the period, in a sentence. Then group the rest",
-    "under two to four '## ' theme headings you choose from what is actually there — not a fixed",
-    "list — with one-line bullets. Stop there; do not append a conclusion."
+    "Open with the single most important thing in the period, in a sentence. Then a table of the",
+    "themes — theme, stories, the one story that matters (an APP TABLE if one fits) — and two to four",
+    "one-line bullets on what to take from it. Stop there; do not append a conclusion."
+  ],
+  story: [
+    "SHAPE. One story the reader picked from the answer above.",
+    "Say what it reports in two or three sentences, from its summary. Then '## Why it matters' with",
+    "one or two bullets for Schüco. If a related story in DETAIL bears on it, name at most two."
   ],
   trend: [
     "SHAPE. Movement.",
@@ -8137,6 +9211,11 @@ function chShape(q, kind, ents) {
    seen everything will answer "you have nothing on X" about a story that was simply cut. */
 var CH_INVENTORY_MAX = 600;
 var CH_DETAIL_MAX = 14;
+/* Characters of summaries in DIGEST: ~8k tokens for a broad question (summary, comparison,
+   breakdown), ~3k otherwise. The stories that get a summary are dropped from INVENTORY, so the
+   prompt grows by the summaries only. */
+var CH_DIGEST_WIDE = 32000;
+var CH_DIGEST_NARROW = 12000;
 
 function chPrompt(m) {
   var ix = chIndex();
@@ -8233,8 +9312,14 @@ function chPrompt(m) {
     ].filter(function (x) { return x !== ""; }).join("\n");
   }
 
+  var P = m.P || chParse(m.q);
+  var rng = m.range || P.range;
+  var known = {};
   var out = ["QUESTION", m.q, ""];
+  if (m.readAs) out.push("READ AS (a follow-up, resolved against the turns above): " + String(m.readAs).replace(/[“”]/g, '"'), "");
   if (whoLine) { out.push(whoLine, ""); }
+  if (rng) out.push("TIME RANGE: " + rng.label + " (" + chRangeSpan(rng) + ")", "");
+  out.push("THE APP'S FIRST READING: a '" + (m.shape || "find") + "' question. If the question plainly wants a different form, give it that form.", "");
 
   if (m.stats && m.stats.length) {
     out.push("FIGURES ALREADY COMPUTED FROM THE READER'S DATA");
@@ -8242,38 +9327,77 @@ function chPrompt(m) {
     out.push("");
   }
 
-  /* THE WHOLE CORPUS, newest first. This is what stops the model reaching outside the data: it can
-     see the shape of everything the reader holds, so "you have nothing on that" becomes a checkable
-     statement rather than a guess, and a summary can be drawn across the lot rather than across the
-     six cards retrieval happened to surface. */
+  /* Exact counts, so a table of competitors or months is quoted rather than counted by the model. */
+  var facts = chFacts(P);
+  out.push(facts, "");
+  chNumbersIn(facts, known);
+  var phone = chPhoneFacts(S.data || {});
+  if (phone) { out.push(phone, ""); chNumbersIn(phone, known); }
+  if (m.tables && m.tables.length) {
+    out.push("APP TABLES — exact, built by the app for this question. To show one under your answer, put its",
+             "number in appTables. Do not copy one into your own tables.");
+    m.tables.forEach(function (t, i) { var tt = chTableText(t); out.push("[" + (i + 1) + "] " + tt); chNumbersIn(tt, known); });
+    out.push("");
+  }
+  (m.stats || []).forEach(function (r) { chNumbersIn(r.join(" "), known); });
+
+  /* THE WHOLE CORPUS, in three depths. DETAIL: the stories that best match, with their full
+     summaries. DIGEST: as many more as the budget allows, with a shorter summary each — this is what
+     makes "summarise this month" rest on what the stories SAY rather than on their headlines.
+     INVENTORY: every other story, title only, so "you have nothing on that" stays checkable. */
   var all = ix.docs.slice().sort(function (a, b) { return (b.ms || 0) - (a.ms || 0); });
-  var shown = all.slice(0, CH_INVENTORY_MAX);
+  var inDetail = {}, inDigest = {};
+  var detail = (m.context && m.context.length ? m.context : (m.items || [])).slice(0, CH_DETAIL_MAX);
+  detail.forEach(function (doc) { inDetail[doc.k] = 1; });
+  var wide = /^(summary|compare|breakdown|trend|explain|timeline|competitor)$/.test(m.shape || "") || !detail.length;
+  var budget = wide ? CH_DIGEST_WIDE : CH_DIGEST_NARROW, used = 0, digest = [];
+  var pool = m.digestDocs ? m.digestDocs.slice() : (rng ? all.filter(function (x) { return chInRange(x, rng); }) : []);
+  /* After the range (or with none), the newest of everything else, so a broad question still sees
+     what recent stories say. */
+  pool = pool.concat(all);
+  for (var pi = 0; pi < pool.length && used < budget; pi++) {
+    var dd = pool[pi];
+    if (inDetail[dd.k] || inDigest[dd.k]) continue;
+    var meta0 = [dd.source, dd.category, dd.mk && dd.mk.join("/"), chShort(dd.ms)].filter(Boolean).join(" · ");
+    var line = "- " + dd.title + " [" + meta0 + "]" + (dd.summary ? " — " + chClip(dd.summary, 260) : "");
+    used += line.length; inDigest[dd.k] = 1; digest.push(line);
+  }
+
   var cxp = chCtx();
   if (chCtxActive(cxp)) {
     out.push("SCOPE: the reader has limited Ask to " + chCtxCount(all.length, cxp) + ". Stories outside it are " +
              "hidden on purpose. If nothing here answers the question, say it is not in that selection — " +
              "never that it does not exist.", "");
   }
-  out.push("INVENTORY — every story the reader holds (" + all.length + " in total" +
-           (all.length > shown.length ? ", newest " + shown.length + " listed" : "") + ")");
+  var rest = all.filter(function (x) { return !inDetail[x.k] && !inDigest[x.k]; });
+  var shown = rest.slice(0, CH_INVENTORY_MAX);
+  out.push("INVENTORY — " + all.length + " stories held in total; " + (detail.length + digest.length) +
+           " appear with summaries further down, the other " + rest.length + " by title here" +
+           (rest.length > shown.length ? " (newest " + shown.length + " listed)" : ""));
   shown.forEach(function (doc, i) {
-    out.push((i + 1) + ". " + doc.title +
-      " [" + [doc.source, doc.category, chAgo(doc.ms)].filter(Boolean).join(" · ") + "]");
+    out.push((i + 1) + ". " + doc.title + " [" + [doc.source, doc.category, chAgo(doc.ms)].filter(Boolean).join(" · ") + "]");
+    chNumbersIn(doc.title, known);
   });
-  if (all.length > shown.length) {
-    out.push("(" + (all.length - shown.length) + " older stories not listed. Do not claim the reader " +
+  if (rest.length > shown.length) {
+    out.push("(" + (rest.length - shown.length) + " older stories not listed. Do not claim the reader " +
              "lacks something purely because it is absent here — say the older ones were not shown.)");
   }
   out.push("");
 
-  if (m.items && m.items.length) {
-    var detail = (m.context && m.context.length ? m.context : m.items).slice(0, CH_DETAIL_MAX);
+  if (digest.length) {
+    out.push("DIGEST — " + digest.length + " more stories with a short summary each" + (rng ? ", the chosen period first" : ", newest first"));
+    digest.forEach(function (x) { out.push(x); chNumbersIn(x, known); });
+    out.push("");
+  }
+
+  if (detail.length) {
     out.push("DETAIL — the stories that best match this question, most relevant first");
     detail.forEach(function (doc, i) {
       out.push((i + 1) + ". " + doc.title);
-      var meta = [doc.source, doc.category, doc.region, chAgo(doc.ms)].filter(Boolean).join(" · ");
+      var meta = [doc.source, doc.category, doc.mk && doc.mk.join("/"), doc.cm && doc.cm.length ? "names " + doc.cm.join(", ") : "", chShort(doc.ms)].filter(Boolean).join(" · ");
       if (meta) out.push("   " + meta);
       if (doc.summary) out.push("   " + String(doc.summary).slice(0, 600));
+      chNumbersIn(doc.title + " " + doc.summary, known);
     });
     out.push("");
   } else {
@@ -8285,12 +9409,40 @@ function chPrompt(m) {
      right. It is deliberately NOT offered as a draft to rewrite: handing the model a finished
      sentence is what made every reply inherit its running order — matches, then newest, then
      published — no matter what had been asked. */
+  var composed = String(m.composed || m.lead).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  chNumbersIn(composed, known);
   out.push("COUNTS ALREADY COMPUTED (use these numbers if you need a number; do not recount them,");
   out.push("and do not follow this sentence's running order — it is a note, not a draft)");
-  out.push(String(m.composed || m.lead).replace(/<[^>]+>/g, ""));
+  out.push(composed);
   out.push("");
   out.push((CH_SHAPES[m.shape] || CH_SHAPES.find).join("\n"));
+  out.push("", "QUESTION, AGAIN: " + m.q + (m.readAs ? " (read as: " + String(m.readAs).replace(/[“”]/g, '"') + ")" : ""));
+  m.known = known;
   return out.join("\n");
+}
+
+/* The conversation so far, as real turns. Each earlier question goes back as the reader asked it and
+   each reply as the model gave it (or the app's own words when Smart did not answer), with the
+   stories that were on screen — so "the second one" means the same thing to the model as to the
+   reader. Six turns: enough for a thread, too few to cost much. */
+var CH_HISTORY_TURNS = 6;
+function chHistory(m) {
+  var i = CH_LOG.indexOf(m), out = [];
+  if (i < 0) i = CH_LOG.length;
+  for (var j = Math.max(0, i - CH_HISTORY_TURNS); j < i; j++) {
+    var t = CH_LOG[j];
+    if (!t || t.pending) continue;
+    var said = t.via === "model" && t.modelText ? t.modelText
+             : String(t.composed || t.lead || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    var tabs = arr(t.shownTables).map(function (x) {
+      return "[table: " + (x.title || "") + " — " + arr(x.cols).filter(Boolean).join(", ") + "]";
+    }).join("\n");
+    var its = arr(t.items).slice(0, 6).map(function (x, k) { return (k + 1) + ". " + x.title; }).join("\n");
+    out.push({ role: "user", parts: [{ text: t.q + (t.readAs ? "\n(read as: " + String(t.readAs).replace(/[“”]/g, '"') + ")" : "") }] });
+    out.push({ role: "model", parts: [{ text: JSON.stringify({ answer: chClip(said, 1800) +
+      (tabs ? "\n" + tabs : "") + (its ? "\nStories shown under this answer:\n" + its : "") }) }] });
+  }
+  return out;
 }
 
 /* How long to wait, and when to try again. 25 s and a 900-token ceiling used to end a Smart reply
@@ -8300,6 +9452,9 @@ function chPrompt(m) {
    reply" (user, 2026-09-21). One quiet retry covers a rate blip or an overloaded model; a rejected
    key is never retried. */
 var CH_TIMEOUT_MS = 60000;
+/* Whether Google accepted the table schema. Rejected once, the page stays on the plain schema until
+   it is reloaded, rather than paying a failed round trip on every question. */
+var CH_TABLE_SCHEMA = true;
 var CH_RETRY = { 429: 1, 500: 1, 502: 1, 503: 1, 504: 1 };
 
 /* The reason in words a reader can act on. Every 400 used to read "the key was rejected", which
@@ -8324,27 +9479,41 @@ function chWhyFailed(status, e) {
 function chCallModel(m, done) {
   var key = chKey();
   if (!key) return done(null, "no API key is saved in this browser. Add one in Settings");
-  var tries = 0;
-  var body = JSON.stringify({
-    systemInstruction: { parts: [{ text: CH_RULES + CH_VOICE }] },
-    contents: [{ role: "user", parts: [{ text: chPrompt(m) }] }],
-    /* A schema rather than a delimiter the model has to remember. The answer keeps its markdown;
-       the follow-ups arrive as real strings instead of a line to be parsed back out of prose.
-       The ceiling is room, not a length rule: the rules ask for short answers, and a cut-off JSON
-       reply is worse than a long one. */
-    generationConfig: {
-      temperature: 0.45, maxOutputTokens: 4096,
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: "OBJECT",
-        properties: {
-          answer: { type: "STRING" },
-          followUps: { type: "ARRAY", items: { type: "STRING" } }
-        },
-        required: ["answer"]
-      }
+  var tries = 0, rich = CH_TABLE_SCHEMA;
+  var contents = chHistory(m).concat([{ role: "user", parts: [{ text: chPrompt(m) }] }]);
+  /* A schema rather than a delimiter the model has to remember. The answer keeps its markdown;
+     tables and follow-ups arrive as real structures instead of text to be parsed back out of prose.
+     The ceiling is room, not a length rule: the rules ask for short answers, and a cut-off JSON
+     reply is worse than a long one.
+     IF GOOGLE REJECTS THE TABLE SCHEMA (a nested array of arrays), the call is made once more with
+     the plain schema and the model is told to write tables as pipes, which chProse draws. */
+  var build = function (withTables) {
+    var props = {
+      answer: { type: "STRING" },
+      followUps: { type: "ARRAY", items: { type: "STRING" } }
+    };
+    if (withTables) {
+      props.tables = { type: "ARRAY", items: { type: "OBJECT", properties: {
+        title: { type: "STRING" },
+        columns: { type: "ARRAY", items: { type: "STRING" } },
+        rows: { type: "ARRAY", items: { type: "ARRAY", items: { type: "STRING" } } },
+        note: { type: "STRING" }
+      }, required: ["columns", "rows"] } };
+      props.appTables = { type: "ARRAY", items: { type: "INTEGER" } };
     }
-  });
+    return JSON.stringify({
+      systemInstruction: { parts: [{ text: CH_RULES + CH_VOICE + (withTables ? "" :
+        "\n\nTABLES: this reply has no tables field. Write any table inside the answer as markdown pipes:" +
+        " a header row, a |---| row, then one row per line.") }] },
+      contents: contents,
+      generationConfig: {
+        temperature: 0.45, maxOutputTokens: 6144,
+        responseMimeType: "application/json",
+        responseSchema: { type: "OBJECT", properties: props, required: ["answer"] }
+      }
+    });
+  };
+  var body = build(true);
   (function attempt() {
     tries++;
     var ctrl = window.AbortController ? new AbortController() : null;
@@ -8361,6 +9530,11 @@ function chCallModel(m, done) {
     }).then(function (res) {
       clearTimeout(timer);
       if (!res.ok) {
+        var emsg = String((res.j && res.j.error && res.j.error.message) || "");
+        if (rich && res.status === 400 && /schema|response_schema|responseSchema|generation_?config|Invalid JSON payload|Unknown name/i.test(emsg)) {
+          rich = false; CH_TABLE_SCHEMA = false; body = build(false); tries = 0;
+          return attempt();
+        }
         if (tries < 2 && CH_RETRY[res.status]) return setTimeout(attempt, 2500);
         return done(null, chWhyFailed(res.status, res.j && res.j.error));
       }
@@ -8384,12 +9558,27 @@ function chCallModel(m, done) {
       if (!payload || typeof payload.answer !== "string" || !payload.answer.trim()) {
         payload = { answer: text, followUps: [] };
       }
-      var ups = (payload.followUps || []).map(function (x) { return String(x || "").trim(); })
+      var ups = arr(payload.followUps).map(function (x) { return String(x || "").trim(); })
         .filter(function (x) { return x.length > 3 && x.length <= 90; })
         .slice(0, 3);
+      /* Tables are untrusted too: sized down here, escaped when drawn, and checked against the
+         figures the model was given before any number is shown as fact. */
+      var clipCell = function (x) { return chClip(String(x == null ? "" : x).replace(/\s+/g, " ").trim(), 90); };
+      var tabs = arr(payload.tables).slice(0, 3).map(function (t) {
+        return { title: clipCell(t && t.title), cols: arr(t && t.columns).slice(0, 7).map(clipCell),
+                 rows: arr(t && t.rows).slice(0, 14).map(function (r) { return arr(r).slice(0, 7).map(clipCell); }),
+                 note: clipCell(t && t.note), bars: null, model: true };
+      }).filter(function (t) { return t.rows.length; });
+      tabs.forEach(function (t) {
+        /* Bars read one column against itself when the table ranks things, and one row against
+           itself when it is a comparison (few rows, several sides). */
+        t.bars = t.rows.length >= 3 && t.cols.length <= 4 ? "col" : "row";
+      });
+      var appT = arr(payload.appTables).map(function (x) { return parseInt(x, 10); })
+        .filter(function (x, i, a) { return x >= 1 && x <= arr(m.tables).length && a.indexOf(x) === i; });
 
       var u = res.j.usageMetadata || {};
-      done({ text: payload.answer, followUps: ups,
+      done({ text: payload.answer, followUps: ups, tables: tabs, appTables: appT,
              inTok: u.promptTokenCount || 0, outTok: u.candidatesTokenCount || 0,
              totalTok: u.totalTokenCount || 0, thoughtTok: u.thoughtsTokenCount || 0 }, null);
     }).catch(function (err) {
@@ -8425,8 +9614,30 @@ function chProse(t) {
   var openList = function (tag) { if (list !== tag) { closeList(); html.push("<" + tag + ' class="chlist">'); list = tag; } };
   var inline = function (x) { return x.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>"); };
 
+  /* Markdown pipe tables, for the fallback schema (and a model that writes one anyway). The text is
+     already escaped, so the cells go in as they are. */
+  var pipe = null;
+  var flushPipe = function () {
+    if (!pipe) return;
+    var rows = pipe.filter(function (r) { return !/^\|?\s*:?-{2,}/.test(r); }).map(function (r) {
+      return r.replace(/^\|/, "").replace(/\|$/, "").split("|").map(function (c) { return c.trim(); });
+    });
+    pipe = null;
+    if (!rows.length) return;
+    var h0 = rows.shift();
+    html.push('<div class="chtbl"><div class="chtblw"><table><thead><tr>' +
+      h0.map(function (c) { return "<th>" + inline(c) + "</th>"; }).join("") + "</tr></thead><tbody>" +
+      rows.map(function (r) {
+        return "<tr>" + r.map(function (c) {
+          return '<td' + (chCellNumeric(c.replace(/&[a-z#0-9]+;/g, "")) ? ' class="n"' : "") + ">" + inline(c) + "</td>";
+        }).join("") + "</tr>";
+      }).join("") + "</tbody></table></div></div>");
+  };
+
   lines.forEach(function (ln) {
     var line = ln.trim();
+    if (/^\|.*\|$/.test(line)) { closeList(); (pipe = pipe || []).push(line); return; }
+    flushPipe();
     if (!line) { closeList(); return; }
     var h = /^#{1,6}\s+(.*)$/.exec(line);
     if (h) { closeList(); html.push("<h4 class=\"chh\">" + inline(h[1]) + "</h4>"); return; }
@@ -8437,6 +9648,7 @@ function chProse(t) {
     closeList();
     html.push("<p>" + inline(line) + "</p>");
   });
+  flushPipe();
   closeList();
   return html.join("");
 }
@@ -8470,6 +9682,7 @@ function chSuggestions() {
   if (chSmart()) {
     if (who && other) out.push(["Compare", "How does " + who + " compare with " + other.name + " this month?"]);
     else if (who) out.push(["Read", "What is " + who + " doing, and what does it signal?"]);
+    out.push(["Summary", "Summarise this month by theme, in a table"]);
     if (hot) out.push(["Why", "Why is " + hot + " heating up, and who is positioned for it?"]);
     out.push(["Judgement", "What is worth putting in the next report, and why?"]);
     if (land) out.push(["Watch", "What is shifting in " + land + " that I should act on?"]);
@@ -8478,13 +9691,13 @@ function chSuggestions() {
     return out.slice(0, 4);
   }
 
-  /* BASIC RETRIEVES. One answer, already sitting in the data: find, count, list. */
+  /* BASIC RETRIEVES AND COUNTS. One answer, already sitting in the data: find, compare, break down. */
+  var land2 = ix.lands.length > 1 ? ix.lands[1].name : "";
   if (who) out.push(["Competitor", "What is happening with " + who + "?"]);
-  out.push(["Spend", "How much have I spent this month?"]);
-  if (hot) out.push(["Trend", "Why is " + hot + " heating up?"]);
-  else out.push(["Trend", "What is trending?"]);
-  if (land) out.push(["Market", "Any news from " + land + "?"]);
-  else out.push(["About", "What can you do?"]);
+  if (land && land2) out.push(["Compare", "Compare " + land + " with " + land2 + " this month"]);
+  else if (who && other) out.push(["Compare", who + " vs " + other.name]);
+  out.push(["Breakdown", "Stories by competitor this month"]);
+  out.push(["Summary", "What happened last week?"]);
   return out.slice(0, 4);
 }
 
@@ -8518,7 +9731,7 @@ function chAsk(q) {
   /* The composed reply is kept whatever happens next. It is the fallback if the call fails, and
      it is also part of the prompt, so the model rephrases figures rather than recounting them. */
   m.composed = m.lead;
-  m.shape = chShape(q, m.kind, chEntities(q));
+  m.shape = chShapeOf(m);
   /* Layout follows the MODE, not how the call turns out. Reading it off `via` after the fact meant
      the composed answer's tiles rendered first and then vanished when the reply landed. */
   m.smartTurn = chSmart();
@@ -8534,6 +9747,15 @@ function chAsk(q) {
   if (m.pending) chRunModel(m, true);
 }
 
+/* Which answer SHAPE the Smart prompt asks for. The answers that know their own form (a comparison,
+   a breakdown, a digest, one story) say so; the rest are read off the question, as before. */
+function chShapeOf(m) {
+  if (m.whyAsked) return "explain";
+  if (m.shapeHint) return m.shapeHint;
+  var P = m.P || chParse(m.q);
+  return chShape(P.q, m.kind, P.ents);
+}
+
 /* One Smart call for one turn: a new question, or "Try again" on a turn whose call failed. */
 function chRunModel(m, follow) {
   m.pending = true; m.via = null; m.viaErr = null;
@@ -8542,6 +9764,7 @@ function chRunModel(m, follow) {
     if (out) {
       m.lead = chProse(out.text); m.modelText = out.text; m.via = "model"; m.usage = out;
       m.followUps = out.followUps || [];
+      m.modelTables = out.tables || []; m.appShow = out.appTables || [];
     }
     else { m.via = "local"; m.viaErr = err; m.lead = m.composed; }
     chSaveSession();
@@ -8563,6 +9786,7 @@ function chSaveSession() {
       return { q: m.q, smart: !!m.smartTurn,
                text: said ? m.modelText : null, usage: said ? m.usage : null,
                followUps: said ? (m.followUps || []) : [],
+               tables: said ? (m.modelTables || []) : [], appTables: said ? (m.appShow || []) : [],
                err: m.pending ? "the page was reloaded before Gemini answered" : (m.viaErr || null) };
     })));
   } catch (e) {}
@@ -8576,12 +9800,13 @@ function chRestoreSession() {
     if (!t || !t.q) return;
     var m = chAnswer(t.q);
     m.composed = m.lead;
-    m.shape = chShape(t.q, m.kind, chEntities(t.q));
+    m.shape = chShapeOf(m);
     m.smartTurn = !!t.smart;
     m.pending = false;
     if (t.text) {
       m.lead = chProse(t.text); m.modelText = t.text; m.via = "model";
       m.usage = t.usage || null; m.followUps = arr(t.followUps);
+      m.modelTables = arr(t.tables); m.appShow = arr(t.appTables);
     } else if (t.smart) {
       m.via = "local"; m.viaErr = t.err || "the page was reloaded before Gemini answered";
     }
@@ -8665,6 +9890,31 @@ function chUsage(m) {
   return foot;
 }
 
+/* The tables a turn shows. A Smart reply shows what the model chose. If it chose none for a question
+   whose whole point is a table (a comparison, a breakdown, a digest), the app's exact tables are
+   shown anyway: the reader asked for this versus that, and those figures are counted, not guessed. */
+function chTurnTables(m) {
+  var local = arr(m.tables).map(function (t) { return { t: t, model: false }; });
+  if (m.smartTurn && m.via === "model") {
+    var picked = arr(m.appShow).map(function (i) { return m.tables && m.tables[i - 1]; }).filter(Boolean)
+      .map(function (t) { return { t: t, model: false }; });
+    var own = arr(m.modelTables).map(function (t) { return { t: t, model: true }; });
+    var both = picked.concat(own);
+    if (!both.length && /^(compare|breakdown|digest|story|trend)$/.test(m.kind)) return local;
+    return both;
+  }
+  return local;
+}
+/* The figures the model was handed, rebuilt when a restored turn needs them. */
+function chKnown(m) {
+  if (!m.known) {
+    /* Data turns set m.known while building their prompt; the short prompts (counts, greetings)
+       carry no story list, so every number in them is a figure the model was given. */
+    try { var p = chPrompt(m); if (!m.known) m.known = chNumbersIn(p, {}); } catch (e) { m.known = null; }
+  }
+  return m.known || {};
+}
+
 function chRenderTurn(m) {
   var turn = el("div", "chturn");
 
@@ -8679,6 +9929,14 @@ function chRenderTurn(m) {
   who.appendChild(el("span", null, "Echo"));
   bot.appendChild(who);
 
+  /* How a follow-up was understood, before the answer to it. */
+  if (m.readAs) {
+    var ra = el("div", "chread");
+    ra.appendChild(document.createTextNode("Read as "));
+    ra.appendChild(el("b", null, m.readAs));
+    bot.appendChild(ra);
+  }
+
   /* A div, not a p: a structured reply carries headings and lists, and a <p> cannot legally hold
      either. Prose replies look identical — .chlead styles the box, not the tag. */
   var lead = el("div", "chlead");
@@ -8689,6 +9947,17 @@ function chRenderTurn(m) {
     lead.innerHTML = '<span class="tdot"></span><span class="tdot"></span><span class="tdot"></span>';
   } else {
     lead.innerHTML = m.lead;    // assembled from escaped parts, or escaped model text
+    /* A table the model wrote as pipes gets the same check as one in the tables field. */
+    if (m.via === "model") {
+      var kn = null;
+      lead.querySelectorAll(".chtbl td").forEach(function (td) {
+        kn = kn || chKnown(m);
+        if (chUnverified(td.textContent, kn, 0)) {
+          td.classList.add("unv");
+          td.title = "Not in the figures Echo gave the model — the model's own number";
+        }
+      });
+    }
   }
   bot.appendChild(lead);
 
@@ -8704,6 +9973,16 @@ function chRenderTurn(m) {
     again.onclick = function () { chRunModel(m, false); render(); };
     fail.appendChild(again);
     bot.appendChild(fail);
+  }
+
+  /* Tables: the model's choice on a Smart reply (the app's exact ones it picked, then its own, each
+     number checked), the app's own everywhere else. */
+  m.shownTables = [];
+  if (!m.pending) {
+    chTurnTables(m).forEach(function (x) {
+      m.shownTables.push(x.t);
+      bot.appendChild(chTableEl(x.t, { known: x.model ? chKnown(m) : null }));
+    });
   }
 
   /* THE TILES BELONG TO THE COMPOSED ANSWER, NOT TO EVERY ANSWER. Matches / Newest / Published is
@@ -8786,7 +10065,8 @@ function renderAsk(app) {
 
     var intro = el("p", "chintro");
     intro.innerHTML =
-      "Ask about a competitor, a market, a theme, what you have spent, or what is moving. " +
+      "Ask about a competitor, a market, a theme, what you have spent, or what is moving — compare any " +
+      "two, break anything down by competitor, market, theme, source or month, or ask about a period. " +
       "I read only what your phone has fetched — <b>" + esc(chCtxCount(ix.docs.length, chCtx())) +
       "</b>, plus your <b>" + chPl(ix.comps.length, "competitor", "competitors") + "</b> and <b>" +
       chPl(ix.lands.length, "market", "markets") + "</b>. There is no model behind me and no key in " +
