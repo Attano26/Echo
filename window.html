@@ -1872,6 +1872,73 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
 .chtbln{padding:7px 12px 9px;border-top:1px solid var(--line-2);font-size:11.5px;line-height:1.5;color:var(--ink-3)}
 .chlead .chtbl{margin:6px 0 10px}
 .chlead .chtbl td.unv{text-decoration:underline dotted var(--ink-3);cursor:help}
+/* Charts (Analytics agent): the same panel as a table, the plot on the chart surface. */
+.chchart{margin-top:14px;background:var(--surface-2);border:1px solid var(--line-2);border-radius:var(--r-box);overflow:hidden}
+.chcact{display:inline-flex;gap:12px;flex:none}
+.chleg{display:flex;flex-wrap:wrap;gap:4px 14px;padding:0 12px 6px;font-size:11.5px;color:var(--ink-2)}
+.chlegi{display:inline-flex;align-items:center;gap:6px}
+.chlegi i,.chtip i{display:inline-block;width:9px;height:9px;border-radius:2px}
+.chplot{position:relative;padding:2px 0 8px}
+.chplot svg{display:block;margin:0 auto;font-family:inherit;max-width:100%;height:auto}
+.chtip{position:absolute;z-index:3;min-width:120px;max-width:200px;pointer-events:none;opacity:0;
+  background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:var(--sh-2);
+  padding:7px 9px;font-size:11.5px;line-height:1.5;color:var(--ink-2);transition:opacity .1s}
+.chtip.on{opacity:1}
+.chtip b{display:block;font-weight:500;color:var(--ink);margin-bottom:2px}
+.chtip div{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.chcnote{margin-top:12px;font-size:12.5px;color:var(--ink-3)}
+/* Folded: the data under the charts, and the sources and stories under any analytical answer. */
+.chfold{margin-top:12px}
+.chfold > summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  font-size:12.5px;color:var(--ink-3);padding:3px 0}
+.chfold > summary::-webkit-details-marker{display:none}
+.chfold > summary::before{content:"";width:0;height:0;border-left:4px solid currentColor;
+  border-top:3.5px solid transparent;border-bottom:3.5px solid transparent;transition:transform var(--t-hover) var(--ease)}
+.chfold[open] > summary::before{transform:rotate(90deg)}
+.chfold > summary:hover{color:var(--ink-2)}
+.chsrcl{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 2px}
+.chsrcl span{font-size:12px;padding:3px 10px;border-radius:var(--r-pill);background:var(--surface-2);
+  border:1px solid var(--line-2);color:var(--ink-2)}
+.chsrcl span b{font-weight:500;color:var(--ink-3);margin-left:4px}
+.chsubh{margin:12px 0 0;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
+/* The composer: "+" for agents, the agent chip, and type-ahead. */
+.chplus{flex:none;width:30px;height:30px;margin-left:-10px;border-radius:50%;border:0;cursor:pointer;
+  display:grid;place-items:center;background:transparent;color:var(--ink-3);
+  transition:background var(--t-hover) var(--ease),color var(--t-hover) var(--ease)}
+.chplus:hover,.chplus.on{background:var(--surface-2);color:var(--ink)}
+.chplus svg{width:17px;height:17px}
+.chagent{flex:none;display:inline-flex;align-items:center;gap:5px;border:0;cursor:pointer;font:inherit;
+  font-size:12.5px;font-weight:500;padding:5px 9px 5px 8px;border-radius:var(--r-pill);
+  background:var(--accent-soft);color:var(--accent-ink)}
+.chagent svg{width:13px;height:13px}
+.chagent .x{opacity:.6;font-weight:400;margin-left:1px}
+.chagent:hover .x{opacity:1}
+.chinw{position:relative;flex:1;min-width:0;display:flex}
+.chghost{position:absolute;inset:0;pointer-events:none;white-space:pre;overflow:hidden;
+  font-size:15px;font-weight:300;line-height:40px;color:var(--ink-3);opacity:.75}
+.chghost .t{color:transparent}
+.chghost .k{display:inline-block;margin-left:8px;padding:0 5px;border:1px solid var(--line);border-radius:4px;
+  font-size:10px;line-height:15px;vertical-align:2px;opacity:.8}
+/* Type-ahead suggestions FLOAT over the conversation, anchored to the box. They used to sit in the
+   dock's own layout: appearing and vanishing moved the Basic/Smart/Clear line, so a press on Clear
+   blurred the box, the list collapsed, the line jumped, and the release landed on nothing. */
+.chacpop{position:absolute;left:0;right:0;bottom:calc(100% + 8px);z-index:9;display:none;
+  background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh-2);
+  padding:5px;max-height:240px;overflow-y:auto}
+.chacpop.on{display:block}
+.chaci{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;cursor:pointer;
+  font:inherit;font-size:14px;font-weight:300;text-align:left;padding:8px 10px;border-radius:9px;color:var(--ink-3)}
+.chaci .tx{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chaci .tx b{font-weight:500;color:var(--ink)}
+.chaci em{flex:none;font-style:normal;font-size:11px;color:var(--ink-3)}
+.chaci:hover,.chaci.sel{background:var(--surface-2)}
+.chaci.sel{box-shadow:inset 0 0 0 1px var(--line)}
+.chmenu .chmi{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;cursor:pointer;
+  font:inherit;text-align:left;padding:8px 6px;border-radius:10px;color:var(--ink)}
+.chmenu .chmi:hover{background:var(--surface-2);text-decoration:none}
+.chmenu .chmi svg{width:18px;height:18px;flex:none;color:var(--accent-ink)}
+.chmenu .chmi .d{display:block;font-size:12px;color:var(--ink-3)}
+.chmenu .chmi .ck{margin-left:auto;font-size:12px;color:var(--accent-ink);font-weight:500}
 
 @media (max-width:640px){
   .chsug{grid-template-columns:1fr}
@@ -7891,6 +7958,8 @@ function chAnsCompare(q, P, d, ix, T) {
   if (themes.length >= 2) lead += " " + chCap(themes.join("; ")) + ".";
 
   return { q: q, kind: "compare", shapeHint: "compare", lead: lead, stats: [], tables: tables,
+           allDocs: pool.filter(chAny(T.list.map(function (t) { return t.f; }))),
+           sides: sides.map(function (x) { return { label: x.t.label, docs: x.docs }; }), sideType: T.type,
            items: chWeave(sides.map(function (x) { return x.docs; }), 6),
            context: chWeave(sides.map(function (x) { return x.docs; }), 24),
            why: "Each side counts the stories that name it, by the same rule as the filter chips.",
@@ -7912,6 +7981,26 @@ function chAnsBreakdown(q, P, d, ix, dims) {
   });
   var keys = chTop(counts);
   if (d1.time) keys.sort(function (a, b) { return d1.order(a[0]) - d1.order(b[0]); });
+  /* Time runs without gaps: the latest twelve months (or weeks) up to the newest story, empty ones
+     at zero, and anything older left out and said so — one story from 2008 must not stretch the axis. */
+  var older = 0;
+  if (d1.time) {
+    var dated = docs.filter(function (z) { return z.ms; });
+    if (dated.length) {
+      var newest = Math.max.apply(null, dated.map(function (z) { return z.ms; }));
+      var seq = [], nd = new Date(newest);
+      for (var qi = 11; qi >= 0; qi--) {
+        var t0 = d1.k === "month" ? new Date(nd.getFullYear(), nd.getMonth() - qi, 1).getTime()
+                                  : chDay0(newest) - ((nd.getDay() + 6) % 7 + qi * 7) * 864e5;
+        seq.push(d1.of({ ms: t0 })[0]);
+      }
+      var first = seq[0];
+      /* Skip leading empty periods, so a young corpus is not mostly zeros. */
+      while (seq.length > 2 && !counts[seq[0]]) seq.shift();
+      older = keys.filter(function (kv) { return seq.indexOf(kv[0]) < 0; }).reduce(function (a, kv) { return a + kv[1]; }, 0);
+      keys = seq.map(function (k) { return [k, counts[k] || 0]; });
+    }
+  }
   var shown = d1.time ? keys.slice(-12) : keys.slice(0, 12);
   var rest = d1.time ? [] : keys.slice(12);
   var N = docs.length;
@@ -7967,9 +8056,13 @@ function chAnsBreakdown(q, P, d, ix, dims) {
 
   var leadKey = live[0] && live[0][0];
   if (d1.time && live.length) leadKey = live[live.length - 1][0];
+  if (older && tables[0]) {
+    tables[0].note = ((tables[0].note ? tables[0].note + " " : "") + chPl(older, "older story", "older stories") +
+                      " before these " + (d1.k === "week" ? "weeks" : "months") + " not shown.").trim();
+  }
   var items = leadKey ? docsOf(leadKey).slice(0, 6) : [];
   var ctx = chWeave(shown.slice(0, 8).map(function (kv) { return docsOf(kv[0]); }), 30);
-  return { q: q, kind: "breakdown", shapeHint: "breakdown", lead: lead, stats: [], tables: tables,
+  return { q: q, kind: "breakdown", shapeHint: "breakdown", lead: lead, stats: [], tables: tables, allDocs: docs,
            items: items, context: ctx,
            why: leadKey ? (d1.time ? "The stories from the latest " + (d1.k === "week" ? "week" : "month") + "." : "The stories under the top row.") : "",
            note: d1.k === "competitor" ? "A story counts for a company when it names it — the filter chips’ rule." : "" };
@@ -8018,7 +8111,7 @@ function chAnsDigest(q, P, d, ix) {
                   rows: lands.map(function (kv) { return [kv[0], String(kv[1]), chPct(kv[1], docs.length)]; }) });
   }
   var items = byCat.slice(0, 6).map(function (kv) { return pickOf(kv[0]); }).filter(Boolean);
-  return { q: q, kind: "digest", shapeHint: "summary", lead: lead, stats: stats, tables: tables,
+  return { q: q, kind: "digest", shapeHint: "summary", lead: lead, stats: stats, tables: tables, allDocs: docs,
            items: items, context: docs.slice(0, 60), digestDocs: docs, range: P2.range,
            why: "One story per theme: published first, then liked, then newest.", note: "" };
 }
@@ -8226,6 +8319,842 @@ function chTableEl(t, opt) {
                       " worked out by the model, not taken from your data as given. Check before quoting.");
   if (notes.length) box.appendChild(el("div", "chtbln", notes.join(" ")));
   return box;
+}
+
+
+/* ============================================================
+   ASK — typing help, agents and charts (2026-09-30)
+   ------------------------------------------------------------
+   TYPE-AHEAD. Suggestions come from three places, all local and free, recomputed per keystroke
+   from lists already in memory:
+     1. questions YOU asked before (this browser), ranked by how often and how lately — so the
+        more Ask is used, the more the suggestions sound like you;
+     2. every question shape Ask can actually answer, filled in with YOUR companies, markets,
+        themes, sources and periods — so a suggestion is never a question it cannot answer;
+     3. the words in your stories, for finishing a word, and a next-word model built from 1 and 2.
+   No model call per keystroke: that would cost money on the reader's key and lag the typing.
+
+   AGENTS. The "+" menu and slash commands. Analytics is the first: the same answer, drawn as charts,
+   with the data behind them one tap away.
+   ============================================================ */
+
+/* ---------- what you asked before ---------- */
+var CH_HIST_LS = "echo.ask.typed";
+function chHistLoad() {
+  try { return arr(JSON.parse(localStorage.getItem(CH_HIST_LS) || "[]")); } catch (e) { return []; }
+}
+function chHistAdd(q) {
+  q = String(q || "").replace(/\s+/g, " ").trim();
+  if (q.length < 4 || q.charAt(0) === "/" || chSocial(q)) return;
+  var h = chHistLoad(), k = key(q), hit = null;
+  h.forEach(function (x) { if (key(x.q) === k) hit = x; });
+  if (hit) { hit.n = (hit.n || 1) + 1; hit.t = Date.now(); hit.q = q; }
+  else h.push({ q: q, n: 1, t: Date.now() });
+  h.sort(function (a, b) { return chHistScore(b) - chHistScore(a); });
+  try { localStorage.setItem(CH_HIST_LS, JSON.stringify(h.slice(0, 150))); } catch (e) {}
+  CH_AC = null;
+}
+function chHistScore(x) {
+  var days = (Date.now() - (x.t || 0)) / 864e5;
+  return 20 * Math.min(x.n || 1, 10) + Math.max(0, 30 - days);
+}
+
+/* ---------- the question shapes Ask answers ---------- */
+var CH_TEMPLATES = [
+  "What is happening with {C}?", "Profile {C}", "What is new with {C} {P}?", "Catch me up on {C}",
+  "Compare {C} with {C2}", "Compare {C} with {C2} {P}", "{C} vs {C2}", "How does {C} compare?",
+  "Compare {L} with {L2} {P}", "Compare {L} with {L2}", "Which market is busier, {L} or {L2}?",
+  "Compare {P} with {P2}", "{P} vs {P2}",
+  "Stories by competitor {P}", "Stories by market {P}", "Stories by theme {P}", "Stories by source {P}",
+  "Stories per month", "Stories per week {P}", "Stories by market and theme", "Stories by competitor and market",
+  "Top sources in {L}", "Top sources {P}", "Top themes {P}", "Top themes in {L}",
+  "Which competitor talks most about {T}?", "Who is loudest {P}?", "Who is loudest in {L}?",
+  "What happened {P}?", "Summarise {P}", "Summarise {P} by theme", "What is new in {L} {P}?",
+  "Any news from {L}?", "News about {T}", "News about {T} in {L}", "{T} stories by competitor",
+  "Saved stories by market", "Published stories by competitor {P}",
+  "How much have I spent this month?", "How many saved stories do I have?", "What is trending?", "What can you do?"
+];
+var CH_PERIODS = ["this month", "last month", "this week", "last week", "the last 2 weeks", "the last 3 months",
+                  "this quarter", "this year"];
+
+var CH_AC = null;
+function chAcIndex() {
+  var ix = chIndex();
+  var stamp = ix.stamp + "|" + chHistLoad().length;
+  if (CH_AC && CH_AC.stamp === stamp) return CH_AC;
+
+  /* Entities in order of how much the reader holds on them, so the likely one is offered first. */
+  var cc = chCountBy(ix.docs, function (d) { return d.cm; });
+  var comps = ix.comps.map(function (c) { return c.name; }).sort(function (a, b) { return (cc[b] || 0) - (cc[a] || 0); }).slice(0, 6);
+  var lands = ix.lands.map(function (c) { return c.name; });
+  var themes = chTop(chCountBy(ix.docs, function (d) { return d.category ? [d.category] : []; }), 8).map(function (x) { return x[0]; });
+  var months = chTop(chCountBy(ix.docs, function (d) { return d.ms ? [new Date(d.ms).toLocaleDateString("en-GB", { month: "long" })] : []; }), 4)
+    .map(function (x) { return "in " + x[0]; });
+  var periods = CH_PERIODS.concat(months);
+
+  var sent = [], seen = {};
+  var add = function (s, w, src) {
+    var k = key(s);
+    if (!s || seen[k]) return;
+    seen[k] = 1; sent.push({ s: s, l: k, w: w, src: src });
+  };
+  chHistLoad().forEach(function (x) { add(x.q, 1000 + chHistScore(x), "you"); });
+  CH_TEMPLATES.forEach(function (tpl, ti) {
+    var base = 100 - ti;
+    var Cs = /\{C\}/.test(tpl) ? comps : [""], Ls = /\{L\}/.test(tpl) ? lands : [""];
+    var Ts = /\{T\}/.test(tpl) ? themes : [""], Ps = /\{P\}/.test(tpl) ? periods : [""];
+    Cs.forEach(function (c, ci) {
+      (/\{C2\}/.test(tpl) ? comps.filter(function (x) { return x !== c; }) : [""]).forEach(function (c2, c2i) {
+        Ls.forEach(function (l, li) {
+          (/\{L2\}/.test(tpl) ? lands.filter(function (x) { return x !== l; }) : [""]).forEach(function (l2) {
+            Ts.forEach(function (t, tj) {
+              Ps.forEach(function (p, pi) {
+                (/\{P2\}/.test(tpl) ? periods.filter(function (x) { return x !== p; }).slice(0, 3) : [""]).forEach(function (p2) {
+                  var s = tpl.replace("{C2}", c2).replace("{C}", c).replace("{L2}", l2).replace("{L}", l)
+                             .replace("{T}", t).replace("{P2}", p2).replace("{P}", p).replace(/\s+([?,])/g, "$1")
+                             .replace(/\s+/g, " ").trim();
+                  add(chCap(s), base - ci * 3 - c2i - li * 2 - tj - pi, "shape");
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+  });
+
+  /* Words and names, for finishing the word being typed. Names first (they are what is hardest to
+     spell), then the story vocabulary in the form it is usually written. */
+  var words = [], wseen = {};
+  var addW = function (w, wt) { var k = key(w); if (w && w.length >= 3 && !wseen[k]) { wseen[k] = 1; words.push({ w: w, l: k, wt: wt }); } };
+  ix.comps.forEach(function (c) { addW(c.name, 90); chBrandTerms(c.name).forEach(function (t) { addW(t, 88); }); });
+  lands.forEach(function (l) { addW(l, 90); });
+  themes.forEach(function (t) { addW(t, 70); });
+  chTop(chCountBy(ix.docs, function (d) { return d.source ? [d.source] : []; }), 12).forEach(function (x) { addW(x[0], 60); });
+  periods.forEach(function (p) { addW(p, 65); });
+  ("compare versus summarise summary stories competitor competitors market markets theme themes source sources " +
+   "month week happening happened loudest busier published saved trending spent analytics").split(" ").forEach(function (w) { addW(w, 55); });
+  var forms = {}, freq = {};
+  ix.docs.forEach(function (d) {
+    String(d.title).split(/[^A-Za-zÀ-ɏ-]+/).forEach(function (w) {
+      if (w.length < 5 || CH_STOP[w.toLowerCase()]) return;
+      var k = w.toLowerCase(); freq[k] = (freq[k] || 0) + 1;
+      var f = forms[k] || (forms[k] = {}); f[w] = (f[w] || 0) + 1;
+    });
+  });
+  Object.keys(freq).sort(function (a, b) { return freq[b] - freq[a]; }).slice(0, 400).forEach(function (k) {
+    var best = Object.keys(forms[k]).sort(function (a, b) { return forms[k][b] - forms[k][a]; })[0];
+    /* Lower case unless it is an acronym; names come from the lists above with their own spelling. */
+    addW(/^[A-Z0-9]{2,}$/.test(best) ? best : k, 10 + Math.min(40, freq[k]));
+  });
+
+  /* Next-word model: what follows one word and what follows two, weighted like the sentences. */
+  var n1 = {}, n2 = {};
+  sent.forEach(function (x) {
+    var ws = x.s.replace(/[?!.]+$/, "").split(/\s+/), w = x.src === "you" ? 8 : 1;
+    for (var i = 0; i < ws.length - 1; i++) {
+      var a = ws[i].toLowerCase(), nx = ws[i + 1];
+      (n1[a] = n1[a] || {})[nx] = (n1[a][nx] || 0) + w;
+      if (i > 0) { var b = ws[i - 1].toLowerCase() + " " + a; (n2[b] = n2[b] || {})[nx] = (n2[b][nx] || 0) + w; }
+    }
+  });
+
+  CH_AC = { stamp: stamp, sent: sent, words: words, n1: n1, n2: n2 };
+  return CH_AC;
+}
+
+var CH_COMMANDS = [
+  { c: "/analytics", d: "Charts and tables from your data", agent: "analytics" },
+  { c: "/charts", d: "Same as /analytics", agent: "analytics" },
+  { c: "/companyprofile", d: "Profile a company: heat map, focus, momentum", agent: "profile" },
+  { c: "/plain", d: "Back to plain answers", agent: "" },
+  { c: "/smart", d: "Answers worded by Gemini, with your key", mode: "smart" },
+  { c: "/basic", d: "Free answers composed here", mode: "basic" },
+  { c: "/clear", d: "Clear this conversation", clear: true }
+];
+var CH_CMD_ALIAS = { analytics: "analytics", analytic: "analytics", chart: "analytics", charts: "analytics",
+                     chats: "analytics", graph: "analytics", graphs: "analytics", viz: "analytics",
+                     companyprofile: "profile", company: "profile", profile: "profile", cp: "profile",
+                     plain: "", off: "", normal: "" };
+
+/* {ghost, options:[{text, label, hint}]}: ghost is what would be appended; each option is a full
+   replacement for the box. */
+function chComplete(x) {
+  var out = { ghost: "", options: [] };
+  if (!x || !x.trim()) return out;
+  var low = x.toLowerCase();
+
+  if (x.charAt(0) === "/") {
+    CH_COMMANDS.filter(function (c) { return c.c.indexOf(low.split(" ")[0]) === 0; }).slice(0, 4).forEach(function (c) {
+      out.options.push({ text: c.c + " ", label: c.c, hint: c.d });
+    });
+    if (out.options.length && low.indexOf(" ") < 0) out.ghost = out.options[0].label.slice(x.length);
+    return out;
+  }
+
+  var ac = chAcIndex();
+  /* 1. A whole question that starts the same way. */
+  var hits = ac.sent.filter(function (s) { return s.l.length > low.length && s.l.indexOf(low) === 0; })
+    .sort(function (a, b) { return b.w - a.w; });
+  if (hits.length) {
+    out.ghost = hits[0].s.slice(x.length);
+    hits.slice(0, 3).forEach(function (h) { out.options.push({ text: h.s, label: h.s, hint: h.src === "you" ? "asked before" : "" }); });
+    return out;
+  }
+
+  var m = /(\S+)$/.exec(x);
+  if (m && m[1].length >= 2) {
+    /* 2. Finish the word (or name) being typed. */
+    var part = m[1].toLowerCase(), head = x.slice(0, x.length - m[1].length);
+    var ws = ac.words.filter(function (w) { return w.l.length > part.length && w.l.indexOf(part) === 0; })
+      .sort(function (a, b) { return b.wt - a.wt; }).slice(0, 3);
+    if (ws.length) {
+      out.ghost = ws[0].w.slice(part.length);
+      ws.forEach(function (w) { out.options.push({ text: head + w.w + " ", label: w.w, hint: "" }); });
+      return out;
+    }
+    return out;
+  }
+
+  /* 3. After a space: the words most likely to come next. */
+  var toks = x.trim().split(/\s+/);
+  var last = toks[toks.length - 1].toLowerCase(), last2 = toks.length > 1 ? toks[toks.length - 2].toLowerCase() + " " + last : "";
+  var dist = (last2 && ac.n2[last2]) || ac.n1[last] || null;
+  if (!dist) return out;
+  var nexts = Object.keys(dist).sort(function (a, b) { return dist[b] - dist[a]; }).slice(0, 3);
+  /* Run the best guess on while each step is clear, up to three words. */
+  var phrase = [nexts[0]], a1 = last, cur = nexts[0];
+  for (var i = 0; i < 2; i++) {
+    var d2 = ac.n2[a1 + " " + cur.toLowerCase()] || ac.n1[cur.toLowerCase()];
+    if (!d2) break;
+    var ks = Object.keys(d2).sort(function (p, q) { return d2[q] - d2[p]; });
+    var tot = ks.reduce(function (s, k) { return s + d2[k]; }, 0);
+    if (!ks.length || d2[ks[0]] / tot < 0.5) break;
+    a1 = cur.toLowerCase(); cur = ks[0]; phrase.push(cur);
+  }
+  var sp = /\s$/.test(x) ? "" : " ";
+  out.ghost = sp + phrase.join(" ");
+  nexts.forEach(function (n) { out.options.push({ text: x + sp + n + " ", label: n, hint: "" }); });
+  return out;
+}
+
+/* ---------- agents ---------- */
+var CH_AGENT_LS = "echo.ask.agent";
+function chAgent() {
+  try { var v = localStorage.getItem(CH_AGENT_LS); return v === "analytics" || v === "profile" ? v : ""; } catch (e) { return ""; }
+}
+var CH_AGENTS = {
+  analytics: { label: "Analytics", desc: "Charts and tables from your data", cmd: "/analytics",
+               hint: "Ask for a chart — e.g. stories by competitor this month", on: "Analytics is on: answers come with charts" },
+  profile:   { label: "Company profile", desc: "Heat map, focus vs peers, momentum, latest moves", cmd: "/companyprofile",
+               hint: "Name a company — e.g. Fenesta", on: "Company profile is on: name a company" }
+};
+function chSetAgent(v) { try { v ? localStorage.setItem(CH_AGENT_LS, v) : localStorage.removeItem(CH_AGENT_LS); } catch (e) {} }
+var CH_PLUS_OPEN = false;
+
+/* A slash command typed into the box. Returns true when it was one (handled, nothing to send). */
+function chCommand(raw) {
+  var m = /^\/(\S*)\s*(.*)$/.exec(String(raw || "").trim());
+  if (!m) return false;
+  var word = m[1].toLowerCase(), rest = m[2];
+  CH_DRAFT = "";
+  if (word in CH_CMD_ALIAS) {
+    chSetAgent(CH_CMD_ALIAS[word]);
+    toast(CH_CMD_ALIAS[word] ? CH_AGENTS[CH_CMD_ALIAS[word]].on : "Plain answers");
+    if (rest) { chAsk(rest); return true; }
+    render(); return true;
+  }
+  if (word === "smart" || word === "basic") {
+    chSetMode(word); CH_WANTKEY = word === "smart" && !chKey();
+    if (rest) { chAsk(rest); return true; }
+    render(); return true;
+  }
+  if (word === "clear") { CH_LOG = []; chSaveSession(); render(); return true; }
+  toast("No command called /" + word + ". Try /analytics");
+  render();
+  return true;
+}
+
+/* ---------- analytics: the charts behind an answer ----------
+   Every chart is drawn from an APP table — counts of stories the reader holds — never from numbers
+   the model wrote. Charts that the answer's own tables cannot give (how something moved over time,
+   what a search result is about) are added here as tables first, so the chart and its data table
+   are always the same figures. */
+function chBuckets(docs, range) {
+  var dated = docs.filter(function (d) { return d.ms; });
+  if (!dated.length) return null;
+  var to = range ? Math.min(range.to, chDay0(Date.now()) + 864e5) : chDay0(Date.now()) + 864e5;
+  var from = range ? range.from : Math.min.apply(null, dated.map(function (d) { return d.ms; }));
+  var weekly = to - from <= 50 * 864e5;
+  var keys = [], idx = {};
+  if (weekly) {
+    var d0 = new Date(chDay0(from)); d0.setDate(d0.getDate() - (d0.getDay() + 6) % 7);
+    for (var t = d0.getTime(); t < to; t += 7 * 864e5) {
+      var lab = new Date(t).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+      idx[lab] = keys.length; keys.push({ lab: lab, from: t, to: t + 7 * 864e5 });
+    }
+  } else {
+    var s = new Date(from), e = new Date(to - 1);
+    var y = s.getFullYear(), mo = s.getMonth();
+    /* At most the latest eight months: a chart of two years of sparse months is mostly zeros. */
+    var span = (e.getFullYear() - y) * 12 + e.getMonth() - mo;
+    if (span > 7) { mo += span - 7; }
+    for (var k = 0; k < 8; k++) {
+      var a = new Date(y, mo + k, 1).getTime();
+      if (a >= to) break;
+      keys.push({ lab: chMonLabel(a), from: a, to: new Date(y, mo + k + 1, 1).getTime() });
+    }
+  }
+  return { weekly: weekly, keys: keys };
+}
+function chOverTime(groups, range, title) {
+  var all = [];
+  groups.forEach(function (g) { all = all.concat(g.docs); });
+  var b = chBuckets(all, range);
+  if (!b || b.keys.length < 2) return null;
+  return {
+    title: title || (groups.length > 1 ? "Over time" : "Stories over time"),
+    cols: [b.weekly ? "Week of" : "Month"].concat(groups.map(function (g) { return g.name; })),
+    rows: b.keys.map(function (k) {
+      return [k.lab].concat(groups.map(function (g) {
+        return String(g.docs.filter(function (d) { return d.ms >= k.from && d.ms < k.to; }).length);
+      }));
+    }),
+    bars: "col", chart: groups.length > 1 ? "line" : "col"
+  };
+}
+function chByTable(docs, dimK, title, n) {
+  var dm = CH_DIMS.filter(function (x) { return x.k === dimK; })[0];
+  var rows = chTop(chCountBy(docs, dm.of), n || 8);
+  if (rows.length < 2) return null;
+  return { title: title, cols: [dm.label, "Stories"], rows: rows.map(function (r) { return [r[0], String(r[1])]; }),
+           bars: "col", chart: "hbar" };
+}
+
+function chAnalytics(m) {
+  m.charts = [];
+  if (m.kind === "profile") {
+    m.charts = arr(m.tables).map(chChartSpec).filter(Boolean);
+    return m;
+  }
+  if (m.social || /^(metric|help|count|none|story)$/.test(m.kind)) {
+    m.chartNote = m.kind === "story" ? "" : "Nothing to chart in this one — ask for a comparison, a breakdown or a period.";
+    return m;
+  }
+  var tables = arr(m.tables).slice(), extra = [];
+  var docs = arr(m.allDocs).length ? m.allDocs : arr(m.context).length ? m.context : arr(m.items);
+  var range = m.range || (m.P && m.P.range) || null;
+
+  if (m.kind === "compare" && arr(m.sides).length && m.sideType !== "period") {
+    var ot = chOverTime(m.sides.map(function (s) { return { name: s.label, docs: s.docs }; }), range, "Over time");
+    if (ot) extra.push(ot);
+  } else if (m.kind === "digest") {
+    var od = chOverTime([{ name: "Stories", docs: docs }], range, "Stories over the period");
+    if (od) extra.push(od);
+  } else if (m.kind === "find" || m.kind === "trend") {
+    var o1 = chOverTime([{ name: "Stories", docs: docs }], range, "When these stories appeared");
+    if (o1) extra.push(o1);
+    var t1 = chByTable(docs, "category", "What they are about", 8); if (t1) extra.push(t1);
+    var c1 = chByTable(docs, "competitor", "Competitors named", 8); if (c1) extra.push(c1);
+  }
+  m.tables = tables.concat(extra);
+  m.tables.forEach(function (t) { var c = chChartSpec(t); if (c) m.charts.push(c); });
+  if (!m.charts.length) m.chartNote = "Not enough to chart here — the answer rests on too few stories.";
+  return m;
+}
+
+/* A table, read as a chart. Only counts go in: rows whose cells are not all figures are left out
+   (names, dates), and a table with nothing left is not charted. */
+function chChartSpec(t) {
+  var cols = arr(t.cols), rows = arr(t.rows);
+  if (!rows.length || cols.length < 2 || t.plain || t.noChart) return null;
+  if (t.spec) return Object.assign({ table: t }, t.spec);
+  if (t.chart === "heat") {
+    var hc = cols.slice(1).filter(function (c) { return !/^total$/i.test(c); });
+    return { type: "heat", title: t.title, labels: rows.map(function (r) { return r[0]; }), cols: hc, series: [],
+             grid: rows.map(function (r) { return hc.map(function (_, j) { return parseFloat(r[j + 1]) || 0; }); }),
+             totals: rows.map(function (r) { return r[cols.length - 1]; }), table: t };
+  }
+  var num = function (s) { var v = parseFloat(String(s).replace(/,/g, "")); return isNaN(v) ? null : v; };
+  var isNum = function (s) { return /^\s*[-+−]?\d[\d,]*(\.\d+)?\s*$/.test(String(s)); };
+  var timeFirst = /^(month|week of|week)$/i.test(cols[0]);
+
+  /* A comparison table: measures down the side, one column per side. Count rows only. */
+  if (t.bars === "row" && !timeFirst) {
+    var keep = rows.filter(function (r) { return r.slice(1).every(isNum) && !/phone/i.test(r[0]); });
+    if (!keep.length) return null;
+    var series = cols.slice(1).map(function (c, i) { return { name: c, values: keep.map(function (r) { return num(r[i + 1]); }) }; });
+    return { type: "hbar", title: t.title, labels: keep.map(function (r) { return r[0]; }), series: series, table: t };
+  }
+  /* Everything else: first column labels, the figure columns as series (Share and Total dropped —
+     they restate the others). */
+  var sc = [];
+  cols.forEach(function (c, i) {
+    if (!i || /^(share|total|newest|the one to read)$/i.test(c)) return;
+    if (rows.filter(function (r) { return isNum(r[i]); }).length >= rows.length * 0.8) sc.push(i);
+  });
+  if (!sc.length) return null;
+  var rs = rows.filter(function (r) { return !/^others \(/i.test(r[0]); });
+  var labels = rs.map(function (r) { return r[0]; });
+  var ser = sc.map(function (i) { return { name: cols[i], values: rs.map(function (r) { return num(r[i]) || 0; }) }; });
+  /* Past four series, the smaller ones fold into Other — a fifth colour is never invented. */
+  if (ser.length > 4) {
+    ser.sort(function (a, b) { return b.values.reduce(function (s, v) { return s + v; }, 0) - a.values.reduce(function (s, v) { return s + v; }, 0); });
+    var other = { name: "Other", values: labels.map(function (_, j) { return ser.slice(3).reduce(function (s, x) { return s + x.values[j]; }, 0); }), other: true };
+    ser = ser.slice(0, 3).concat([other]);
+  }
+  var type = t.chart || (timeFirst ? (ser.length > 1 ? "line" : "col") : (ser.length > 1 ? "stack" : "hbar"));
+  return { type: type, title: t.title, labels: labels, series: ser, table: t };
+}
+
+/* ---------- drawing ----------
+   Plain SVG, colours written in as values (not CSS variables) so a copied or downloaded image looks
+   the same outside the page. The categorical order was run through the colour-blind validator for
+   both themes (light on #F7F7F9, dark on #1F1F22). */
+var CH_PAL_LIGHT = ["#1F57F5", "#06B6D4", "#F59E0B", "#8B5CF6"];
+var CH_PAL_DARK = ["#3B6BF6", "#0B98B3", "#C98208", "#9B6CF6"];
+function chTok(name, fb) {
+  var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || fb;
+}
+function chInk() {
+  var dark = isDark();
+  return { dark: dark, pal: dark ? CH_PAL_DARK : CH_PAL_LIGHT,
+           ink: chTok("--ink", dark ? "#F5F5F7" : "#111"), ink2: chTok("--ink-2", "#555"), ink3: chTok("--ink-3", "#777"),
+           grid: chTok("--line-2", dark ? "#242427" : "#EFEFF1"), line: chTok("--line", "#ddd"),
+           bg: chTok("--surface-2", dark ? "#1F1F22" : "#F7F7F9"), other: dark ? "#55565E" : "#B4B5BC" };
+}
+function chSvg(tag, at, txt) {
+  var n = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (var k in at) n.setAttribute(k, at[k]);
+  if (txt != null) n.textContent = txt;
+  return n;
+}
+function chNice(max) {
+  if (max <= 5) return Math.max(1, Math.ceil(max));
+  var p = Math.pow(10, Math.floor(Math.log10(max))), f = max / p;
+  return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p;
+}
+function chShortLab(s, n) { s = String(s); return s.length > n ? s.slice(0, n - 1) + "…" : s; }
+/* Bars get rounded data-ends and square baselines. */
+function chBarPath(x, y, w, h, horiz) {
+  var r = Math.min(4, horiz ? h / 2 : w / 2, horiz ? w : h);
+  if (w <= 0 || h <= 0) return "";
+  if (horiz) return "M" + x + "," + y + "h" + (w - r) + "a" + r + "," + r + " 0 0 1 " + r + "," + r + "v" + (h - 2 * r) +
+                    "a" + r + "," + r + " 0 0 1 " + (-r) + "," + r + "h" + (r - w) + "z";
+  return "M" + x + "," + (y + h) + "v" + (r - h) + "a" + r + "," + r + " 0 0 1 " + r + "," + (-r) + "h" + (w - 2 * r) +
+         "a" + r + "," + r + " 0 0 1 " + r + "," + r + "v" + (h - r) + "z";
+}
+
+function chChartEl(spec) {
+  var C = chInk();
+  var box = el("div", "chchart");
+  var head = el("div", "chtblh");
+  head.appendChild(el("span", null, spec.title || ""));
+  var acts = el("span", "chcact");
+  var cp = el("button", "chtblcp", "Copy");
+  cp.title = "Copy the chart as an image";
+  var dl = el("button", "chtblcp", "PNG");
+  dl.title = "Download the chart as a PNG";
+  acts.appendChild(cp); acts.appendChild(dl);
+  head.appendChild(acts);
+  box.appendChild(head);
+
+  var colour = function (i) { return spec.series[i].other ? C.other : C.pal[i % C.pal.length]; };
+  var unit = spec.unit || "";
+  if (spec.series.length > 1) {
+    var lg = el("div", "chleg");
+    spec.series.forEach(function (s, i) {
+      var it = el("span", "chlegi");
+      var sw = el("i"); sw.style.background = colour(i);
+      it.appendChild(sw); it.appendChild(document.createTextNode(s.name));
+      lg.appendChild(it);
+    });
+    box.appendChild(lg);
+  }
+
+  /* Sized to the conversation column as it is now drawn, so text stays at its real size. */
+  var flowEl = document.querySelector(".chflow");
+  var W = Math.max(270, Math.min(760, flowEl && flowEl.clientWidth ? flowEl.clientWidth - 72 : (window.innerWidth || 800) - 80));
+  var fs = 12, svg, tipRows = [];
+  var tip = el("div", "chtip");
+  var n = spec.labels.length, S = spec.series;
+  var maxV = 0;
+  if (spec.type === "heat") spec.grid.forEach(function (r) { r.forEach(function (v) { maxV = Math.max(maxV, v); }); });
+  else if (spec.type === "stack") spec.labels.forEach(function (_, j) { maxV = Math.max(maxV, S.reduce(function (s, x) { return s + (x.values[j] || 0); }, 0)); });
+  else S.forEach(function (s) { s.values.forEach(function (v) { maxV = Math.max(maxV, v || 0); }); });
+  /* Whole-number gridlines: three steps of a nice size, the top one just above the largest value. */
+  var step = Math.max(1, chNice((maxV || 1) / 3)), top = step * Math.max(1, Math.ceil((maxV || 1) / step));
+
+  if (spec.type === "heat") {
+    /* One hue, light to dark: more stories, deeper colour. Figures in the cells, so the colour is never
+       the only way to read it. */
+    var hueRGB = C.dark ? [59, 107, 246] : [31, 87, 245];
+    var hlw = Math.min(W * 0.36, 8 + 6.6 * Math.max.apply(null, spec.labels.map(function (l) { return Math.min(30, String(l).length); })));
+    var nc = spec.cols.length, totW = 36;
+    var cw = Math.min(64, (W - hlw - totW - 8) / nc), ch = 26, headH = 22;
+    var HH = headH + spec.labels.length * (ch + 3) + 6;
+    svg = chSvg("svg", { width: W, height: HH, viewBox: "0 0 " + W + " " + HH, role: "img", "aria-label": spec.title });
+    spec.cols.forEach(function (c, j) {
+      svg.appendChild(chSvg("text", { x: hlw + j * cw + cw / 2, y: 14, "text-anchor": "middle", "font-size": 10.5, fill: C.ink3 },
+        chShortLab(String(c).replace(/^([A-Za-z]{3})[a-z]*\s+(?:20)?(\d\d)$/, "$1 $2"), 8)));
+    });
+    svg.appendChild(chSvg("text", { x: hlw + nc * cw + totW / 2 + 4, y: 14, "text-anchor": "middle", "font-size": 10.5, fill: C.ink3 }, "Total"));
+    spec.labels.forEach(function (lab, r) {
+      var y = headH + r * (ch + 3);
+      svg.appendChild(chSvg("text", { x: hlw - 8, y: y + ch / 2 + 4, "text-anchor": "end", "font-size": fs, fill: C.ink2 }, chShortLab(lab, 30)));
+      spec.cols.forEach(function (c, j) {
+        var v = spec.grid[r][j] || 0, a = v ? 0.14 + 0.76 * v / (maxV || 1) : 0;
+        var cell = chSvg("rect", { x: hlw + j * cw + 1.5, y: y, width: cw - 3, height: ch, rx: 4,
+          fill: v ? "rgba(" + hueRGB.join(",") + "," + a.toFixed(3) + ")" : C.grid });
+        svg.appendChild(cell);
+        if (v) svg.appendChild(chSvg("text", { x: hlw + j * cw + cw / 2, y: y + ch / 2 + 4, "text-anchor": "middle", "font-size": 11,
+          fill: a > 0.55 ? "#FFFFFF" : C.ink }, String(v)));
+        var hitc = chSvg("rect", { x: hlw + j * cw, y: y, width: cw, height: ch + 3, fill: "transparent" });
+        hitc.setAttribute("data-tip", tipRows.length);
+        svg.appendChild(hitc);
+        tipRows.push([lab + " · " + c, [["Stories", v, v ? "rgba(" + hueRGB.join(",") + "," + a.toFixed(3) + ")" : C.grid]]]);
+      });
+      svg.appendChild(chSvg("text", { x: hlw + nc * cw + totW / 2 + 4, y: y + ch / 2 + 4, "text-anchor": "middle", "font-size": 11,
+        "font-weight": 600, fill: C.ink2 }, String(spec.totals[r])));
+    });
+  } else if (spec.type === "hbar" || spec.type === "stack") {
+    var lw = Math.min(W * 0.38, 8 + 6.6 * Math.max.apply(null, spec.labels.map(function (l) { return Math.min(28, String(l).length); })));
+    var k = spec.type === "stack" ? 1 : S.length;
+    var bh = k > 1 ? 9 : 12, gap = 2, gh = k * bh + (k - 1) * gap, rowH = gh + 14;
+    var H = n * rowH + 8, pw = W - lw - 44;
+    svg = chSvg("svg", { width: W, height: H, viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": spec.title });
+    spec.labels.forEach(function (lab, j) {
+      var y0 = 4 + j * rowH + 7;
+      svg.appendChild(chSvg("text", { x: lw - 8, y: y0 + gh / 2 + 4, "text-anchor": "end", "font-size": fs, fill: C.ink2 }, chShortLab(lab, 28)));
+      var acc = 0;
+      S.forEach(function (s, i) {
+        var v = s.values[j] || 0;
+        var y = spec.type === "stack" ? y0 : y0 + i * (bh + gap);
+        var x = lw + (spec.type === "stack" ? acc / top * pw : 0);
+        var w = v / top * pw;
+        if (w > 0) {
+          /* 2px surface gap between stacked segments. */
+          var ww = spec.type === "stack" && acc > 0 ? Math.max(0, w - 2) : w;
+          var xx = spec.type === "stack" && acc > 0 ? x + 2 : x;
+          svg.appendChild(chSvg("path", { d: chBarPath(xx, y, ww, bh, true), fill: colour(i) }));
+        }
+        if (spec.type !== "stack") {
+          svg.appendChild(chSvg("text", { x: lw + w + 6, y: y + bh / 2 + 4, "font-size": 11, fill: C.ink2 }, String(v) + unit));
+        }
+        acc += v;
+      });
+      if (spec.type === "stack") svg.appendChild(chSvg("text", { x: lw + acc / top * pw + 6, y: y0 + gh / 2 + 4, "font-size": 11, fill: C.ink2 }, String(acc)));
+      var hit = chSvg("rect", { x: 0, y: 4 + j * rowH, width: W, height: rowH, fill: "transparent" });
+      hit.setAttribute("data-tip", j);
+      svg.appendChild(hit);
+      tipRows.push([lab, S.map(function (s, i) { return [s.name, (s.values[j] || 0) + unit, colour(i)]; })]);
+    });
+  } else {
+    /* Columns or lines over time: one axis, a few recessive gridlines, labels under the ticks. */
+    var H2 = 200, padL = 34, padB = 26, padT = 12, pw2 = W - padL - 24, ph = H2 - padB - padT;
+    svg = chSvg("svg", { width: W, height: H2, viewBox: "0 0 " + W + " " + H2, role: "img", "aria-label": spec.title });
+    for (var g = 0; g * step <= top; g++) {
+      var gv = g * step, gy = padT + ph - gv / top * ph;
+      svg.appendChild(chSvg("line", { x1: padL, x2: W - 24, y1: gy, y2: gy, stroke: g ? C.grid : C.line, "stroke-width": 1 }));
+      svg.appendChild(chSvg("text", { x: padL - 6, y: gy + 4, "text-anchor": "end", "font-size": 10.5, fill: C.ink3 }, String(gv)));
+    }
+    var band = pw2 / n;
+    var every = Math.ceil(n / Math.max(2, Math.floor(pw2 / 58)));
+    spec.labels.forEach(function (lab, j) {
+      if (j % every === 0 || j === n - 1) {
+        svg.appendChild(chSvg("text", { x: padL + band * (j + 0.5), y: H2 - 8, "text-anchor": "middle", "font-size": 10.5, fill: C.ink3 }, chShortLab(String(lab).replace(/^([A-Za-z]{3})[a-z]*\s+(?:20)?(\d\d)$/, "$1 $2"), 9)));
+      }
+    });
+    if (spec.type === "col") {
+      var s0 = S[0], bw = Math.min(28, band * 0.6), mx = Math.max.apply(null, s0.values);
+      s0.values.forEach(function (v, j) {
+        var h = v / top * ph, x = padL + band * (j + 0.5) - bw / 2;
+        if (h > 0) svg.appendChild(chSvg("path", { d: chBarPath(x, padT + ph - h, bw, h, false), fill: colour(0) }));
+        /* Selective labels: the peak and the latest, not every column. */
+        if ((v === mx && v > 0) || j === n - 1) {
+          svg.appendChild(chSvg("text", { x: x + bw / 2, y: padT + ph - h - 5, "text-anchor": "middle", "font-size": 11, fill: C.ink2 }, String(v)));
+        }
+      });
+    } else {
+      S.forEach(function (s, i) {
+        var pts = s.values.map(function (v, j) { return [padL + band * (j + 0.5), padT + ph - (v || 0) / top * ph]; });
+        svg.appendChild(chSvg("polyline", { points: pts.map(function (p) { return p.join(","); }).join(" "), fill: "none",
+          stroke: colour(i), "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+        pts.forEach(function (p) {
+          svg.appendChild(chSvg("circle", { cx: p[0], cy: p[1], r: 4, fill: colour(i), stroke: C.bg, "stroke-width": 2 }));
+        });
+      });
+    }
+    spec.labels.forEach(function (lab, j) {
+      var hit = chSvg("rect", { x: padL + band * j, y: 0, width: band, height: H2, fill: "transparent" });
+      hit.setAttribute("data-tip", j);
+      svg.appendChild(hit);
+      tipRows.push([lab, S.map(function (s, i) { return [s.name, s.values[j] || 0, colour(i)]; })]);
+    });
+  }
+
+  var plot = el("div", "chplot");
+  plot.appendChild(svg);
+  plot.appendChild(tip);
+  box.appendChild(plot);
+
+  /* Hover (and tap): the exact figures for one row or one period. */
+  var showTip = function (e) {
+    var t = e.target && e.target.getAttribute && e.target.getAttribute("data-tip");
+    if (t == null) { tip.classList.remove("on"); return; }
+    var r = tipRows[+t];
+    tip.innerHTML = "";
+    tip.appendChild(el("b", null, r[0]));
+    r[1].forEach(function (x) {
+      var row = el("div");
+      var sw = el("i"); sw.style.background = x[2];
+      row.appendChild(sw); row.appendChild(document.createTextNode(x[0] + ": " + x[1]));
+      tip.appendChild(row);
+    });
+    var pr = plot.getBoundingClientRect();
+    var x = (e.clientX || pr.left) - pr.left, y = (e.clientY || pr.top) - pr.top;
+    tip.style.left = Math.min(Math.max(4, x + 12), pr.width - 170) + "px";
+    tip.style.top = Math.max(0, y - 10) + "px";
+    tip.classList.add("on");
+  };
+  svg.addEventListener("mousemove", showTip);
+  svg.addEventListener("click", showTip);
+  svg.addEventListener("mouseleave", function () { tip.classList.remove("on"); });
+
+  if (spec.note) box.appendChild(el("div", "chtbln", spec.note));
+
+  /* The image: the same SVG on the chart surface, with its title and legend drawn in, at 2x. */
+  var toPng = function (done) {
+    var W0 = +svg.getAttribute("width"), H0 = +svg.getAttribute("height");
+    var legendH = S.length > 1 ? 22 : 0, headH = 34;
+    var out = chSvg("svg", { xmlns: "http://www.w3.org/2000/svg", width: W0 + 32, height: H0 + headH + legendH + 16 });
+    out.appendChild(chSvg("rect", { x: 0, y: 0, width: W0 + 32, height: H0 + headH + legendH + 16, rx: 10, fill: C.bg }));
+    out.appendChild(chSvg("text", { x: 16, y: 24, "font-size": 13, "font-weight": 600, fill: C.ink,
+      "font-family": "Arial, Helvetica, sans-serif" }, spec.title || ""));
+    var lx = 16;
+    if (legendH) S.forEach(function (s, i) {
+      out.appendChild(chSvg("rect", { x: lx, y: headH + 2, width: 10, height: 10, rx: 2, fill: colour(i) }));
+      var tt = chSvg("text", { x: lx + 15, y: headH + 11, "font-size": 11, fill: C.ink2, "font-family": "Arial, Helvetica, sans-serif" }, s.name);
+      out.appendChild(tt); lx += 26 + 6.5 * s.name.length;
+    });
+    var gIn = chSvg("g", { transform: "translate(16," + (headH + legendH + 4) + ")", "font-family": "Arial, Helvetica, sans-serif" });
+    Array.prototype.forEach.call(svg.childNodes, function (c) { if (!(c.getAttribute && c.getAttribute("data-tip") != null)) gIn.appendChild(c.cloneNode(true)); });
+    out.appendChild(gIn);
+    var url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(new XMLSerializer().serializeToString(out));
+    var img = new Image();
+    img.onload = function () {
+      var cv = document.createElement("canvas");
+      cv.width = (W0 + 32) * 2; cv.height = (H0 + headH + legendH + 16) * 2;
+      var cx = cv.getContext("2d"); cx.scale(2, 2); cx.drawImage(img, 0, 0);
+      cv.toBlob(function (b) { done(b); }, "image/png");
+    };
+    img.onerror = function () { done(null); };
+    img.src = url;
+  };
+  var fname = (String(spec.title || "chart").replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "").toLowerCase() || "chart") + ".png";
+  var download = function (b) {
+    if (!b) { toast("Could not draw the image"); return; }
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(b); a.download = fname;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+  };
+  cp.onclick = function () {
+    toPng(function (b) {
+      if (!b) { toast("Could not draw the image"); return; }
+      try {
+        navigator.clipboard.write([new ClipboardItem({ "image/png": b })])
+          .then(function () { toast("Chart copied — paste it into a slide or a message"); },
+                function () { download(b); toast("This browser cannot copy images, so it was downloaded"); });
+      } catch (e) { download(b); toast("This browser cannot copy images, so it was downloaded"); }
+    });
+  };
+  dl.onclick = function () { toPng(download); };
+  return box;
+}
+
+
+/* ---------- company profile (skill) ----------
+   One template, the same for every company, so two profiles can be read against each other:
+     KPIs          stories, last 30 days vs the 30 before, share of voice now vs before, main focus
+     Heat map      activity type × month: where the company's effort went, and when
+     Focus vs peers  its mix of activity against every other tracked company's
+     Momentum      stories per month
+     Markets       where its stories are
+     Latest moves  the newest story of each kind
+   Activity is read from each story's own words (title, summary, theme), by the rules below. A story
+   can be two things at once (a plant that makes a new system is investment AND product), and counts
+   for both; the latest-moves table gives each story its first match in this order. */
+var CH_ACTS = [
+  { k: "product", label: "New product launch",
+    re: /\b(launch(es|ed|ing)?|introduc(e|es|ed|ing)|unveil(s|ed|ing)?|debut(s|ed)?|rolls? out|new (range|series|system|product|collection|profile|window|door)s?|showcas(e|es|ed))\b/i,
+    cat: /new product|product launch/i },
+  { k: "tech", label: "Technology & R&D",
+    re: /\b(technolog(y|ies|ical)|innovat\w*|r\s?&\s?d|research|patent\w*|automat\w*|digital\w*|software|bim|smart (home|window|glass)|sensor\w*|robot\w*|thermal break|multi-cavity|engineer(ed|ing))\b/i,
+    cat: /r&d|technology|product tech/i },
+  { k: "change", label: "Product change / upgrade",
+    re: /\b(upgrad(e|es|ed|ing)|updat(e|es|ed)|enhanc(e|es|ed|ement)|improv(e|es|ed|ement)|redesign\w*|revamp\w*|new version|extend(s|ed)? (its |the )?(range|line|portfolio)|refresh(es|ed)?|next[- ]gen\w*)\b/i },
+  { k: "invest", label: "Investment & expansion",
+    re: /\b(invest\w*|crore|capex|plant|factory|facilit(y|ies)|expan(d|ds|ded|sion)|capacity|commission(s|ed)?|acqui(re|res|red|sition)|stake|funding|ipo|new (unit|site|office|showroom)s?|greenfield)\b/i,
+    cat: /expansion|investment/i },
+  { k: "partner", label: "Partnerships & distribution",
+    re: /\b(partner(s|ed|ship|ships)?|tie-?up|collaborat\w*|alliance|joint venture|jv|distribut(or|ors|ion)|dealer\w*|fabricator network|franchise\w*|mou|agreement)\b/i,
+    cat: /partnership|distribution/i },
+  { k: "project", label: "Projects & wins",
+    re: /\b(project|projects|contract|order|orders|wins?|won|specified|supplie[sd]|install(s|ed|ation)|landmark|tower|airport|hospital|residenc\w*|township|metro)\b/i,
+    cat: /project wins|specs/i },
+  { k: "green", label: "Sustainability & certification",
+    re: /\b(sustainab\w*|recycl\w*|green|carbon|low-carbon|net[- ]zero|epd|certif\w*|cradle to cradle|leed|griha|igbc|energy[- ]efficien\w*|passivhaus|u-value)\b/i,
+    cat: /sustainab|certification|standards/i },
+  { k: "price", label: "Pricing & commercial",
+    re: /\b(price|prices|pricing|discount\w*|cost|costs|promotion\w*|offer|offers|margin\w*|tariff\w*|financials?|revenue|profit\w*|results)\b/i,
+    cat: /pricing|promotion|material prices/i },
+  { k: "market", label: "Marketing & events",
+    re: /\b(exhibit\w*|expo|trade fair|fair|event|events|campaign\w*|brand ambassador|award\w*|webinar|summit|conference|showroom|experience cent(er|re)|advert\w*)\b/i },
+  { k: "people", label: "Leadership & people",
+    re: /\b(appoint\w*|ceo|cmd|managing director|chief|head of|leadership|joins as|hires?|hired|promot(ed|es) to|board)\b/i }
+];
+var CH_ACT_OTHER = "Market commentary";
+
+function chActsOf(doc) {
+  if (doc.acts) return doc.acts;
+  var text = doc.title + " " + doc.summary;
+  var out = CH_ACTS.filter(function (a) { return a.re.test(text) || (a.cat && a.cat.test(doc.category || "")); })
+    .map(function (a) { return a.label; });
+  doc.acts = out.length ? out : [CH_ACT_OTHER];
+  return doc.acts;
+}
+
+var CH_PROFILE_MONTHS = 6;
+function chAnsProfile(q, comp, P, d, ix) {
+  var cf = chCompFilter(comp);
+  var rng = P && P.range;
+  var inR = function (x) { return chInRange(x, rng); };
+  var mine = ix.docs.filter(function (x) { return cf(x) && inR(x); }).sort(function (a, b) { return (b.ms || 0) - (a.ms || 0); });
+  var peers = ix.docs.filter(function (x) { return !cf(x) && x.cm.length && inR(x); });
+  var row = arr(d.competitors).filter(function (c) { return c && sameName(c.name, comp.name); })[0] || {};
+  var N = mine.length;
+  if (!N) {
+    return { q: q, kind: "none", lead: "Nothing on <b>" + esc(comp.name) + "</b>" + (rng ? " for " + esc(rng.label) : "") + " in your data yet.",
+             stats: [], items: [], why: "",
+             note: "A profile is built from the stories that name the company. Ask again once the phone has fetched some." };
+  }
+
+  var now = chDay0(Date.now()) + 864e5, D = 864e5;
+  var cnt = function (arrx, a, b) { return arrx.filter(function (x) { return x.ms >= a && x.ms < b; }).length; };
+  var l30 = cnt(mine, now - 30 * D, now), p30 = cnt(mine, now - 60 * D, now - 30 * D);
+  /* Share of voice: its stories among all stories naming ANY tracked company, last 90 days vs the 90 before. */
+  var named = ix.docs.filter(function (x) { return x.cm.length; });
+  var sov = function (a, b) {
+    var all = cnt(named, a, b); return all ? Math.round(cnt(mine, a, b) * 100 / all) : 0;
+  };
+  var sNow = sov(now - 90 * D, now), sPrev = sov(now - 180 * D, now - 90 * D);
+
+  /* Activity mix, its own and the peers'. */
+  var labels = CH_ACTS.map(function (a) { return a.label; }).concat([CH_ACT_OTHER]);
+  var mc = chCountBy(mine, chActsOf), pc = chCountBy(peers, chActsOf);
+  var used = labels.filter(function (l) { return mc[l] || pc[l]; });
+  var pct = function (n, of) { return of ? Math.round(n * 100 / of) : 0; };
+  var focus = used.map(function (l) {
+    return { l: l, n: mc[l] || 0, s: pct(mc[l] || 0, N), ps: pct(pc[l] || 0, peers.length) };
+  }).sort(function (a, b) { return b.n - a.n || b.ps - a.ps; });
+  var top = focus.filter(function (f) { return f.l !== CH_ACT_OTHER && f.n; });
+  var main = top[0] || focus[0];
+  var over = top.filter(function (f) { return f.n >= 2 && f.ps && f.s / f.ps >= 1.5; })
+    .sort(function (a, b) { return b.s / b.ps - a.s / a.ps; })[0];
+
+  /* Heat map: activity × the last six months up to the newest story (or the asked-for range). */
+  var newest = mine[0].ms || now;
+  var months = [];
+  var nd = new Date(newest);
+  for (var i = CH_PROFILE_MONTHS - 1; i >= 0; i--) {
+    var a0 = new Date(nd.getFullYear(), nd.getMonth() - i, 1).getTime();
+    months.push({ lab: chMonLabel(a0), from: a0, to: new Date(nd.getFullYear(), nd.getMonth() - i + 1, 1).getTime() });
+  }
+  var heatRows = used.filter(function (l) { return mc[l]; });
+  var heat = { title: "Where " + comp.name + "’s effort went, month by month", chart: "heat",
+    cols: ["Activity"].concat(months.map(function (m) { return m.lab; }), ["Total"]),
+    rows: heatRows.map(function (l) {
+      return [l].concat(months.map(function (m) {
+        return String(mine.filter(function (x) { return x.ms >= m.from && x.ms < m.to && chActsOf(x).indexOf(l) >= 0; }).length);
+      }), [String(mc[l] || 0)]);
+    }),
+    note: "A story can be two kinds at once and counts in both rows. " +
+          (mine.filter(function (x) { return !x.ms || x.ms < months[0].from; }).length
+            ? chPl(mine.filter(function (x) { return !x.ms || x.ms < months[0].from; }).length, "story", "stories") + " older or undated are in Total only." : "") };
+
+  var focusT = { title: comp.name + " vs other tracked companies: what the stories are about",
+    cols: ["Activity", "Stories", comp.name + " %", "Peers %", "vs peers"],
+    rows: focus.map(function (f) {
+      return [f.l, String(f.n), f.s + "%", f.ps + "%", f.ps ? (Math.round(f.s / f.ps * 10) / 10) + "×" : (f.s ? "only them" : "—")];
+    }),
+    spec: { type: "hbar", title: comp.name + " vs peers — share of stories by activity (%)", unit: "%",
+            labels: focus.map(function (f) { return f.l; }),
+            series: [{ name: comp.name, values: focus.map(function (f) { return f.s; }) },
+                     { name: "Other tracked companies", values: focus.map(function (f) { return f.ps; }) }] },
+    note: "Peers = every story naming another tracked company (" + peers.length + "). Above 1× means " + comp.name + " talks about it more than they do." };
+
+  var perMonth = { title: comp.name + ": stories per month", chart: "col", cols: ["Month", "Stories"],
+    rows: months.map(function (m) { return [m.lab, String(cnt(mine, m.from, m.to))]; }) };
+
+  var tables = [heat, focusT, perMonth];
+  var mk = chTop(chCountBy(mine, function (x) { return x.mk; }), 6);
+  if (mk.length >= 2) tables.push({ title: "Where its stories are", cols: ["Market", "Stories"], chart: "hbar",
+    rows: mk.map(function (x) { return [x[0], String(x[1])]; }) });
+  /* Latest moves: the newest story of each kind, so the profile ends on evidence. */
+  var seenK = {}, moves = [];
+  mine.forEach(function (x) {
+    var k = chActsOf(x)[0];
+    if (seenK[k] || moves.length >= 8) return;
+    seenK[k] = 1; moves.push([x.ms ? chShort(x.ms) : "undated", k, chClip(x.title, 110)]);
+  });
+  tables.push({ title: "Latest moves, one per kind", cols: ["Date", "Activity", "Story"], rows: moves, noChart: true });
+
+  var stats = [
+    ["Stories", String(N), rng ? rng.label : "newest " + chShort(mine[0].ms)],
+    ["Last 30 days", String(l30), "vs " + p30 + " the 30 before (" + chSigned(l30 - p30) + ")"],
+    ["Share of voice", sNow + "%", "of stories naming a tracked company, last 90 days; " + sPrev + "% the 90 before"],
+    ["Main focus", main ? main.l : "—", main ? main.s + "% of its stories · peers " + main.ps + "%" : ""]
+  ];
+  var lead = "<b>" + esc(comp.name) + "</b>: " + chPl(N, "story", "stories") + (rng ? " for " + esc(rng.label) : "") + ". " +
+    (main ? "Most of its news is <b>" + esc(main.l) + "</b> (" + main.s + "%)" +
+            (top[1] ? ", then " + esc(top[1].l) + " (" + top[1].s + "%)" : "") + ". " : "") +
+    (over && over !== main ? "It leans on " + esc(over.l) + " far more than its peers (" + over.s + "% vs " + over.ps + "%). " : "") +
+    "Last 30 days: " + l30 + " (" + chSigned(l30 - p30) + " on the 30 before); share of voice " + sNow + "% (" + chSigned(sNow - sPrev) + " pts).";
+
+  var facts = [];
+  if (row.markets) facts.push(["Tracked in", String(row.markets)]);
+  if (row.keyProduct) facts.push(["Key product", String(row.keyProduct)]);
+  if (row.websiteUrl) facts.push(["Website", String(row.websiteUrl)]);
+
+  return { q: q, kind: "profile", shapeHint: "profile", lead: lead, stats: stats, tables: tables,
+           items: mine.slice(0, 6), context: mine.slice(0, 30), allDocs: mine, profile: comp.name,
+           dbFacts: facts, dbNotes: String(row.insights || ""),
+           why: "Newest stories naming " + esc(comp.name) + ".",
+           note: "Activity is read from each story’s headline, summary and theme; figures are counts of stories you hold." };
+}
+
+/* In the profile skill every question about a company becomes its profile. A question about none
+   asks which, with every tracked company one tap away. */
+function chProfileTurn(q, m) {
+  if (m.social || /^(story|compare|metric|help|count)$/.test(m.kind)) return m;
+  var P = m.P || chParse(q);
+  var comp = P.ents.comps[0];
+  if (!comp) {
+    var ix = chIndex();
+    var cc = chCountBy(ix.docs, function (d) { return d.cm; });
+    var pick = ix.comps.slice().sort(function (a, b) { return (cc[b.name] || 0) - (cc[a.name] || 0); });
+    return { q: q, kind: "none", P: P, lead: "Which company? Name one you track, or pick one below.",
+             stats: [], items: [], why: "", note: "",
+             followUps: pick.slice(0, 6).map(function (c) { return c.name; }), localFollow: true };
+  }
+  var pm = chAnsProfile(q, comp, P, S.data || {}, chIndex());
+  pm.P = P; pm.readAs = m.readAs; pm.base = m.base;
+  /* A name given in answer to "Which company?" is not a follow-up worth spelling out. */
+  var last = CH_LOG[CH_LOG.length - 1];
+  if (last && last.localFollow) { pm.readAs = null; pm.base = null; }
+  return pm;
 }
 
 /* ---------- router ----------
@@ -8631,7 +9560,8 @@ function chAnsHelp(q, ix) {
           "by company, market, theme or wording; compare two companies, markets or periods side by " +
           "side; break anything down by competitor, market, theme, source, month or week; sum up a " +
           "period (“this month”, “last 2 weeks”, “in August”); count what you hold; and report your " +
-          "spend. Follow-ups work too: “and Germany?”, “the second one”, “compare them”, “more”.",
+          "spend. Follow-ups work too: “and Germany?”, “the second one”, “compare them”, “more”. " +
+          "Turn on Analytics (the + button, or /analytics) for charts. Tab accepts a suggestion.",
     stats: [
       ["Stories I can read", String(ix.docs.length), "across alerts, saved, published and stored"],
       ["Companies tracked", String(ix.comps.length), "as onboarded on the phone"],
@@ -8886,7 +9816,7 @@ function chAnsFind(q, d, ix, P, wantCount, page, whyAsked) {
   /* Six cards is the right number to READ. The model gets more than that, because a summary
      drawn from six of forty matches is a summary of the wrong thing — so the extras ride along
      for grounding and are not drawn. */
-  return { q: q, kind: "find", lead: lead, stats: stats,
+  return { q: q, kind: "find", lead: lead, stats: stats, allDocs: docs,
            items: docs.slice(0, 6), context: docs.slice(0, 24), why: why,
            note: n > 6 ? "Say “more” for the next six." : "" };
 }
@@ -9132,6 +10062,13 @@ var CH_SHAPES = {
     "themes — theme, stories, the one story that matters (an APP TABLE if one fits) — and two to four",
     "one-line bullets on what to take from it. Stop there; do not append a conclusion."
   ],
+  profile: [
+    "SHAPE. A company profile.",
+    "Open with two sentences on where this company is putting its effort and whether it is getting louder or",
+    "quieter, from the heat map, the focus-vs-peers table and the KPIs. Then '## Recent moves' with three",
+    "bullets, each naming a story and its date. Then '## What it means for Schüco' with one or two bullets.",
+    "If the record is thin (a handful of stories), say so plainly and keep it short."
+  ],
   story: [
     "SHAPE. One story the reader picked from the answer above.",
     "Say what it reports in two or three sentences, from its summary. Then '## Why it matters' with",
@@ -9320,6 +10257,19 @@ function chPrompt(m) {
   if (whoLine) { out.push(whoLine, ""); }
   if (rng) out.push("TIME RANGE: " + rng.label + " (" + chRangeSpan(rng) + ")", "");
   out.push("THE APP'S FIRST READING: a '" + (m.shape || "find") + "' question. If the question plainly wants a different form, give it that form.", "");
+  if (m.kind === "profile") {
+    out.push("COMPANY PROFILE. The app drew this company's profile from the APP TABLES (a heat map of activity by",
+             "month, its focus against the other tracked companies, stories per month, markets, latest moves) and",
+             "shows it under your answer. Do not rebuild those tables or read their numbers back.", "");
+    var dbn = String(m.dbNotes || "").trim();
+    if (dbn) out.push("NOTES FROM THE READER'S DATABASE TAB (background the reader wrote or saved; not news):", chClip(dbn, 1200), "");
+  }
+  if (m.agent === "analytics") {
+    out.push("ANALYTICS MODE. The reader asked for charts. The app draws a chart from every APP TABLE and shows it",
+             "under your answer, with the data one tap away. Do not rebuild those as tables and do not read their",
+             "numbers back. Write the takeaways: what the charts show and what it means for Schüco, in at most 120",
+             "words. Add a table of your own only if the question needs figures no APP TABLE has.", "");
+  }
 
   if (m.stats && m.stats.length) {
     out.push("FIGURES ALREADY COMPUTED FROM THE READER'S DATA");
@@ -9661,6 +10611,12 @@ function chProse(t) {
    can hold a sentence, figures and the stories behind them without any of it
    escaping the container it belongs to.
    ============================================================ */
+var ICON_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+  'stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+var ICON_BUILDING = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+  'stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V5l8-3v19M12 8l8 3v10M2 21h20M8 9h.01M8 13h.01M8 17h.01M16 14h.01M16 18h.01"/></svg>';
+var ICON_CHART = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+  'stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>';
 var ICON_SEND = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
   'stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>';
 
@@ -9674,6 +10630,24 @@ function chSuggestions() {
   var hot = String(w.risingTrend || "").trim();
   var cool = String(w.coolingTrend || "").trim();
   var land = ix.lands.length ? ix.lands[0].name : "";
+
+  /* COMPANY PROFILE: one card per company, the ones with the most stories first. */
+  if (chAgent() === "profile") {
+    var ccp = chCountBy(ix.docs, function (d0) { return d0.cm; });
+    return comps.slice().sort(function (a, b) { return (ccp[b.name] || 0) - (ccp[a.name] || 0); }).slice(0, 4)
+      .map(function (c) { return ["Profile", c.name]; });
+  }
+
+  /* ANALYTICS draws: every opener is one that makes a chart. */
+  if (chAgent() === "analytics") {
+    var l0 = ix.lands[0] && ix.lands[0].name, l1 = ix.lands[1] && ix.lands[1].name;
+    out.push(["Chart", "Stories by competitor this month"]);
+    if (l0 && l1) out.push(["Chart", "Compare " + l0 + " with " + l1 + " over the last 3 months"]);
+    else if (who && other) out.push(["Chart", "Compare " + who + " with " + other.name]);
+    out.push(["Chart", "Stories per month by market"]);
+    out.push(["Chart", "Top themes this month"]);
+    return out.slice(0, 4);
+  }
 
   /* SMART REASONS over the stories, so it opens on questions that need them weighed against each
      other — comparison, cause, judgement. These are exactly the questions Basic would have to
@@ -9716,6 +10690,8 @@ function chHello() {
 function chAsk(q) {
   q = String(q || "").trim();
   if (!q) return;
+  if (q.charAt(0) === "/") { chCommand(q); return; }
+  chHistAdd(q);
   /* SENDING PAST THE KEY FIELD. Smart is selected, the key panel is open, and the reader has
      typed a question instead of a key. Rather than answering from a mode that cannot run, fall
      back properly: flip the stored mode, drop the key request so the panel closes, and say why.
@@ -9728,10 +10704,14 @@ function chAsk(q) {
   CH_PH_I++;                 /* next question gets a different hint */
   CH_DRAFT = "";
   var m = chAnswer(q);        // oldest first: the conversation grows DOWN into the composer
+  if (chAgent() === "profile") m = chProfileTurn(q, m);
   /* The composed reply is kept whatever happens next. It is the fallback if the call fails, and
      it is also part of the prompt, so the model rephrases figures rather than recounting them. */
   m.composed = m.lead;
   m.shape = chShapeOf(m);
+  /* The agent is part of the turn: a chart question stays a chart answer after a reload. */
+  m.agent = chAgent();
+  if (m.agent) chAnalytics(m);
   /* Layout follows the MODE, not how the call turns out. Reading it off `via` after the fact meant
      the composed answer's tiles rendered first and then vanished when the reply landed. */
   m.smartTurn = chSmart();
@@ -9787,6 +10767,7 @@ function chSaveSession() {
                text: said ? m.modelText : null, usage: said ? m.usage : null,
                followUps: said ? (m.followUps || []) : [],
                tables: said ? (m.modelTables || []) : [], appTables: said ? (m.appShow || []) : [],
+               agent: m.agent || "",
                err: m.pending ? "the page was reloaded before Gemini answered" : (m.viaErr || null) };
     })));
   } catch (e) {}
@@ -9799,8 +10780,11 @@ function chRestoreSession() {
   arr(saved).forEach(function (t) {
     if (!t || !t.q) return;
     var m = chAnswer(t.q);
+    if (t.agent === "profile") m = chProfileTurn(t.q, m);
     m.composed = m.lead;
     m.shape = chShapeOf(m);
+    m.agent = t.agent || "";
+    if (m.agent) chAnalytics(m);
     m.smartTurn = !!t.smart;
     m.pending = false;
     if (t.text) {
@@ -9915,6 +10899,18 @@ function chKnown(m) {
   return m.known || {};
 }
 
+function chStatTiles(list) {
+  var stats = el("div", "chstat");
+  list.forEach(function (x) {
+    var c = el("div", "chsc");
+    c.appendChild(el("div", "chsk", x[0]));
+    c.appendChild(el("div", "chsv", x[1]));
+    if (x[2]) c.appendChild(el("div", "chss", x[2]));
+    stats.appendChild(c);
+  });
+  return stats;
+}
+
 function chRenderTurn(m) {
   var turn = el("div", "chturn");
 
@@ -9978,7 +10974,33 @@ function chRenderTurn(m) {
   /* Tables: the model's choice on a Smart reply (the app's exact ones it picked, then its own, each
      number checked), the app's own everywhere else. */
   m.shownTables = [];
-  if (!m.pending) {
+  /* A profile's KPIs come straight after its headline, in Basic and Smart alike. */
+  if (!m.pending && m.kind === "profile" && arr(m.stats).length) bot.appendChild(chStatTiles(m.stats));
+  if (!m.pending && m.agent && arr(m.charts).length + arr(m.tables).length) {
+    /* Charts first; the exact tables behind them folded underneath. The model's own tables (if it
+       added any) stay open — they are part of its answer, and carry the number check. */
+    arr(m.charts).forEach(function (c) { bot.appendChild(chChartEl(c)); });
+    if (m.chartNote) bot.appendChild(el("div", "chcnote", m.chartNote));
+    var own = m.smartTurn && m.via === "model" ? arr(m.modelTables) : [];
+    own.forEach(function (t) { m.shownTables.push(t); bot.appendChild(chTableEl(t, { known: chKnown(m) })); });
+    /* Evidence tables (no chart of their own, like Latest moves) stay open; the rest fold. */
+    arr(m.tables).filter(function (t) { return t.noChart; }).forEach(function (t) { m.shownTables.push(t); bot.appendChild(chTableEl(t, {})); });
+    var charted = arr(m.tables).filter(function (t) { return !t.noChart; });
+    if (charted.length) {
+      var dfold = el("details", "chfold");
+      dfold.appendChild(el("summary", null, "Data behind the " + (arr(m.charts).length === 1 ? "chart" : "charts") +
+                                              " (" + chPl(charted.length, "table", "tables") + ")"));
+      charted.forEach(function (t) { m.shownTables.push(t); dfold.appendChild(chTableEl(t, {})); });
+      bot.appendChild(dfold);
+    }
+    if (arr(m.dbFacts).length || m.dbNotes) {
+      var dbf = el("details", "chfold");
+      dbf.appendChild(el("summary", null, "From your Database tab"));
+      if (arr(m.dbFacts).length) dbf.appendChild(chTableEl({ title: m.profile || "", cols: ["", ""], rows: m.dbFacts, plain: true }, {}));
+      if (m.dbNotes) dbf.appendChild(el("p", "chnote", chClip(m.dbNotes, 900)));
+      bot.appendChild(dbf);
+    }
+  } else if (!m.pending) {
     chTurnTables(m).forEach(function (x) {
       m.shownTables.push(x.t);
       bot.appendChild(chTableEl(x.t, { known: x.model ? chKnown(m) : null }));
@@ -9989,17 +11011,7 @@ function chRenderTurn(m) {
      what chAnsFind computes to support ITS sentence. Rendering them under a model reply put the
      same three-column skeleton beneath every question whatever had been asked, which is what made
      the bot look like it was filling in a form. Smart mode shows what the model actually said. */
-  if (!m.smartTurn && m.stats && m.stats.length) {
-    var stats = el("div", "chstat");
-    m.stats.forEach(function (s) {
-      var c = el("div", "chsc");
-      c.appendChild(el("div", "chsk", s[0]));
-      c.appendChild(el("div", "chsv", s[1]));
-      if (s[2]) c.appendChild(el("div", "chss", s[2]));
-      stats.appendChild(c);
-    });
-    bot.appendChild(stats);
-  }
+  if (!m.smartTurn && m.kind !== "profile" && !m.pending && m.stats && m.stats.length) bot.appendChild(chStatTiles(m.stats));
 
   /* The same card the rest of the app draws, one surface down. An answer and a story should never
      look like two different products, and every claim above stays a link away from what it was
@@ -10010,9 +11022,23 @@ function chRenderTurn(m) {
      page. Evidence is one click away, which is the right distance for something you check rather
      than read. */
   if (m.items && m.items.length) {
-    if (m.smartTurn) {
-      var det = el("details", "chsrcd");
-      det.appendChild(el("summary", null, chPl(m.items.length, "story", "stories") + " behind this"));
+    /* An analytical answer (charts, tables, or Smart's own words) keeps its evidence folded: the
+       sources it drew on and the main stories, one tap away. A plain Basic search shows its cards,
+       because there the cards ARE the answer. */
+    var folds = m.smartTurn || m.agent || arr(m.tables).length || arr(m.modelTables).length;
+    if (folds) {
+      var det = el("details", "chfold");
+      var pool = arr(m.allDocs).length ? m.allDocs : m.items;
+      var srcs = chTop(chCountBy(pool, function (d) { return d.source ? [d.source] : []; }), 8);
+      det.appendChild(el("summary", null, "Sources and main stories" +
+        (srcs.length ? " · " + chPl(srcs.length, "source", "sources") : "") + " · " + chPl(m.items.length, "story", "stories")));
+      if (srcs.length) {
+        det.appendChild(el("div", "chsubh", "Sources" + (pool.length > m.items.length ? ", across " + chPl(pool.length, "story", "stories") : "")));
+        var sl = el("div", "chsrcl");
+        srcs.forEach(function (x) { var sp = el("span", null, x[0]); sp.appendChild(el("b", null, String(x[1]))); sl.appendChild(sp); });
+        det.appendChild(sl);
+      }
+      det.appendChild(el("div", "chsubh", "Main stories"));
       var folded = el("div", "chsrc");
       m.items.forEach(function (doc) { folded.appendChild(articleCard(doc.raw, {})); });
       det.appendChild(folded);
@@ -10221,14 +11247,115 @@ function renderAsk(app) {
     dock.appendChild(kn);
   }
 
+  /* The "+" menu: agents. Analytics is the first; each is also a slash command. */
+  var agentNow = chAgent();
+  if (CH_PLUS_OPEN) {
+    var menu = el("div", "chctx chctxp chmenu");
+    Object.keys(CH_AGENTS).forEach(function (k) {
+      var ag = CH_AGENTS[k];
+      var mi = el("button", "chmi");
+      mi.innerHTML = k === "profile" ? ICON_BUILDING : ICON_CHART;
+      var mt = el("span");
+      mt.appendChild(document.createTextNode(ag.label));
+      mt.appendChild(el("span", "d", ag.desc + " · " + ag.cmd));
+      mi.appendChild(mt);
+      if (agentNow === k) mi.appendChild(el("span", "ck", "On"));
+      mi.onclick = function () {
+        chSetAgent(agentNow === k ? "" : k);
+        CH_PLUS_OPEN = false; render();
+        var i2 = $("#chIn"); if (i2) i2.focus();
+      };
+      menu.appendChild(mi);
+    });
+    menu.appendChild(el("div", "chctxn", "Type / in the box for commands: /analytics, /companyprofile, /plain, /smart, /basic, /clear."));
+    dock.appendChild(menu);
+  }
+
+  var acRow = el("div", "chacpop");
+  acRow.id = "chAcPop";
+  acRow.setAttribute("role", "listbox");
+
   var box = el("div", "chbox" + (chSmart() ? " smart" : ""));
+  var plus = el("button", "chplus" + (CH_PLUS_OPEN ? " on" : ""));
+  plus.innerHTML = ICON_PLUS;
+  plus.title = "Agents"; plus.setAttribute("aria-label", "Agents");
+  plus.setAttribute("aria-expanded", CH_PLUS_OPEN ? "true" : "false");
+  plus.onclick = function () { CH_PLUS_OPEN = !CH_PLUS_OPEN; render(); };
+  box.appendChild(plus);
+  if (agentNow) {
+    var chipA = el("button", "chagent");
+    chipA.innerHTML = agentNow === "profile" ? ICON_BUILDING : ICON_CHART;
+    chipA.appendChild(document.createTextNode(CH_AGENTS[agentNow].label));
+    chipA.appendChild(el("span", "x", "×"));
+    chipA.title = CH_AGENTS[agentNow].label + " is on. Tap to turn it off.";
+    chipA.onclick = function () { chSetAgent(""); render(); var i3 = $("#chIn"); if (i3) i3.focus(); };
+    box.appendChild(chipA);
+  }
   var input = el("input", "chin");
   input.id = "chIn";
   input.type = "text";
-  input.placeholder = chPlaceholder();
+  input.placeholder = agentNow ? CH_AGENTS[agentNow].hint : chPlaceholder();
   input.autocomplete = "off";
   input.setAttribute("enterkeyhint", "send");
   input.value = CH_DRAFT;
+  var ghost = el("div", "chghost");
+  ghost.setAttribute("aria-hidden", "true");
+  var AC = { ghost: "", options: [] }, acSel = -1;
+
+  /* Type-ahead: grey text to accept with Tab (or →), and up to three chips above the box for touch. */
+  var acUpdate = function (focusing) {
+    var v = input.value, focused = focusing === true || document.activeElement === input;
+    AC = focused || v ? chComplete(v) : { ghost: "", options: [] };
+    /* An empty, focused box offers what you asked most. */
+    if (!v && focused) {
+      AC = { ghost: "", options: chHistLoad().slice(0, 3).map(function (x) { return { text: x.q, label: x.q, hint: "asked before" }; }) };
+    }
+    var atEnd = input.selectionStart === v.length && input.selectionEnd === v.length;
+    var fits = input.scrollWidth <= input.clientWidth + 1;
+    ghost.innerHTML = "";
+    if (AC.ghost && atEnd && fits) {
+      ghost.appendChild(el("span", "t", v));
+      ghost.appendChild(document.createTextNode(AC.ghost));
+      if (railIsPermanent()) ghost.appendChild(el("span", "k", "Tab"));
+    }
+    acRow.innerHTML = "";
+    acSel = -1;
+    AC.options.forEach(function (o) {
+      if (key(o.text).trim() === key(v).trim()) return;
+      /* The whole question as it would read, with what you have NOT typed yet in weight — the part
+         you are choosing between is the part that differs. */
+      var b = el("button", "chaci");
+      b.setAttribute("role", "option");
+      var tx = el("span", "tx");
+      var full = o.text.replace(/\s+$/, "");
+      if (v && key(full).indexOf(key(v)) === 0) {
+        tx.appendChild(document.createTextNode(full.slice(0, v.length)));
+        tx.appendChild(el("b", null, full.slice(v.length)));
+      } else tx.appendChild(el("b", null, full));
+      b.appendChild(tx);
+      if (o.hint) b.appendChild(el("em", null, o.hint));
+      b.onmousedown = function (e) { e.preventDefault(); };
+      b.onclick = function () {
+        input.value = o.text; CH_DRAFT = o.text; input.focus();
+        input.setSelectionRange(o.text.length, o.text.length); sync(); acUpdate();
+      };
+      acRow.appendChild(b);
+    });
+    acRow.classList.toggle("on", !!acRow.firstChild);
+    /* Lifted above the Basic/Smart/Clear line (and any panel open above the box), so that line is
+       never covered while you type and Clear is always one click. */
+    if (acRow.firstChild) {
+      var lift = box.getBoundingClientRect().top - ctx.getBoundingClientRect().top;
+      acRow.style.bottom = "calc(100% + " + Math.max(8, Math.round(lift) + 6) + "px)";
+    }
+  };
+  var accept = function () {
+    if (!AC.ghost) return false;
+    input.value = input.value + AC.ghost; CH_DRAFT = input.value;
+    input.setSelectionRange(input.value.length, input.value.length);
+    sync(); acUpdate();
+    return true;
+  };
 
   var go = el("button", "chgo");
   go.innerHTML = ICON_SEND;
@@ -10241,15 +11368,38 @@ function renderAsk(app) {
     box.classList.toggle("live",
       chSmart() && (document.activeElement === input || !!input.value.trim()));
   };
-  input.onfocus = sync;
-  input.onblur = sync;
-  input.oninput = function () { CH_DRAFT = input.value; sync(); };
-  input.onkeydown = function (e) { if (e.key === "Enter") { e.preventDefault(); chAsk(input.value); } };
+  input.onfocus = function () { sync(); acUpdate(true); };
+  /* Hidden at once on blur: the list floats, so hiding it moves nothing else on the screen. */
+  input.onblur = function () { sync(); ghost.innerHTML = ""; acRow.innerHTML = ""; acRow.classList.remove("on"); };
+  input.oninput = function () { CH_DRAFT = input.value; sync(); acUpdate(); };
+  input.onkeyup = function (e) { if (e.key === "ArrowLeft" || e.key === "Home" || e.key === "End") acUpdate(); };
+  input.onkeydown = function (e) {
+    if (e.key === "Tab" && !e.shiftKey && AC.ghost) { e.preventDefault(); accept(); return; }
+    if (e.key === "ArrowRight" && AC.ghost && input.selectionStart === input.value.length) { e.preventDefault(); accept(); return; }
+    /* Up/down walk the chips; Enter then takes the highlighted one into the box. */
+    var chips = acRow.querySelectorAll(".chaci");
+    if ((e.key === "ArrowDown" || e.key === "ArrowUp") && chips.length) {
+      e.preventDefault();
+      acSel = (acSel + (e.key === "ArrowDown" ? 1 : chips.length - 1) + (acSel < 0 && e.key === "ArrowUp" ? 1 : 0)) % chips.length;
+      chips.forEach(function (c, i) { c.classList.toggle("sel", i === acSel); });
+      return;
+    }
+    if (e.key === "Escape") { ghost.innerHTML = ""; acRow.innerHTML = ""; acRow.classList.remove("on"); AC = { ghost: "", options: [] }; return; }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (acSel >= 0 && chips[acSel]) { chips[acSel].click(); return; }
+      chAsk(input.value);
+    }
+  };
   go.onclick = function () { chAsk(input.value); };
   sync();
 
-  box.appendChild(input);
+  var inw = el("div", "chinw");
+  inw.appendChild(ghost);
+  inw.appendChild(input);
+  box.appendChild(inw);
   box.appendChild(go);
+  box.appendChild(acRow);
   dock.appendChild(box);
   pane.appendChild(dock);
   app.appendChild(pane);
