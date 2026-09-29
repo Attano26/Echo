@@ -1880,6 +1880,8 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
 .chlegi i,.chtip i{display:inline-block;width:9px;height:9px;border-radius:2px}
 .chplot{position:relative;padding:2px 0 8px}
 .chplot svg{display:block;margin:0 auto;font-family:inherit;max-width:100%;height:auto}
+.chplot.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.chplot.scroll svg{max-width:none;margin:0}
 .chtip{position:absolute;z-index:3;min-width:120px;max-width:200px;pointer-events:none;opacity:0;
   background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:var(--sh-2);
   padding:7px 9px;font-size:11.5px;line-height:1.5;color:var(--ink-2);transition:opacity .1s}
@@ -7520,7 +7522,7 @@ var CH_META = (function () {
     "since today yesterday last past previous current day days weeks months years " +
     "saved save published publish alert alerts inbox unread liked disliked " +
     "talk talks talking say says said mention mentions mentioned discuss discusses discussed cover covers " +
-    "covered write writes wrote feature features featured").split(" ");
+    "covered write writes wrote feature features featured time over").split(" ");
   for (var i = 0; i < w.length; i++) o[chStem(w[i])] = 1;
   return o;
 })();
@@ -7768,7 +7770,7 @@ var CH_DIMS = [
     of: function (doc) { return [doc.category || "Uncategorised"]; } },
   { k: "source", label: "Source", re: /\b(sources?|publishers?|outlets?|publications?|sites?|websites?|media|press)\b/,
     of: function (doc) { return doc.source ? [doc.source] : []; } },
-  { k: "month", label: "Month", re: /\b(months?|monthly|month on month)\b/, time: true,
+  { k: "month", label: "Month", re: /\b(months?|monthly|month on month|over time)\b/, time: true,
     of: function (doc) { return doc.ms ? [chMonLabel(doc.ms)] : []; },
     order: function (a) { return Date.parse("1 " + a) || 0; } },
   { k: "week", label: "Week of", re: /\b(weeks?|weekly|week on week)\b/, time: true,
@@ -7958,6 +7960,8 @@ function chAnsBreakdown(q, P, d, ix, dims) {
   var base = chBase(P);
   var docs = base.docs, scope = chScopeLabel(P, base);
   var d1 = dims[0], d2 = dims[1] && dims[1] !== dims[0] ? dims[1] : null;
+  /* "theme mix over time": time goes down the rows, so it reads as columns through the months. */
+  if (d2 && d2.time && !d1.time) { var sw = d1; d1 = d2; d2 = sw; }
   var counts = chCountBy(docs, d1.of);
   /* Tracked companies and markets with NO stories belong in the table: silence is a finding. */
   if (d1.k === "competitor") ix.comps.forEach(function (c) { if (!counts[c.name]) counts[c.name] = 0; });
@@ -8012,13 +8016,17 @@ function chAnsBreakdown(q, P, d, ix, dims) {
     var c2 = chTop(chCountBy(docs, d2.of));
     if (d2.time) c2.sort(function (a, b) { return d2.order(a[0]) - d2.order(b[0]); });
     var colsK = (d2.time ? c2.slice(-6) : c2.slice(0, 6)).map(function (kv) { return kv[0]; });
+    /* Stacked through time, every story must be in some band, or a month's column is shorter than the
+       month. A theme or a source is one per story, so what the six columns miss is exactly "the rest". */
+    var restCol = d1.time && !d2.time && (d2.k === "category" || d2.k === "source") && c2.length > colsK.length;
     tables.push({ title: d1.label.replace(" of", "") + " × " + d2.label.toLowerCase().replace(" of", "") + (scope ? " · " + scope : ""),
-      cols: [d1.label].concat(colsK, ["Total"]), bars: "col",
+      cols: [d1.label].concat(colsK, restCol ? ["Other " + d2.label.toLowerCase() + "s"] : [], ["Total"]), bars: "col", cross: true,
+      chart: d1.time ? (d2.k === "market" ? "line" : "stackcol") : "heat",
       rows: shown.map(function (kv) {
         var sub = docsOf(kv[0]);
-        return [kv[0]].concat(colsK.map(function (c) {
-          return String(sub.filter(function (z) { return d2.of(z).indexOf(c) >= 0; }).length);
-        }), [String(kv[1])]);
+        var cells = colsK.map(function (c) { return sub.filter(function (z) { return d2.of(z).indexOf(c) >= 0; }).length; });
+        if (restCol) cells.push(Math.max(0, sub.length - cells.reduce(function (a, b) { return a + b; }, 0)));
+        return [kv[0]].concat(cells.map(String), [String(kv[1])]);
       }),
       note: c2.length > colsK.length ? "The " + colsK.length + " largest of " + c2.length + " columns." : "" });
   }
@@ -8050,6 +8058,7 @@ function chAnsBreakdown(q, P, d, ix, dims) {
   var items = leadKey ? docsOf(leadKey).slice(0, 6) : [];
   var ctx = chWeave(shown.slice(0, 8).map(function (kv) { return docsOf(kv[0]); }), 30);
   return { q: q, kind: "breakdown", shapeHint: "breakdown", lead: lead, stats: [], tables: tables, allDocs: docs,
+           dims: [d1.k, d2 ? d2.k : ""],
            items: items, context: ctx,
            why: leadKey ? (d1.time ? "The stories from the latest " + (d1.k === "week" ? "week" : "month") + "." : "The stories under the top row.") : "",
            note: d1.k === "competitor" ? "A story counts for a company when it names it — the filter chips’ rule." : "" };
@@ -8359,6 +8368,8 @@ var CH_TEMPLATES = [
   "What happened {P}?", "Summarise {P}", "Summarise {P} by theme", "What is new in {L} {P}?",
   "Any news from {L}?", "News about {T}", "News about {T} in {L}", "{T} stories by competitor",
   "Saved stories by market", "Published stories by competitor {P}",
+  "Who is gaining momentum?", "Theme mix over time", "Stories by competitor and theme", "Stories by market and theme",
+  "{T} over time",
   "How much have I spent this month?", "How many saved stories do I have?", "What is trending?", "What can you do?"
 ];
 var CH_PERIODS = ["this month", "last month", "this week", "last week", "the last 2 weeks", "the last 3 months",
@@ -8635,6 +8646,11 @@ function chAnalytics(m) {
   if (m.kind === "compare" && arr(m.sides).length && m.sideType !== "period") {
     var ot = chOverTime(m.sides.map(function (s) { return { name: s.label, docs: s.docs }; }), range, "Over time");
     if (ot) extra.push(ot);
+    if (m.sideType === "market") { var mh = chFieldHeat(docs, "market", "What each market's news is about"); if (mh) extra.push(mh); }
+  } else if (m.kind === "breakdown" && m.dims && !m.dims[1] && (m.dims[0] === "competitor" || m.dims[0] === "market")) {
+    if (m.dims[0] === "competitor") { var mo = chMomentumTable(chIndex()); if (mo) extra.push(mo); }
+    var fh = chFieldHeat(docs, m.dims[0], m.dims[0] === "competitor" ? "Who talks about what: company × theme" : "What each market's news is about");
+    if (fh) extra.push(fh);
   } else if (m.kind === "digest") {
     var od = chOverTime([{ name: "Stories", docs: docs }], range, "Stories over the period");
     if (od) extra.push(od);
@@ -8657,10 +8673,19 @@ function chChartSpec(t) {
   if (!rows.length || cols.length < 2 || t.plain || t.noChart) return null;
   if (t.spec) return Object.assign({ table: t }, t.spec);
   if (t.chart === "heat") {
-    var hc = cols.slice(1).filter(function (c) { return !/^total$/i.test(c); });
-    return { type: "heat", title: t.title, labels: rows.map(function (r) { return r[0]; }), cols: hc, series: [],
-             grid: rows.map(function (r) { return hc.map(function (_, j) { return parseFloat(r[j + 1]) || 0; }); }),
-             totals: rows.map(function (r) { return r[cols.length - 1]; }), table: t };
+    var hasTot = /^total$/i.test(cols[cols.length - 1]);
+    var hc = cols.slice(1, hasTot ? -1 : undefined);
+    var hl = rows.map(function (r) { return r[0]; });
+    var grid = rows.map(function (r) { return hc.map(function (_, j) { return parseFloat(r[j + 1]) || 0; }); });
+    var tots = rows.map(function (r, i) { return hasTot ? r[cols.length - 1] : String(grid[i].reduce(function (a, b) { return a + b; }, 0)); });
+    /* Long names down the side, short ones across: turn it round when the columns are the long ones. */
+    var avg = function (a) { return a.reduce(function (x, y) { return x + String(y).length; }, 0) / (a.length || 1); };
+    if (avg(hc) > avg(hl) + 4 && hc.length <= 10) {
+      var g2 = hc.map(function (_, j) { return grid.map(function (r) { return r[j]; }); });
+      return { type: "heat", title: t.title, labels: hc, cols: hl, series: [], grid: g2,
+               totals: g2.map(function (r) { return String(r.reduce(function (a, b) { return a + b; }, 0)); }), table: t };
+    }
+    return { type: "heat", title: t.title, labels: hl, cols: hc, series: [], grid: grid, totals: tots, table: t };
   }
   var num = function (s) { var v = parseFloat(String(s).replace(/,/g, "")); return isNaN(v) ? null : v; };
   var isNum = function (s) { return /^\s*[-+−]?\d[\d,]*(\.\d+)?\s*$/.test(String(s)); };
@@ -8685,11 +8710,18 @@ function chChartSpec(t) {
   var labels = rs.map(function (r) { return r[0]; });
   var ser = sc.map(function (i) { return { name: cols[i], values: rs.map(function (r) { return num(r[i]) || 0; }) }; });
   /* Past four series, the smaller ones fold into Other — a fifth colour is never invented. */
-  if (ser.length > 4) {
-    ser.sort(function (a, b) { return b.values.reduce(function (s, v) { return s + v; }, 0) - a.values.reduce(function (s, v) { return s + v; }, 0); });
-    var other = { name: "Other", values: labels.map(function (_, j) { return ser.slice(3).reduce(function (s, x) { return s + x.values[j]; }, 0); }), other: true };
-    ser = ser.slice(0, 3).concat([other]);
+  /* A column that is already "Other ..." always joins the grey band, never takes a colour. */
+  var pre = ser.filter(function (x) { return /^other\b/i.test(x.name); });
+  var named = ser.filter(function (x) { return !/^other\b/i.test(x.name); });
+  if (named.length > 4 || (pre.length && named.length > 3)) {
+    named.sort(function (a, b) { return b.values.reduce(function (s, v) { return s + v; }, 0) - a.values.reduce(function (s, v) { return s + v; }, 0); });
+    pre = pre.concat(named.slice(3)); named = named.slice(0, 3);
   }
+  if (pre.length) {
+    named.push({ name: "Other", other: true,
+      values: labels.map(function (_, j) { return pre.reduce(function (s, x) { return s + x.values[j]; }, 0); }) });
+  }
+  ser = named;
   var type = t.chart || (timeFirst ? (ser.length > 1 ? "line" : "col") : (ser.length > 1 ? "stack" : "hbar"));
   return { type: type, title: t.title, labels: labels, series: ser, table: t };
 }
@@ -8734,6 +8766,8 @@ function chBarPath(x, y, w, h, horiz) {
 }
 
 function chChartEl(spec) {
+  spec.series = spec.series || [];          /* timelines and diverging bars carry their own data */
+  spec.labels = spec.labels || spec.lanes || [];
   var C = chInk();
   var box = el("div", "chchart");
   var head = el("div", "chtblh");
@@ -8763,12 +8797,14 @@ function chChartEl(spec) {
   /* Sized to the conversation column as it is now drawn, so text stays at its real size. */
   var flowEl = document.querySelector(".chflow");
   var W = Math.max(270, Math.min(760, flowEl && flowEl.clientWidth ? flowEl.clientWidth - 72 : (window.innerWidth || 800) - 80));
-  var fs = 12, svg, tipRows = [];
+  var fs = 12, svg, tipRows = [], wide = false;
+  /* A label never runs past its column: cut to what fits, the full name stays in the tooltip. */
+  var fitLab = function (l, px) { return chShortLab(l, Math.max(6, Math.min(30, Math.floor((px - 8) / 6.4)))); };
   var tip = el("div", "chtip");
   var n = spec.labels.length, S = spec.series;
   var maxV = 0;
   if (spec.type === "heat") spec.grid.forEach(function (r) { r.forEach(function (v) { maxV = Math.max(maxV, v); }); });
-  else if (spec.type === "stack") spec.labels.forEach(function (_, j) { maxV = Math.max(maxV, S.reduce(function (s, x) { return s + (x.values[j] || 0); }, 0)); });
+  else if (spec.type === "stack" || spec.type === "stackcol") spec.labels.forEach(function (_, j) { maxV = Math.max(maxV, S.reduce(function (s, x) { return s + (x.values[j] || 0); }, 0)); });
   else S.forEach(function (s) { s.values.forEach(function (v) { maxV = Math.max(maxV, v || 0); }); });
   /* Whole-number gridlines: three steps of a nice size, the top one just above the largest value. */
   var step = Math.max(1, chNice((maxV || 1) / 3)), top = step * Math.max(1, Math.ceil((maxV || 1) / step));
@@ -8779,17 +8815,21 @@ function chChartEl(spec) {
     var hueRGB = C.dark ? [59, 107, 246] : [31, 87, 245];
     var hlw = Math.min(W * 0.36, 8 + 6.6 * Math.max.apply(null, spec.labels.map(function (l) { return Math.min(30, String(l).length); })));
     var nc = spec.cols.length, totW = 36;
+    /* Too narrow for readable cells (a phone): keep the cells readable and let the map scroll sideways. */
+    var needW = hlw + nc * 34 + totW + 10;
+    if (W < needW) { W = needW; wide = true; }
     var cw = Math.min(64, (W - hlw - totW - 8) / nc), ch = 26, headH = 22;
     var HH = headH + spec.labels.length * (ch + 3) + 6;
     svg = chSvg("svg", { width: W, height: HH, viewBox: "0 0 " + W + " " + HH, role: "img", "aria-label": spec.title });
     spec.cols.forEach(function (c, j) {
       svg.appendChild(chSvg("text", { x: hlw + j * cw + cw / 2, y: 14, "text-anchor": "middle", "font-size": 10.5, fill: C.ink3 },
-        chShortLab(String(c).replace(/^([A-Za-z]{3})[a-z]*\s+(?:20)?(\d\d)$/, "$1 $2"), 8)));
+        chShortLab(/^[A-Za-z]{3,}\s+20\d\d$/.test(String(c)) ? String(c).replace(/^([A-Za-z]{3})[a-z]*\s+(?:20)?(\d\d)$/, "$1 $2") : chShortName(c),
+                   Math.max(4, Math.floor(cw / 6.3)))));
     });
     svg.appendChild(chSvg("text", { x: hlw + nc * cw + totW / 2 + 4, y: 14, "text-anchor": "middle", "font-size": 10.5, fill: C.ink3 }, "Total"));
     spec.labels.forEach(function (lab, r) {
       var y = headH + r * (ch + 3);
-      svg.appendChild(chSvg("text", { x: hlw - 8, y: y + ch / 2 + 4, "text-anchor": "end", "font-size": fs, fill: C.ink2 }, chShortLab(lab, 30)));
+      svg.appendChild(chSvg("text", { x: hlw - 8, y: y + ch / 2 + 4, "text-anchor": "end", "font-size": fs, fill: C.ink2 }, fitLab(lab, hlw)));
       spec.cols.forEach(function (c, j) {
         var v = spec.grid[r][j] || 0, a = v ? 0.14 + 0.76 * v / (maxV || 1) : 0;
         var cell = chSvg("rect", { x: hlw + j * cw + 1.5, y: y, width: cw - 3, height: ch, rx: 4,
@@ -8805,6 +8845,59 @@ function chChartEl(spec) {
       svg.appendChild(chSvg("text", { x: hlw + nc * cw + totW / 2 + 4, y: y + ch / 2 + 4, "text-anchor": "middle", "font-size": 11,
         "font-weight": 600, fill: C.ink2 }, String(spec.totals[r])));
     });
+  } else if (spec.type === "timeline") {
+    /* One lane per kind of activity, one dot per story, months along the top. */
+    var tlw = Math.min(W * 0.34, 8 + 6.6 * Math.max.apply(null, spec.lanes.map(function (l) { return Math.min(30, l.length); })));
+    var tpw = W - tlw - 14, laneH = 24, top0 = 22, span = (spec.to - spec.from) || 1;
+    var TH = top0 + spec.lanes.length * laneH + 6;
+    svg = chSvg("svg", { width: W, height: TH, viewBox: "0 0 " + W + " " + TH, role: "img", "aria-label": spec.title });
+    var tkEvery = Math.max(1, Math.ceil(46 / (tpw / Math.max(1, spec.ticks.length))));
+    spec.ticks.forEach(function (tk, ti) {
+      var tx = tlw + (tk.ms - spec.from) / span * tpw;
+      svg.appendChild(chSvg("line", { x1: tx, x2: tx, y1: top0 - 4, y2: TH - 4, stroke: C.grid, "stroke-width": 1 }));
+      if (ti % tkEvery) return;
+      svg.appendChild(chSvg("text", { x: tx + 3, y: 13, "font-size": 10.5, fill: C.ink3 },
+        String(tk.lab).replace(/^([A-Za-z]{3})[a-z]*\s+(?:20)?(\d\d)$/, "$1 $2")));
+    });
+    spec.lanes.forEach(function (l, i) {
+      var ly = top0 + i * laneH + laneH / 2;
+      svg.appendChild(chSvg("line", { x1: tlw, x2: W - 6, y1: ly, y2: ly, stroke: C.grid, "stroke-width": 1 }));
+      svg.appendChild(chSvg("text", { x: tlw - 8, y: ly + 4, "text-anchor": "end", "font-size": fs, fill: C.ink2 }, fitLab(l, tlw)));
+    });
+    var placed = {};
+    spec.points.slice().sort(function (a, b) { return a.ms - b.ms; }).forEach(function (p) {
+      var li = spec.lanes.indexOf(p.lane); if (li < 0) return;
+      var px = tlw + (p.ms - spec.from) / span * tpw, bucket = li + ":" + Math.round(px / 7);
+      var k = placed[bucket] = (placed[bucket] || 0) + 1;
+      var py = top0 + li * laneH + laneH / 2 + (k === 1 ? 0 : (k % 2 ? 1 : -1) * Math.min(8, 3 * Math.floor(k / 2)));
+      svg.appendChild(chSvg("circle", { cx: px, cy: py, r: 4.5, fill: C.pal[0], stroke: C.bg, "stroke-width": 2 }));
+      var hitd = chSvg("circle", { cx: px, cy: py, r: 9, fill: "transparent" });
+      hitd.setAttribute("data-tip", tipRows.length);
+      svg.appendChild(hitd);
+      tipRows.push([chClip(p.title, 120), [[p.lane, chShort(p.ms), C.pal[0]]]]);
+    });
+  } else if (spec.type === "diverge") {
+    /* Gains to the right in blue, losses to the left in amber, from a shared zero. */
+    var vals = spec.values, mxA = Math.max(1, Math.max.apply(null, vals.map(Math.abs)));
+    var dlw = Math.min(W * 0.34, 8 + 6.6 * Math.max.apply(null, spec.labels.map(function (l) { return Math.min(28, String(l).length); })));
+    /* Labels | room for a loss's figure | losses | gains | room for a gain's figure | "before → after". */
+    var half = Math.max(40, (W - dlw - 48 - 150) / 2), x0 = dlw + 48 + half, rH = 24, DH = vals.length * rH + 10;
+    var dpw = half * 2;
+    svg = chSvg("svg", { width: W, height: DH, viewBox: "0 0 " + W + " " + DH, role: "img", "aria-label": spec.title });
+    svg.appendChild(chSvg("line", { x1: x0, x2: x0, y1: 2, y2: DH - 2, stroke: C.line, "stroke-width": 1 }));
+    vals.forEach(function (v, j) {
+      var y = 5 + j * rH, bw = Math.abs(v) / mxA * (dpw / 2), up = v >= 0, colr = up ? C.pal[0] : C.pal[2];
+      svg.appendChild(chSvg("text", { x: dlw - 8, y: y + rH / 2 + 3, "text-anchor": "end", "font-size": fs, fill: C.ink2 }, fitLab(spec.labels[j], dlw)));
+      if (bw > 0) svg.appendChild(chSvg("rect", { x: up ? x0 : x0 - bw, y: y + 5, width: bw, height: 12, rx: 3, fill: colr }));
+      svg.appendChild(chSvg("text", { x: up ? x0 + bw + 6 : x0 - bw - 6, y: y + rH / 2 + 3, "text-anchor": up ? "start" : "end",
+        "font-size": 11, "font-weight": 600, fill: C.ink2 }, chSigned(v)));
+      svg.appendChild(chSvg("text", { x: W - 8, y: y + rH / 2 + 3, "text-anchor": "end", "font-size": 11, fill: C.ink3 },
+        spec.from[j] + " → " + spec.to[j]));
+      var hitv = chSvg("rect", { x: 0, y: y, width: W, height: rH, fill: "transparent" });
+      hitv.setAttribute("data-tip", tipRows.length);
+      svg.appendChild(hitv);
+      tipRows.push([spec.labels[j], [["30 days before", spec.from[j], C.other], ["Last 30 days", spec.to[j], colr]]]);
+    });
   } else if (spec.type === "hbar" || spec.type === "stack") {
     var lw = Math.min(W * 0.38, 8 + 6.6 * Math.max.apply(null, spec.labels.map(function (l) { return Math.min(28, String(l).length); })));
     var k = spec.type === "stack" ? 1 : S.length;
@@ -8813,7 +8906,7 @@ function chChartEl(spec) {
     svg = chSvg("svg", { width: W, height: H, viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": spec.title });
     spec.labels.forEach(function (lab, j) {
       var y0 = 4 + j * rowH + 7;
-      svg.appendChild(chSvg("text", { x: lw - 8, y: y0 + gh / 2 + 4, "text-anchor": "end", "font-size": fs, fill: C.ink2 }, chShortLab(lab, 28)));
+      svg.appendChild(chSvg("text", { x: lw - 8, y: y0 + gh / 2 + 4, "text-anchor": "end", "font-size": fs, fill: C.ink2 }, fitLab(lab, lw)));
       var acc = 0;
       S.forEach(function (s, i) {
         var v = s.values[j] || 0;
@@ -8853,7 +8946,27 @@ function chChartEl(spec) {
         svg.appendChild(chSvg("text", { x: padL + band * (j + 0.5), y: H2 - 8, "text-anchor": "middle", "font-size": 10.5, fill: C.ink3 }, chShortLab(String(lab).replace(/^([A-Za-z]{3})[a-z]*\s+(?:20)?(\d\d)$/, "$1 $2"), 9)));
       }
     });
-    if (spec.type === "col") {
+    if (spec.type === "stackcol") {
+      /* Stacked columns: each month's stories split by series, 2px surface gaps between segments,
+         the total over the tallest and the latest column only. */
+      var sbw = Math.min(30, band * 0.62), tots2 = spec.labels.map(function (_, j) { return S.reduce(function (a, x) { return a + (x.values[j] || 0); }, 0); });
+      var mxT = Math.max.apply(null, tots2);
+      spec.labels.forEach(function (lab, j) {
+        var acc = 0, x = padL + band * (j + 0.5) - sbw / 2;
+        var topI = -1; S.forEach(function (x2, i) { if (x2.values[j]) topI = i; });
+        S.forEach(function (sv, i) {
+          var v = sv.values[j] || 0; if (!v) return;
+          var h = v / top * ph, y = padT + ph - (acc + v) / top * ph;
+          var hh = acc ? Math.max(0, h - 2) : h;
+          svg.appendChild(i === topI ? chSvg("path", { d: chBarPath(x, y, sbw, hh, false), fill: colour(i) })
+                                     : chSvg("rect", { x: x, y: y, width: sbw, height: hh, fill: colour(i) }));
+          acc += v;
+        });
+        if ((tots2[j] === mxT && mxT > 0) || j === spec.labels.length - 1) {
+          svg.appendChild(chSvg("text", { x: x + sbw / 2, y: padT + ph - acc / top * ph - 5, "text-anchor": "middle", "font-size": 11, fill: C.ink2 }, String(tots2[j])));
+        }
+      });
+    } else if (spec.type === "col") {
       var s0 = S[0], bw = Math.min(28, band * 0.6), mx = Math.max.apply(null, s0.values);
       s0.values.forEach(function (v, j) {
         var h = v / top * ph, x = padL + band * (j + 0.5) - bw / 2;
@@ -8881,7 +8994,7 @@ function chChartEl(spec) {
     });
   }
 
-  var plot = el("div", "chplot");
+  var plot = el("div", "chplot" + (wide ? " scroll" : ""));
   plot.appendChild(svg);
   plot.appendChild(tip);
   box.appendChild(plot);
@@ -9085,10 +9198,8 @@ function chAnsProfile(q, comp, P, d, ix) {
   var perMonth = { title: comp.name + ": stories per month", chart: "col", cols: ["Month", "Stories"],
     rows: months.map(function (m) { return [m.lab, String(cnt(mine, m.from, m.to))]; }) };
 
-  var tables = [heat, focusT, perMonth];
-  var mk = chTop(chCountBy(mine, function (x) { return x.mk; }), 6);
-  if (mk.length >= 2) tables.push({ title: "Where its stories are", cols: ["Market", "Stories"], chart: "hbar",
-    rows: mk.map(function (x) { return [x[0], String(x[1])]; }) });
+  var others = ix.docs.filter(function (x) { return !cf(x) && inR(x); });
+  var tables = [heat, focusT].concat(chProfileMore(comp, mine, peers, others, months, d, ix), [perMonth]);
   /* Latest moves: the newest story of each kind, so the profile ends on evidence. */
   var seenK = {}, moves = [];
   mine.forEach(function (x) {
@@ -9142,6 +9253,268 @@ function chProfileTurn(q, m) {
   var last = CH_LOG[CH_LOG.length - 1];
   if (last && last.localFollow) { pm.readAs = null; pm.base = null; }
   return pm;
+}
+
+
+/* ---------- more views (2026-09-30, chosen by the user) ----------
+   Profile: keywords & product lines, event timeline, your attention, market footprint over time.
+   Field: momentum leaderboard, company × theme heat map, keyword trend on demand, theme mix over
+   time, market × theme heat map. All counts of held stories. */
+
+/* Short names for column heads: "Reynaers Aluminium India" → "Reynaers", "TOSTEM (LIXIL) India" → "TOSTEM". */
+function chShortName(s) {
+  var t = String(s || "").split("(")[0].trim(), w = t.split(/\s+/);
+  return w[0] && w[0].length >= 4 ? w[0] : w.slice(0, 2).join(" ");
+}
+
+/* Months ending at `end` (a date), `n` of them, contiguous. */
+function chMonthsTo(end, n) {
+  var nd = new Date(end), out = [];
+  for (var i = n - 1; i >= 0; i--) {
+    var a = new Date(nd.getFullYear(), nd.getMonth() - i, 1).getTime();
+    out.push({ lab: chMonLabel(a), from: a, to: new Date(nd.getFullYear(), nd.getMonth() - i + 1, 1).getTime() });
+  }
+  return out;
+}
+
+/* ---- keywords that set a company apart ----
+   Words and two-word phrases from its stories' headlines and summaries, scored by how much more
+   often they appear there than in every other story. The company's own name, the beat's everyday
+   words and stop words are left out, so what remains is what it is actually known for. */
+var CH_KW_SKIP = (function () {
+  var o = {}, w = ("window windows door doors aluminium aluminum system systems india indian company companies " +
+    "market markets product products solution solutions new also said says will with from their which more " +
+    "high performance range design designs home homes building buildings project projects glass glazing " +
+    "germany german limited ltd pvt private group brand brands offer offers offering " +
+    "presence customer customers practical effects effect minimize maximize ensure ensuring provide provides " +
+    "providing including include various across while focus focusing focused highlight highlights highlighted " +
+    "emphasize emphasizes emphasizing emphasis significant significantly leading latest recent recently quality " +
+    "benefits benefit features feature ability approach aimed aims growing growth increasing increase improve " +
+    "improved needs need options option users user clients client commitment committed strong strengthen potential " +
+    "particularly specific specifically further such other well best better great modern contemporary advanced " +
+    "innovative premium unique wide wider variety overall industry sector space spaces living life people time " +
+    "year years today details detail information available based part parts per makes making made help helps " +
+    "within without along into over under").split(" ");
+  for (var i = 0; i < w.length; i++) o[w[i]] = 1;
+  return o;
+})();
+function chTermsOf(doc, own) {
+  if (doc._terms && doc._termsOwn === own) return doc._terms;
+  var words = String(doc.title + " " + doc.summary).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9\- ]+/g, " ").split(/\s+/).filter(Boolean);
+  var ok = function (w) { return w.length >= 4 && !CH_STOP[w] && !CH_KW_SKIP[w] && !own[w] && !/^\d+$/.test(w); };
+  var set = {};
+  for (var i = 0; i < words.length; i++) {
+    if (ok(words[i])) set[words[i]] = 1;
+    if (i + 1 < words.length && ok(words[i]) && ok(words[i + 1])) set[words[i] + " " + words[i + 1]] = 1;
+    else if (i + 1 < words.length && words[i].length >= 4 && !CH_STOP[words[i]] && !/\d/.test(words[i]) && ok(words[i + 1]) && !own[words[i]]) {
+      set[words[i] + " " + words[i + 1]] = 1;          // "thermal break": first word may be an everyday one
+    }
+  }
+  doc._terms = Object.keys(set); doc._termsOwn = own;
+  return doc._terms;
+}
+function chKeywords(mine, others, compName) {
+  var own = {};
+  chTokens(compName).concat(String(compName).toLowerCase().split(/[^a-z]+/)).forEach(function (w) { if (w) own[w] = 1; });
+  chBrandTerms(compName).forEach(function (t) { own[t.toLowerCase()] = 1; });
+  var dm = {}, dt = {};
+  mine.forEach(function (x) { chTermsOf(x, own).forEach(function (t) { dm[t] = (dm[t] || 0) + 1; }); });
+  others.forEach(function (x) { chTermsOf(x, own).forEach(function (t) { dt[t] = (dt[t] || 0) + 1; }); });
+  var N = mine.length || 1, M = others.length || 1;
+  var rows = Object.keys(dm).filter(function (t) { return dm[t] >= Math.max(2, Math.ceil(N * 0.06)); }).map(function (t) {
+    var a = dm[t] / N, b = ((dt[t] || 0) + 0.5) / M;
+    /* A phrase says more than a word, so it scores a little higher at the same count. */
+    var w = t.indexOf(" ") > 0 ? 1.5 : 1;
+    return { t: t, n: dm[t], a: Math.round(a * 100), b: Math.round((dt[t] || 0) * 100 / M), lift: a / b, score: w * dm[t] * Math.log(a / b) };
+  }).filter(function (r) { return r.lift >= 1.6; }).sort(function (x, y) { return y.score - x.score; });
+  /* A phrase and its own words would say the same thing twice: keep the phrase. */
+  var out = [];
+  rows.forEach(function (r) {
+    if (out.length >= 10) return;
+    if (out.some(function (o) { return o.t.indexOf(r.t) >= 0 || r.t.indexOf(o.t) >= 0; })) return;
+    out.push(r);
+  });
+  return out;
+}
+/* Product lines: a capitalised name with a model number ("FWS 50", "MasterLine 8", "AWS 75.SI+"). */
+var CH_PRODUCT_RX = /\b([A-Z][A-Za-z]{1,14}(?:[ -][A-Z][A-Za-z]{1,14})?[ -]?\d{1,3}(?:\.[A-Z]{1,3})?\+?)(?![\d-])/g;
+function chProducts(mine, keyProduct) {
+  var seen = {};
+  var add = function (name, doc, trusted) {
+    var k = name.toLowerCase().replace(/\s+/g, " ");
+    /* A product name has a short acronym ("FWS 50") or an inner capital ("MasterLine 8"). Dates, clauses
+       and shouting ("July 31", "Class 9", "PART 24", "PROGRESS FROM 1") have neither, or are listed here. */
+    var first = name.split(/[\s-]+/)[0];
+    if (!trusted) {
+      if (/^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(first)) return;
+      if (/^(on|in|at|by|class|part|phase|section|chapter|tier|grade|level|type|zone|top|vol|no|page|achieve|from|ecbc|q[1-4]|covid|iso|en|din|is|bis|gst|rs|inr|usd|eur|nbc|wave|round|stage|step|block|sector|plot|unit|floor|tower)$/i.test(first)) return;
+      if (!(/^[A-Z]{2,4}$/.test(first) || /[a-z][A-Z]/.test(first))) return;
+    }
+    var r = seen[k] || (seen[k] = { name: name, n: 0, first: Infinity, last: 0 });
+    r.n++;
+    if (doc.ms) { r.first = Math.min(r.first, doc.ms); r.last = Math.max(r.last, doc.ms); }
+  };
+  mine.forEach(function (x) {
+    var text = x.title + " " + x.summary, m, got = {};
+    CH_PRODUCT_RX.lastIndex = 0;
+    while ((m = CH_PRODUCT_RX.exec(text))) { if (!got[m[1]]) { got[m[1]] = 1; add(m[1], x); } }
+    if (keyProduct) {
+      var kp = String(keyProduct).split(/[,;/]| and /).map(function (p) { return p.trim(); }).filter(function (p) { return p.length >= 4; });
+      kp.forEach(function (p) {
+        var core = p.split(/\s+/).slice(0, 2).join(" ");
+        if (!got[core] && new RegExp("\\b" + core.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "i").test(text)) { got[core] = 1; add(core, x, true); }
+      });
+    }
+  });
+  return Object.keys(seen).map(function (k) { return seen[k]; }).sort(function (a, b) { return b.n - a.n || b.last - a.last; }).slice(0, 8);
+}
+
+/* The profile's extra tables, built from the same selection as the rest of it. */
+function chProfileMore(comp, mine, peers, others, months, d, ix) {
+  var out = [];
+  var row = arr(d.competitors).filter(function (c) { return c && sameName(c.name, comp.name); })[0] || {};
+
+  /* Event timeline: every dated story in the window, in its first activity's lane. */
+  var from = months[0].from, to = months[months.length - 1].to;
+  var pts = mine.filter(function (x) { return x.ms >= from && x.ms < to; }).map(function (x) {
+    return { lane: chActsOf(x)[0], ms: x.ms, title: x.title };
+  });
+  if (pts.length >= 2) {
+    var lanes = CH_ACTS.map(function (a) { return a.label; }).concat([CH_ACT_OTHER])
+      .filter(function (l) { return pts.some(function (p) { return p.lane === l; }); });
+    out.push({ title: comp.name + ": what happened when", cols: ["Date", "Activity", "Story"],
+      rows: pts.slice().sort(function (a, b) { return b.ms - a.ms; }).slice(0, 40)
+        .map(function (p) { return [chShort(p.ms), p.lane, chClip(p.title, 110)]; }),
+      spec: { type: "timeline", title: comp.name + ": what happened when", lanes: lanes, points: pts, from: from, to: to,
+              ticks: months.map(function (m) { return { ms: m.from, lab: m.lab }; }) },
+      note: "Each dot is one story, in the lane of the first kind of activity it reports. Hover or tap for the headline." });
+  }
+
+  /* Keywords and product lines. */
+  var kw = chKeywords(mine, others, comp.name);
+  if (kw.length >= 2) {
+    out.push({ title: "Words that set " + comp.name + " apart", cols: ["Word or phrase", "Its stories", comp.name + " %", "Everyone else %"],
+      rows: kw.map(function (k) { return [k.t, String(k.n), k.a + "%", k.b + "%"]; }),
+      spec: { type: "hbar", title: "Words that set " + comp.name + " apart (% of stories that use them)", unit: "%",
+              labels: kw.map(function (k) { return k.t; }),
+              series: [{ name: comp.name, values: kw.map(function (k) { return k.a; }) },
+                       { name: "Everyone else", values: kw.map(function (k) { return k.b; }) }] },
+      note: "Words and phrases from headlines and summaries, used at least twice, and far more often in its stories than in the other " +
+            others.length + ". Its own name and the beat's everyday words are left out." });
+  }
+  var prods = chProducts(mine, row.keyProduct);
+  if (prods.length) {
+    out.push({ title: "Product lines named in its stories", cols: ["Product", "Stories", "First seen", "Last seen"], noChart: true,
+      rows: prods.map(function (p) { return [p.name, String(p.n), p.first < Infinity ? chShort(p.first) : "undated", p.last ? chShort(p.last) : "undated"]; }) });
+  }
+
+  /* Market footprint over time. */
+  var lands = chTop(chCountBy(mine, function (x) { return x.mk; }), 4).map(function (x) { return x[0]; });
+  if (lands.length >= 2) {
+    out.push({ title: comp.name + " by market, month by month", chart: "line", cols: ["Month"].concat(lands),
+      rows: months.map(function (m) {
+        return [m.lab].concat(lands.map(function (l) {
+          return String(mine.filter(function (x) { return x.ms >= m.from && x.ms < m.to && x.mk.indexOf(l) >= 0; }).length);
+        }));
+      }) });
+  }
+
+  /* Your attention: what you did with its stories, against everyone else's. */
+  var rate = function (list, f) { return list.length ? Math.round(list.filter(f).length * 100 / list.length) : 0; };
+  var sig = [["Saved", function (x) { return x.buckets.indexOf("saved") >= 0; }],
+             ["Published", function (x) { return x.published; }],
+             ["Verified", function (x) { return x.verified; }],
+             ["Liked", function (x) { return x.liked; }],
+             ["Disliked", function (x) { return x.disliked; }],
+             ["Still in alerts", function (x) { return x.buckets.indexOf("alerts") >= 0; }]];
+  out.push({ title: "Your attention: what you did with its stories", cols: ["", "Its stories", comp.name + " %", "Everyone else %"],
+    rows: sig.map(function (s) { return [s[0], String(mine.filter(s[1]).length), rate(mine, s[1]) + "%", rate(others, s[1]) + "%"]; }),
+    spec: { type: "hbar", title: "Your attention — " + comp.name + " vs everyone else (% of stories)", unit: "%",
+            labels: sig.map(function (s) { return s[0]; }),
+            series: [{ name: comp.name, values: sig.map(function (s) { return rate(mine, s[1]); }) },
+                     { name: "Everyone else", values: sig.map(function (s) { return rate(others, s[1]); }) }] },
+    note: "Everyone else = the other " + others.length + " stories you hold." });
+  return out;
+}
+
+/* ---- the field ---- */
+function chMomentumTable(ix, P) {
+  var now = chDay0(Date.now()) + 864e5, D = 864e5;
+  var docs = ix.docs;
+  var rows = ix.comps.map(function (c) {
+    var f = chCompFilter(c);
+    var a = docs.filter(function (x) { return f(x) && x.ms >= now - 30 * D; }).length;
+    var b = docs.filter(function (x) { return f(x) && x.ms >= now - 60 * D && x.ms < now - 30 * D; }).length;
+    return { n: c.name, a: a, b: b };
+  }).filter(function (r) { return r.a || r.b; }).sort(function (x, y) { return (y.a - y.b) - (x.a - x.b) || y.a - x.a; });
+  if (rows.length < 2) return null;
+  return { title: "Momentum: last 30 days vs the 30 before", cols: ["Company", "Last 30 days", "30 days before", "Change"],
+    rows: rows.map(function (r) { return [r.n, String(r.a), String(r.b), chSigned(r.a - r.b)]; }),
+    spec: { type: "diverge", title: "Momentum: change in stories, last 30 days vs the 30 before",
+            labels: rows.map(function (r) { return r.n; }), values: rows.map(function (r) { return r.a - r.b; }),
+            from: rows.map(function (r) { return r.b; }), to: rows.map(function (r) { return r.a; }) },
+    note: "Companies with no stories in either period are left out." };
+}
+function chFieldHeat(docs, dimRow, title) {
+  var dm = CH_DIMS.filter(function (x) { return x.k === dimRow; })[0];
+  var rowsK = chTop(chCountBy(docs, dm.of), 10).map(function (x) { return x[0]; });
+  var themes = chTop(chCountBy(docs, function (x) { return [x.category || "Uncategorised"]; }), 8).map(function (x) { return x[0]; });
+  if (rowsK.length < 2 || themes.length < 2) return null;
+  /* Themes down the side (long names), companies or markets across (short). */
+  return { title: title, chart: "heat", cross: true,
+    cols: ["Theme"].concat(rowsK, ["Total"]),
+    rows: themes.map(function (t) {
+      var sub = docs.filter(function (x) { return (x.category || "Uncategorised") === t; });
+      return [t].concat(rowsK.map(function (k) { return String(sub.filter(function (x) { return dm.of(x).indexOf(k) >= 0; }).length); }),
+                        [String(sub.filter(function (x) { return rowsK.some(function (k) { return dm.of(x).indexOf(k) >= 0; }); }).length)]);
+    }),
+    note: "The eight biggest themes; a story counts under every " + (dimRow === "competitor" ? "company" : "market") + " it names." };
+}
+
+/* ---- keyword trend on demand: "thermal break vs uPVC over time" ---- */
+var CH_TIMECUE = /\b(over time|trend|trends|trending over|by month|per month|monthly|month by month|timeline|by week|per week|weekly|over the (last|past) \d+ (months|weeks))\b/;
+function chTermList(text) {
+  var parts = String(text).replace(/\b(over time|trend of|trends? in|trend|by month|per month|monthly|month by month|timeline|by week|per week|weekly|mentions? of|chart|show|plot|graph|compare|how often|stories about|news about|stories on|news on)\b/gi, " ")
+    .split(/\s*(?:\bvs\.?\b|\bversus\b|\bagainst\b|,|\band\b|\bor\b|\/)\s*/i)
+    .map(function (p) { return p.replace(/[?!.]+/g, " ").replace(/\s+/g, " ").trim(); })
+    .filter(function (p) { return chSubjectTokens(p).length; });
+  return parts.slice(0, 4);
+}
+function chAnsTerms(q, P, d, ix, terms) {
+  var sets = terms.map(function (t) {
+    var toks = chTokens(t);
+    return { name: t, docs: ix.docs.filter(function (x) { return toks.every(function (k) { return x.tf && x.tf[k]; }); }) };
+  });
+  var all = [];
+  sets.forEach(function (s) { all = all.concat(s.docs); });
+  var dated = all.filter(function (x) { return x.ms; });
+  if (!dated.length) {
+    return { q: q, kind: "none", lead: "None of your stories mention " + chList(terms.map(function (t) { return "“" + esc(t) + "”"; })) + ".",
+             stats: [], items: [], why: "", note: "" };
+  }
+  var end = P.range ? Math.min(P.range.to - 1, Date.now()) : Math.max.apply(null, dated.map(function (x) { return x.ms; }));
+  var nMonths = P.range ? Math.max(2, Math.min(12, Math.round((P.range.to - P.range.from) / (30 * 864e5)))) : 8;
+  var months = chMonthsTo(end, nMonths);
+  var t = { title: (sets.length > 1 ? sets.map(function (s) { return "“" + s.name + "”"; }).join(" vs ") : "“" + sets[0].name + "”") + " over time",
+    chart: sets.length > 1 ? "line" : "col",
+    cols: ["Month"].concat(sets.map(function (s) { return s.name; })),
+    rows: months.map(function (m) {
+      return [m.lab].concat(sets.map(function (s) { return String(s.docs.filter(function (x) { return x.ms >= m.from && x.ms < m.to; }).length); }));
+    }),
+    note: "Stories whose headline, summary or theme contain every word of the term." };
+  var bits = sets.map(function (s) {
+    var best = null;
+    t.rows.forEach(function (r, i) { var v = +r[1 + sets.indexOf(s)]; if (!best || v > best.v) best = { v: v, m: r[0] }; });
+    return "<b>“" + esc(s.name) + "”</b> in " + chPl(s.docs.length, "story", "stories") + (best && best.v ? ", peaking in " + esc(best.m) + " (" + best.v + ")" : "");
+  });
+  var byComp = chTop(chCountBy(all, function (x) { return x.cm; }), 8);
+  var tables = [t];
+  if (byComp.length >= 2) tables.push({ title: "Who these stories name", cols: ["Company", "Stories"], chart: "hbar",
+    rows: byComp.map(function (x) { return [x[0], String(x[1])]; }) });
+  return { q: q, kind: "breakdown", shapeHint: "trend", lead: chCap(bits.join("; ")) + ".", stats: [], tables: tables,
+           items: chWeave(sets.map(function (s) { return s.docs; }), 6), context: chWeave(sets.map(function (s) { return s.docs; }), 24),
+           allDocs: all, why: "The newest stories for each term.", note: "" };
 }
 
 /* ---------- router ----------
@@ -9224,6 +9597,13 @@ function chAnswerP(q, P, d, ix, fol) {
                note: "For example: “" + (ix.comps[1] ? ix.comps[0].name + " vs " + ix.comps[1].name : "this month vs last month") +
                      "”, or “this month vs last month”." };
     }
+  }
+
+  /* WORDS OVER TIME. "thermal break vs uPVC over time", "trend of sustainability". Only when no company
+     or market is named (those are breakdowns) and real subject words are left. */
+  if (!named && kind !== "metric" && CH_TIMECUE.test(t)) {
+    var terms = chTermList(P.text);
+    if (terms.length) return chAnsTerms(q, P, d, ix, terms);
   }
 
   /* BY X. "by competitor", "which market", "top sources", "who is loudest", "per month". */
@@ -9606,13 +9986,17 @@ function chAnsMetric(q, d, ix) {
   return { q: q, kind: "metric", lead: lead, stats: stats, items: [], why: "", note: "" };
 }
 
+function chFieldTables() {
+  var ix = chIndex();
+  return [chMomentumTable(ix), chFieldHeat(ix.docs, "competitor", "Who talks about what: company × theme")].filter(Boolean);
+}
 function chAnsTrend(q, d) {
   var an = d.analytics || null, w = d.widgets || {};
   var a = an && an[AN_WIN];
   if (!a) {
     return { q: q, kind: "trend",
       lead: "Your phone has not sent its analytics yet.",
-      stats: [], items: [], why: "",
+      stats: [], items: [], why: "", tables: chFieldTables(),
       note: "Open Settings, then Storage, on the phone and press Back up. These figures are " +
             "computed there, and I wait for them rather than working them out a second way." };
   }
@@ -9641,8 +10025,9 @@ function chAnsTrend(q, d) {
   var seed = rising.concat(cooling).map(function (k) { return k.n; }).join(" ") + " " + (w.moverName || "");
   var items = chAbove(chSearch(seed)).slice(0, 4).map(function (h) { return h.doc; });
 
-  /* The phone's figures, as it computed them — shown, never recomputed. */
-  var tables = [];
+  /* Momentum and the company × theme map first (counted here from held stories), then the phone's
+     own figures, as it computed them — shown, never recomputed. */
+  var tables = chFieldTables();
   if (sov.length >= 2) {
     tables.push({ title: "Share of voice · phone, " + anPhrase(AN_WIN), cols: ["Company", "Stories"], bars: "col",
                   rows: sov.slice(0, 10).map(function (s) { return [s.n, String(s.c)]; }) });
@@ -10628,11 +11013,10 @@ function chSuggestions() {
   /* ANALYTICS draws: every opener is one that makes a chart. */
   if (chAgent() === "analytics") {
     var l0 = ix.lands[0] && ix.lands[0].name, l1 = ix.lands[1] && ix.lands[1].name;
-    out.push(["Chart", "Stories by competitor this month"]);
-    if (l0 && l1) out.push(["Chart", "Compare " + l0 + " with " + l1 + " over the last 3 months"]);
-    else if (who && other) out.push(["Chart", "Compare " + who + " with " + other.name]);
-    out.push(["Chart", "Stories per month by market"]);
-    out.push(["Chart", "Top themes this month"]);
+    out.push(["Momentum", "Who is gaining momentum?"]);
+    out.push(["Heat map", "Stories by competitor and theme"]);
+    out.push(["Mix", "Theme mix over time"]);
+    out.push(["Words", "thermal break vs uPVC over time"]);
     return out.slice(0, 4);
   }
 
