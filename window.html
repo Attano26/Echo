@@ -1887,6 +1887,8 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
   padding:7px 9px;font-size:11.5px;line-height:1.5;color:var(--ink-2);transition:opacity .1s}
 .chtip.on{opacity:1}
 .chtip b{display:block;font-weight:500;color:var(--ink);margin-bottom:2px}
+.chtip .cap{margin-top:5px;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.chtip{max-width:240px}
 .chtip div{display:flex;align-items:center;gap:6px;white-space:nowrap}
 .chcnote{margin-top:12px;font-size:12.5px;color:var(--ink-3)}
 /* Folded: the data under the charts, and the sources and stories under any analytical answer. */
@@ -7730,6 +7732,7 @@ function chBase(P, opt) {
   if (!opt.noComps && P.ents.comps.length) fs.push(chAny(P.ents.comps.map(chCompFilter)));
   if (!opt.noLands && P.ents.lands.length) fs.push(chAny(P.ents.lands.map(chLandFilter)));
   if (!opt.noRange && P.range) { var r = P.range; fs.push(function (doc) { return chInRange(doc, r); }); }
+  if (P.theme) { var th = key(P.theme); fs.push(function (doc) { var c = key(doc.category); return c === th || c.indexOf(th) >= 0; }); }
   var f = chAll(fs);
   var subj = chSubjectTokens(P.text).filter(function (w) {
     return !P.ents.comps.concat(P.ents.lands).some(function (e) {
@@ -8015,17 +8018,21 @@ function chAnsBreakdown(q, P, d, ix, dims) {
   } else {
     var c2 = chTop(chCountBy(docs, d2.of));
     if (d2.time) c2.sort(function (a, b) { return d2.order(a[0]) - d2.order(b[0]); });
-    var colsK = (d2.time ? c2.slice(-6) : c2.slice(0, 6)).map(function (kv) { return kv[0]; });
+    /* Every company as a column (there are few, and the chart folds past three); six of anything else. */
+    var colsK = (d2.time ? c2.slice(-6) : c2.slice(0, d2.k === "competitor" ? 12 : 6)).map(function (kv) { return kv[0]; });
     /* Stacked through time, every story must be in some band, or a month's column is shorter than the
        month. A theme or a source is one per story, so what the six columns miss is exactly "the rest". */
-    var restCol = d1.time && !d2.time && (d2.k === "category" || d2.k === "source") && c2.length > colsK.length;
+    var restCol = !d2.time && (d2.k === "category" || d2.k === "source") && c2.length > colsK.length;
     tables.push({ title: d1.label.replace(" of", "") + " × " + d2.label.toLowerCase().replace(" of", "") + (scope ? " · " + scope : ""),
-      cols: [d1.label].concat(colsK, restCol ? ["Other " + d2.label.toLowerCase() + "s"] : [], ["Total"]), bars: "col", cross: true,
-      chart: d1.time ? (d2.k === "market" ? "line" : "stackcol") : "heat",
+      cols: [d1.label].concat(colsK, restCol ? ["Other " + d2.label.toLowerCase() + "s"] : [],
+                              d2.k === "competitor" ? ["No tracked company"] : [], ["Total"]), bars: "col", cross: true,
+      chart: d1.time ? (d2.k === "market" ? "line" : "stackcol") : (/\bheat/.test(key(P.q)) ? "heat" : "stack"),
       rows: shown.map(function (kv) {
         var sub = docsOf(kv[0]);
         var cells = colsK.map(function (c) { return sub.filter(function (z) { return d2.of(z).indexOf(c) >= 0; }).length; });
         if (restCol) cells.push(Math.max(0, sub.length - cells.reduce(function (a, b) { return a + b; }, 0)));
+        /* The part of the bar no tracked company accounts for, so a theme's bar is its whole count. */
+        if (d2.k === "competitor") cells.push(sub.filter(function (z) { return !z.cm.length; }).length);
         return [kv[0]].concat(cells.map(String), [String(kv[1])]);
       }),
       note: c2.length > colsK.length ? "The " + colsK.length + " largest of " + c2.length + " columns." : "" });
@@ -8049,6 +8056,22 @@ function chAnsBreakdown(q, P, d, ix, dims) {
     else if (zero.length) lead += " " + chCap(chNum(zero.length)) + " tracked " + (d1.k === "market" ? "markets have" : "companies have") + " none.";
   }
 
+  /* What each bar is made of, for the hover: a theme's companies, a company's themes, a market's or a
+     month's themes — or, in a cross view, the full second dimension rather than the top three. */
+  var compl = d2 || chDimByKey(d1.k === "category" ? "competitor" : "category");
+  if (tables[0] && compl) {
+    var det = {};
+    shown.forEach(function (kv) {
+      var sub = docsOf(kv[0]);
+      var parts = chTop(chCountBy(sub, compl.of), 10);
+      if (compl.k === "competitor") {
+        var none = sub.filter(function (z) { return !z.cm.length; }).length;
+        if (none) parts.push(["No tracked company", none]);
+      }
+      det[kv[0]] = { total: sub.length, parts: parts };
+    });
+    tables[0].detail = { title: "By " + compl.label.toLowerCase().replace(" of", ""), rows: det };
+  }
   var leadKey = live[0] && live[0][0];
   if (d1.time && live.length) leadKey = live[live.length - 1][0];
   if (older && tables[0]) {
@@ -8369,6 +8392,7 @@ var CH_TEMPLATES = [
   "Any news from {L}?", "News about {T}", "News about {T} in {L}", "{T} stories by competitor",
   "Saved stories by market", "Published stories by competitor {P}",
   "Who is gaining momentum?", "Theme mix over time", "Stories by competitor and theme", "Stories by market and theme",
+  "Themes vs competitors", "Competitors vs themes {P}",
   "{T} over time",
   "How much have I spent this month?", "How many saved stories do I have?", "What is trending?", "What can you do?"
 ];
@@ -8671,7 +8695,7 @@ function chAnalytics(m) {
 function chChartSpec(t) {
   var cols = arr(t.cols), rows = arr(t.rows);
   if (!rows.length || cols.length < 2 || t.plain || t.noChart) return null;
-  if (t.spec) return Object.assign({ table: t }, t.spec);
+  if (t.spec) return Object.assign({ table: t, detail: t.detail }, t.spec);
   if (t.chart === "heat") {
     var hasTot = /^total$/i.test(cols[cols.length - 1]);
     var hc = cols.slice(1, hasTot ? -1 : undefined);
@@ -8711,6 +8735,9 @@ function chChartSpec(t) {
   var ser = sc.map(function (i) { return { name: cols[i], values: rs.map(function (r) { return num(r[i]) || 0; }) }; });
   /* Past four series, the smaller ones fold into Other — a fifth colour is never invented. */
   /* A column that is already "Other ..." always joins the grey band, never takes a colour. */
+  /* "No tracked company" stays its own faint band, last: it is the rest of the bar, not a company. */
+  var none = ser.filter(function (x) { return /^no tracked/i.test(x.name); });
+  ser = ser.filter(function (x) { return !/^no tracked/i.test(x.name); });
   var pre = ser.filter(function (x) { return /^other\b/i.test(x.name); });
   var named = ser.filter(function (x) { return !/^other\b/i.test(x.name); });
   if (named.length > 4 || (pre.length && named.length > 3)) {
@@ -8721,9 +8748,11 @@ function chChartSpec(t) {
     named.push({ name: "Other", other: true,
       values: labels.map(function (_, j) { return pre.reduce(function (s, x) { return s + x.values[j]; }, 0); }) });
   }
-  ser = named;
+  ser = named.concat(none.map(function (x) { x.faint = true; return x; }));
+  var totI = cols.length - 1;
+  var totals = /^total$/i.test(cols[totI]) ? rs.map(function (r) { return r[totI]; }) : null;
   var type = t.chart || (timeFirst ? (ser.length > 1 ? "line" : "col") : (ser.length > 1 ? "stack" : "hbar"));
-  return { type: type, title: t.title, labels: labels, series: ser, table: t };
+  return { type: type, title: t.title, labels: labels, series: ser, table: t, detail: t.detail, totals: totals };
 }
 
 /* ---------- drawing ----------
@@ -8781,7 +8810,10 @@ function chChartEl(spec) {
   head.appendChild(acts);
   box.appendChild(head);
 
-  var colour = function (i) { return spec.series[i].other ? C.other : C.pal[i % C.pal.length]; };
+  var colour = function (i) {
+    var sv = spec.series[i];
+    return sv.faint ? (C.dark ? "#34353B" : "#DCDDE1") : sv.other ? C.other : C.pal[i % C.pal.length];
+  };
   var unit = spec.unit || "";
   if (spec.series.length > 1) {
     var lg = el("div", "chleg");
@@ -8799,6 +8831,18 @@ function chChartEl(spec) {
   var W = Math.max(270, Math.min(760, flowEl && flowEl.clientWidth ? flowEl.clientWidth - 72 : (window.innerWidth || 800) - 80));
   var fs = 12, svg, tipRows = [], wide = false;
   /* A label never runs past its column: cut to what fits, the full name stays in the tooltip. */
+  /* A bar's tooltip: its figures, then what it is made of (spec.detail), with the chart's colour beside
+     any part that is also one of its series. */
+  var withDetail = function (lab, rows) {
+    var dd = spec.detail && spec.detail.rows && spec.detail.rows[lab];
+    if (!dd) return [lab, rows];
+    var colourOf = {};
+    rows.forEach(function (x) { colourOf[x[0]] = x[2]; });
+    var out = spec.series.length > 1 ? [["Stories", dd.total, null]] : rows;
+    out = out.concat([[spec.detail.title, "", null]]);
+    dd.parts.forEach(function (p) { out.push([p[0], p[1], colourOf[p[0]] || null]); });
+    return [lab, out];
+  };
   var fitLab = function (l, px) { return chShortLab(l, Math.max(6, Math.min(30, Math.floor((px - 8) / 6.4)))); };
   var tip = el("div", "chtip");
   var n = spec.labels.length, S = spec.series;
@@ -8917,18 +8961,24 @@ function chChartEl(spec) {
           /* 2px surface gap between stacked segments. */
           var ww = spec.type === "stack" && acc > 0 ? Math.max(0, w - 2) : w;
           var xx = spec.type === "stack" && acc > 0 ? x + 2 : x;
-          svg.appendChild(chSvg("path", { d: chBarPath(xx, y, ww, bh, true), fill: colour(i) }));
+          /* Only the bar's far end is rounded; inner segments of a stack are square. */
+          var lastSeg = spec.type !== "stack" || !S.slice(i + 1).some(function (s2) { return s2.values[j] > 0; });
+          svg.appendChild(lastSeg ? chSvg("path", { d: chBarPath(xx, y, ww, bh, true), fill: colour(i) })
+                                  : chSvg("rect", { x: xx, y: y, width: ww, height: bh, fill: colour(i) }));
         }
         if (spec.type !== "stack") {
           svg.appendChild(chSvg("text", { x: lw + w + 6, y: y + bh / 2 + 4, "font-size": 11, fill: C.ink2 }, String(v) + unit));
         }
         acc += v;
       });
-      if (spec.type === "stack") svg.appendChild(chSvg("text", { x: lw + acc / top * pw + 6, y: y0 + gh / 2 + 4, "font-size": 11, fill: C.ink2 }, String(acc)));
+      /* The row's own story count when the table has one (a story naming two companies is in two
+         segments but is still one story). */
+      if (spec.type === "stack") svg.appendChild(chSvg("text", { x: lw + acc / top * pw + 6, y: y0 + gh / 2 + 4, "font-size": 11, fill: C.ink2 },
+        String(spec.totals && spec.totals[j] != null ? spec.totals[j] : acc)));
       var hit = chSvg("rect", { x: 0, y: 4 + j * rowH, width: W, height: rowH, fill: "transparent" });
       hit.setAttribute("data-tip", j);
       svg.appendChild(hit);
-      tipRows.push([lab, S.map(function (s, i) { return [s.name, (s.values[j] || 0) + unit, colour(i)]; })]);
+      tipRows.push(withDetail(lab, S.map(function (s, i) { return [s.name, (s.values[j] || 0) + unit, colour(i)]; })));
     });
   } else {
     /* Columns or lines over time: one axis, a few recessive gridlines, labels under the ticks. */
@@ -8990,7 +9040,7 @@ function chChartEl(spec) {
       var hit = chSvg("rect", { x: padL + band * j, y: 0, width: band, height: H2, fill: "transparent" });
       hit.setAttribute("data-tip", j);
       svg.appendChild(hit);
-      tipRows.push([lab, S.map(function (s, i) { return [s.name, s.values[j] || 0, colour(i)]; })]);
+      tipRows.push(withDetail(lab, S.map(function (s, i) { return [s.name, s.values[j] || 0, colour(i)]; })));
     });
   }
 
@@ -9007,8 +9057,9 @@ function chChartEl(spec) {
     tip.innerHTML = "";
     tip.appendChild(el("b", null, r[0]));
     r[1].forEach(function (x) {
+      if (x[1] === "" && !x[2]) { tip.appendChild(el("div", "cap", x[0])); return; }
       var row = el("div");
-      var sw = el("i"); sw.style.background = x[2];
+      var sw = el("i"); sw.style.background = x[2] || "transparent";
       row.appendChild(sw); row.appendChild(document.createTextNode(x[0] + ": " + x[1]));
       tip.appendChild(row);
     });
@@ -9517,6 +9568,86 @@ function chAnsTerms(q, P, d, ix, terms) {
            allDocs: all, why: "The newest stories for each term.", note: "" };
 }
 
+
+/* ---------- charts the model asks for ----------
+   The model does not draw and does not count. It is told what CAN be plotted — the dimensions, the
+   filters and the chart types below — and returns a request; the app counts the stories and draws it.
+   So Smart can answer any chart question the data supports without each one being written as a rule
+   here, and every number on the chart is still a count of stories the reader holds. */
+var CH_REQ_DIMS = {
+  competitor: "competitor", company: "competitor", companies: "competitor", competitors: "competitor",
+  market: "market", country: "market", markets: "market",
+  theme: "category", category: "category", topic: "category", themes: "category",
+  source: "source", publisher: "source", sources: "source",
+  month: "month", months: "month", week: "week", weeks: "week",
+  activity: "activity", move: "activity", moves: "activity",
+  status: "status"
+};
+function chDimByKey(k) {
+  if (k === "activity") return { k: "activity", label: "Activity", of: chActsOf };
+  if (k === "status") return { k: "status", label: "Status", of: function (d) {
+    var o = [];
+    if (d.buckets.indexOf("alerts") >= 0) o.push("In alerts");
+    if (d.buckets.indexOf("saved") >= 0) o.push("Saved");
+    if (d.published) o.push("Published");
+    if (d.liked) o.push("Liked");
+    if (d.disliked) o.push("Disliked");
+    return o.length ? o : ["Stored only"];
+  } };
+  return CH_DIMS.filter(function (x) { return x.k === k; })[0] || null;
+}
+function chFindEnt(list, name) {
+  var n = chFold(name || "").trim();
+  if (!n) return null;
+  return list.filter(function (e) { var f = chFold(e.name); return f === n || f.indexOf(n) >= 0 || n.indexOf(f.split(" ")[0]) >= 0; })[0] || null;
+}
+/* One request → one table, built by the same breakdown every Basic answer uses. */
+function chChartFromReq(req) {
+  if (!req || !req.x) return null;
+  var ix = chIndex();
+  var dx = chDimByKey(CH_REQ_DIMS[key(req.x)] || key(req.x));
+  if (!dx) return null;
+  var ds = req.split ? chDimByKey(CH_REQ_DIMS[key(req.split)] || key(req.split)) : null;
+  var comp = req.competitor ? chFindEnt(ix.comps, req.competitor) : null;
+  var land = req.market ? chFindEnt(ix.lands, req.market) : null;
+  var P = { q: String(req.title || ""), text: String(req.words || ""), ranges: [],
+            ents: { comps: comp ? [comp] : [], lands: land ? [land] : [] },
+            range: req.period ? chTimeRange(String(req.period)) : null, theme: req.theme || "" };
+  var m = chAnsBreakdown("", P, S.data || {}, ix, ds ? [dx, ds] : [dx]);
+  var t = m.tables && m.tables[0];
+  if (!t || !t.rows.length) return null;
+  var ty = key(req.type);
+  if (ty === "heat") t.chart = "heat";
+  else if (ty === "line") t.chart = "line";
+  else if (ty === "column" || ty === "columns") t.chart = ds ? "stackcol" : "col";
+  else if (ty === "stacked") t.chart = dx.time ? "stackcol" : "stack";
+  else if (ty === "bar" && !ds) t.chart = dx.time ? "col" : "hbar";
+  if (req.title) t.title = String(req.title).slice(0, 90);
+  t.fromModel = true;
+  return t;
+}
+function chChartMenu() {
+  var ix = chIndex();
+  var themes = chTop(chCountBy(ix.docs, function (d) { return d.category ? [d.category] : []; }), 14).map(function (x) { return x[0]; });
+  return [
+    "CHARTS YOU CAN REQUEST. You never draw and never give numbers: put a request in `charts` and the app counts",
+    "the reader's stories and draws it under your answer, with the data and hover detail. Request a chart when the",
+    "question asks for one, or when a comparison, breakdown or trend reads better as one" +
+      (chAgent() ? " — in this mode give one to three" : "") + ". Skip any an APP TABLE already shows.",
+    "- x (required): competitor | market | theme | source | month | week | activity | status",
+    "- split (optional, a second dimension from the same list): e.g. x=theme split=competitor shows each theme's",
+    "  bar made of the companies behind it; x=month split=theme shows the theme mix over time",
+    "- type: bar | stacked | column | line | heat",
+    "- filters (optional): competitor, market, theme — exact names below; words (stories containing them);",
+    "  period in plain words (\"this month\", \"last 3 months\", \"August\", \"Q3\")",
+    "- activity = the kind of move a story reports: " + CH_ACTS.map(function (a) { return a.label; }).join(", ") + ".",
+    "- status = what the reader did: in alerts, saved, published, liked, disliked.",
+    "Companies: " + ix.comps.map(function (c) { return c.name; }).join(", "),
+    "Markets: " + ix.lands.map(function (c) { return c.name; }).join(", "),
+    "Themes: " + themes.join(", ")
+  ].join("\n");
+}
+
 /* ---------- router ----------
    Rules, not a model. Five shapes cover what anyone actually asks this app, and a rule you
    can read is a rule you can fix when it misfires. */
@@ -9581,6 +9712,14 @@ function chAnswerP(q, P, d, ix, fol) {
   /* A question that is not about this beat gets a straight answer with a voice, rather than
      being run through retrieval so it can come back with a shrug. */
   if (fresh && chOffbeat(q)) return chAnsOffbeat(q, ix, d);
+
+  /* TWO DIMENSIONS NAMED: "category vs competitors", "markets and themes", "theme by company". Whatever
+     joins them, that is a cross view — "vs" used to send it to the company comparison, which found no
+     companies and fell through to a word search. */
+  var dims2 = chDimsOf(P.text);
+  if (dims2.length >= 2 && kind !== "metric" && !(P.ents.comps.length >= 2 || P.ents.lands.length >= 2)) {
+    return chAnsBreakdown(q, P, d, ix, dims2);
+  }
 
   /* THIS VERSUS THAT. Two companies, two markets or two periods — or one of them with a compare
      word, set against its nearest rivals. */
@@ -10368,7 +10507,9 @@ var CH_VOICE = [
   "answers it, put its number in `appTables` instead of rebuilding it. EVERY NUMBER IN A TABLE must",
   "come from FACTS, PHONE ANALYTICS, APP TABLES, FIGURES or a story's own text; if you do not have a",
   "figure, write '—'. Never estimate. Numbers you did not get from those are flagged to the reader.",
-  "The prose does not repeat the table; it says what the table means.",
+  "THE PROSE NEVER RESTATES A TABLE OR CHART. If a table, an APP TABLE you picked or a chart you requested",
+  "shows a list of companies, themes or figures, do not also write that list as bullets or sentences — not",
+  "even a shortened one. Say only what it means: the one or two takeaways the reader could not see at a glance.",
   "",
   "Name a story when it is doing the work of your claim. Do not list stories back for their own",
   "sake and never close with a roll-call of everything you read — the reader can open the sources",
@@ -10738,6 +10879,7 @@ function chPrompt(m) {
   out.push(composed);
   out.push("");
   out.push((CH_SHAPES[m.shape] || CH_SHAPES.find).join("\n"));
+  out.push("", chChartMenu());
   out.push("", "QUESTION, AGAIN: " + m.q + (m.readAs ? " (read as: " + String(m.readAs).replace(/[“”]/g, '"') + ")" : ""));
   m.known = known;
   return out.join("\n");
@@ -10822,6 +10964,11 @@ function chCallModel(m, done) {
         note: { type: "STRING" }
       }, required: ["columns", "rows"] } };
       props.appTables = { type: "ARRAY", items: { type: "INTEGER" } };
+      props.charts = { type: "ARRAY", items: { type: "OBJECT", properties: {
+        title: { type: "STRING" }, x: { type: "STRING" }, split: { type: "STRING" }, type: { type: "STRING" },
+        competitor: { type: "STRING" }, market: { type: "STRING" }, theme: { type: "STRING" },
+        words: { type: "STRING" }, period: { type: "STRING" }
+      }, required: ["x"] } };
     }
     return JSON.stringify({
       systemInstruction: { parts: [{ text: CH_RULES + CH_VOICE + (withTables ? "" :
@@ -10900,7 +11047,8 @@ function chCallModel(m, done) {
         .filter(function (x, i, a) { return x >= 1 && x <= arr(m.tables).length && a.indexOf(x) === i; });
 
       var u = res.j.usageMetadata || {};
-      done({ text: payload.answer, followUps: ups, tables: tabs, appTables: appT,
+      var reqs = arr(payload.charts).slice(0, 3).filter(function (c) { return c && c.x; });
+      done({ text: payload.answer, followUps: ups, tables: tabs, appTables: appT, charts: reqs,
              inTok: u.promptTokenCount || 0, outTok: u.candidatesTokenCount || 0,
              totalTok: u.totalTokenCount || 0, thoughtTok: u.thoughtsTokenCount || 0 }, null);
     }).catch(function (err) {
@@ -11113,9 +11261,11 @@ function chRunModel(m, follow) {
   chCallModel(m, function (out, err) {
     m.pending = false;
     if (out) {
-      m.lead = chProse(out.text); m.modelText = out.text; m.via = "model"; m.usage = out;
+      m.modelText = out.text; m.via = "model"; m.usage = out;
       m.followUps = out.followUps || [];
       m.modelTables = out.tables || []; m.appShow = out.appTables || [];
+      m.chartReqs = out.charts || []; chReqCharts(m);
+      m.lead = chProse(chStripDup(out.text, m));
     }
     else { m.via = "local"; m.viaErr = err; m.lead = m.composed; }
     chSaveSession();
@@ -11138,6 +11288,7 @@ function chSaveSession() {
                text: said ? m.modelText : null, usage: said ? m.usage : null,
                followUps: said ? (m.followUps || []) : [],
                tables: said ? (m.modelTables || []) : [], appTables: said ? (m.appShow || []) : [],
+               charts: said ? (m.chartReqs || []) : [],
                agent: m.agent || "",
                err: m.pending ? "the page was reloaded before Gemini answered" : (m.viaErr || null) };
     })));
@@ -11159,9 +11310,11 @@ function chRestoreSession() {
     m.smartTurn = !!t.smart;
     m.pending = false;
     if (t.text) {
-      m.lead = chProse(t.text); m.modelText = t.text; m.via = "model";
+      m.modelText = t.text; m.via = "model";
       m.usage = t.usage || null; m.followUps = arr(t.followUps);
       m.modelTables = arr(t.tables); m.appShow = arr(t.appTables);
+      m.chartReqs = arr(t.charts); chReqCharts(m);
+      m.lead = chProse(chStripDup(t.text, m));
     } else if (t.smart) {
       m.via = "local"; m.viaErr = t.err || "the page was reloaded before Gemini answered";
     }
@@ -11243,6 +11396,51 @@ function chUsage(m) {
   wrap.appendChild(pop);
   foot.appendChild(wrap);
   return foot;
+}
+
+/* THE PROSE NEVER RESTATES A TABLE (user, 30 Sep). The prompt says so; this is the net for when the model
+   does it anyway: a bullet or numbered list of three or more items, most of which name a row of a table
+   or chart shown under the answer, is dropped — with its heading, when the heading introduced only that
+   list. The model's own words are kept as text (m.modelText); only what is drawn changes. */
+function chStripDup(text, m) {
+  var shown = chTurnTables(m).map(function (x) { return x.t; }).concat(arr(m.reqTables));
+  if (m.agent) shown = shown.concat(arr(m.tables));
+  var labels = [];
+  shown.forEach(function (t) {
+    arr(t && t.rows).forEach(function (r) {
+      var l = key(String(r[0] || "").replace(/[“”"]/g, ""));
+      if (l.length >= 3) labels.push(l);
+    });
+  });
+  if (!labels.length) return text;
+  var lines = String(text || "").replace(/\r/g, "").split("\n");
+  var isItem = function (l) { return /^\s*([-*•]|\d+[.)])\s+/.test(l); };
+  var out = [], i = 0;
+  while (i < lines.length) {
+    if (!isItem(lines[i])) { out.push(lines[i]); i++; continue; }
+    var j = i;
+    while (j < lines.length && isItem(lines[j])) j++;
+    var run = lines.slice(i, j);
+    var hits = run.filter(function (l) {
+      var k = key(l.replace(/\*\*/g, ""));
+      return labels.some(function (lab) { return k.indexOf(lab) >= 0; });
+    }).length;
+    if (run.length >= 3 && hits / run.length >= 0.6) {
+      /* Drop the list, and a heading left with nothing under it. */
+      while (out.length && !out[out.length - 1].trim()) out.pop();
+      if (out.length && /^\s*#{1,6}\s/.test(out[out.length - 1])) out.pop();
+    } else {
+      out = out.concat(run);
+    }
+    i = j;
+  }
+  return out.join("\n");
+}
+
+/* Charts the model requested, counted and drawn by the app. */
+function chReqCharts(m) {
+  m.reqTables = arr(m.chartReqs).map(function (r) { try { return chChartFromReq(r); } catch (e) { return null; } }).filter(Boolean);
+  m.reqCharts = m.reqTables.map(chChartSpec).filter(Boolean);
 }
 
 /* The tables a turn shows. A Smart reply shows what the model chose. If it chose none for a question
@@ -11345,6 +11543,14 @@ function chRenderTurn(m) {
   /* Tables: the model's choice on a Smart reply (the app's exact ones it picked, then its own, each
      number checked), the app's own everywhere else. */
   m.shownTables = [];
+  /* Charts Smart asked for come right under its words, with their data folded. */
+  if (!m.pending && m.via === "model" && arr(m.reqCharts).length) {
+    m.reqCharts.forEach(function (c) { bot.appendChild(chChartEl(c)); });
+    var rfold = el("details", "chfold");
+    rfold.appendChild(el("summary", null, "Data behind " + (m.reqCharts.length === 1 ? "this chart" : "these charts")));
+    m.reqTables.forEach(function (t) { m.shownTables.push(t); rfold.appendChild(chTableEl(t, {})); });
+    bot.appendChild(rfold);
+  }
   /* A profile's KPIs come straight after its headline, in Basic and Smart alike. */
   if (!m.pending && m.kind === "profile" && arr(m.stats).length) bot.appendChild(chStatTiles(m.stats));
   if (!m.pending && m.agent && arr(m.charts).length + arr(m.tables).length) {
