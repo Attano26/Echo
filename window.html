@@ -9348,6 +9348,19 @@ function chAnsProfile(q, comp, P, d, ix, opt) {
 
 /* In the profile skill every question about a company becomes its profile. A question about none
    asks which, with every tracked company one tap away. */
+/* Nothing in the question but company (or market) names, joining words and a period? */
+function chBareNames(q, P) {
+  var own = {};
+  P.ents.comps.concat(P.ents.lands).forEach(function (e) {
+    chTokens(e.name).forEach(function (w) { own[chFold(w)] = 1; });
+    e.terms.forEach(function (t) { chTokens(t).forEach(function (w) { own[chFold(w)] = 1; }); });
+  });
+  var extra = chTokens(chStrip(q, chTimeRanges(q))).filter(function (w) {
+    return !own[chFold(w)] && !/^(versus|and|compare|profile|profiles|company|companies|competitor|competitors|companyprofile)$/.test(w);
+  });
+  return !extra.length;
+}
+
 function chProfileTurn(q, m) {
   if (m.social || /^(story|metric|help|count)$/.test(m.kind)) return m;
   var P = m.P || chParse(q);
@@ -9810,9 +9823,23 @@ function chAnsProfileMulti(q, comps, P, d, ix) {
     tables.push(t2);
     return t2;
   };
-  var fT = grouped(/vs other tracked companies/, "What each company's stories are about (% of its stories)", "%", "Activity", 2);
+  /* The field as the baseline, as in a single profile: every OTHER tracked company's stories (for the
+     activity mix), and every other story (for your attention). Grey, so the companies keep the colour. */
+  var isOurs = function (x) { return comps.some(function (c) { return chCompFilter(c)(x); }); };
+  var peersD = ix.docs.filter(function (x) { return chInRange(x, rng) && x.cm.length && !isOurs(x); });
+  var restD = ix.docs.filter(function (x) { return chInRange(x, rng) && !isOurs(x); });
+  var pctOf = function (list, f) { return list.length ? Math.round(list.filter(f).length * 100 / list.length) : 0; };
+  var withBase = function (t, label, list, fOf) {
+    if (!t) return;
+    t.cols = t.cols.concat([label]);
+    t.rows.forEach(function (r) { r.push(pctOf(list, fOf(r[0])) + "%"); });
+  };
+  var fT = grouped(/vs other tracked companies/, "What each company's stories are about, against the rest of the field (% of stories)", "%", "Activity", 2);
+  withBase(fT, "Other tracked companies", peersD, function (l) { return function (x) { return chActsOf(x).indexOf(l) >= 0; }; });
   if (fT) charts.push({ type: "hbar", title: fT.title, unit: "%", labels: fT.rows.map(function (r) { return r[0]; }),
-    series: names.map(function (n, i) { return { name: n, values: fT.rows.map(function (r) { return parseFloat(r[i + 1]) || 0; }) }; }), table: fT });
+    series: names.map(function (n, i) { return { name: n, values: fT.rows.map(function (r) { return parseFloat(r[i + 1]) || 0; }) }; })
+      .concat([{ name: "Other tracked companies", other: true, values: fT.rows.map(function (r) { return parseFloat(r[names.length + 1]) || 0; }) }]),
+    table: fT });
   var mT = grouped(/stories per month/, "Stories per month", "", "Month", 1);
   if (mT) {
     mT.rows.sort(function (a, b) { return (Date.parse("1 " + a[0]) || 0) - (Date.parse("1 " + b[0]) || 0); });
@@ -9828,8 +9855,14 @@ function chAnsProfileMulti(q, comps, P, d, ix) {
   var fp = ok.map(function (p) { return find(p, /by market, month by month/); }).filter(Boolean);
   if (fp.length) { charts.push(pairOf(fp.map(chChartSpec).filter(Boolean))); tables = tables.concat(fp); }
   var aT = grouped(/Your attention/, "Your attention: what you did with each company's stories (%)", "%", "", 2);
+  var SIG = { "Saved": function (x) { return x.buckets.indexOf("saved") >= 0; }, "Published": function (x) { return x.published; },
+              "Verified": function (x) { return x.verified; }, "Liked": function (x) { return x.liked; },
+              "Disliked": function (x) { return x.disliked; }, "Still in alerts": function (x) { return x.buckets.indexOf("alerts") >= 0; } };
+  withBase(aT, "Everyone else", restD, function (l) { return SIG[l] || function () { return false; }; });
   if (aT) charts.push({ type: "hbar", title: aT.title, unit: "%", labels: aT.rows.map(function (r) { return r[0]; }),
-    series: names.map(function (n, i) { return { name: n, values: aT.rows.map(function (r) { return parseFloat(r[i + 1]) || 0; }) }; }), table: aT });
+    series: names.map(function (n, i) { return { name: n, values: aT.rows.map(function (r) { return parseFloat(r[i + 1]) || 0; }) }; })
+      .concat([{ name: "Everyone else", other: true, values: aT.rows.map(function (r) { return parseFloat(r[names.length + 1]) || 0; }) }]),
+    table: aT });
 
   /* Evidence, one table each, with the company named on every row. */
   var moves = [];
@@ -10799,7 +10832,10 @@ var CH_SHAPES = {
     "Open with two sentences on where this company is putting its effort and whether it is getting louder or",
     "quieter, from the heat map, the focus-vs-peers table and the KPIs. Then '## Recent moves' with three",
     "bullets, each naming a story and its date. Then '## What it means for Schüco' with one or two bullets.",
-    "If the record is thin (a handful of stories), say so plainly and keep it short."
+    "If the record is thin (a handful of stories), say so plainly and keep it short.",
+    "WHEN TWO OR THREE COMPANIES ARE PROFILED, compare them on each point instead of describing them one after",
+    "the other: who is louder, where each puts its effort, where one leads and the other is silent, and which",
+    "moves matter most to Schüco. Name each company's stories with their dates."
   ],
   story: [
     "SHAPE. One story the reader picked from the answer above.",
@@ -11443,7 +11479,13 @@ function chAsk(q) {
   CH_DRAFT = "";
   var m = chAnswer(q);        // oldest first: the conversation grows DOWN into the composer
   /* The agent is the chip's, or "profile" for this turn when the question asks for a profile by name. */
-  var turnAgent = /\bprofiles?\b/i.test(q) && m.P && m.P.ents.comps.length ? "profile" : chAgent();
+  /* A company's name on its own ("Hindalco", "Eternia vs Fenesta", "Fenesta last 3 months") is a request
+     for its profile, in any mode (user, 30 Sep: a bare name gave a list of stories, and the detailed
+     profile only came with the skill's name). It is a new question, not a follow-up to the last one. */
+  var freshP = chParse(q);
+  var bare = freshP.ents.comps.length && chBareNames(q, freshP);
+  if (bare) { m.P = freshP; m.readAs = null; m.base = null; }
+  var turnAgent = bare || (/\bprofiles?\b/i.test(q) && m.P && m.P.ents.comps.length) ? "profile" : chAgent();
   if (turnAgent === "profile") m = chProfileTurn(q, m);
   /* The composed reply is kept whatever happens next. It is the fallback if the call fails, and
      it is also part of the prompt, so the model rephrases figures rather than recounting them. */
@@ -11523,7 +11565,11 @@ function chRestoreSession() {
   arr(saved).forEach(function (t) {
     if (!t || !t.q) return;
     var m = chAnswer(t.q);
-    if (t.agent === "profile") m = chProfileTurn(t.q, m);
+    if (t.agent === "profile") {
+      var fp = chParse(t.q);
+      if (fp.ents.comps.length && chBareNames(t.q, fp)) { m.P = fp; m.readAs = null; m.base = null; }
+      m = chProfileTurn(t.q, m);
+    }
     m.composed = m.lead;
     m.shape = chShapeOf(m);
     m.agent = t.agent || "";
