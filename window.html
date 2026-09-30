@@ -1882,13 +1882,24 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
 .chplot svg{display:block;margin:0 auto;font-family:inherit;max-width:100%;height:auto}
 .chplot.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .chplot.scroll svg{max-width:none;margin:0}
-.chtip{position:absolute;z-index:3;min-width:120px;max-width:200px;pointer-events:none;opacity:0;
+.chtip{position:fixed;z-index:95;left:0;top:0;min-width:120px;max-width:200px;pointer-events:none;opacity:0;
   background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:var(--sh-2);
   padding:7px 9px;font-size:11.5px;line-height:1.5;color:var(--ink-2);transition:opacity .1s}
 .chtip.on{opacity:1}
 .chtip b{display:block;font-weight:500;color:var(--ink);margin-bottom:2px}
 .chtip .cap{margin-top:5px;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
-.chtip{max-width:240px}
+.chtip{max-width:260px}
+.chlegh{margin-left:auto;font-size:11px;color:var(--ink-3)}
+/* Timeline range: a small segmented switch beside the title. */
+.chrng{display:inline-flex;gap:2px;padding:2px;border-radius:999px;background:var(--seg-track);margin-right:6px}
+.chrng button{border:0;background:transparent;color:var(--ink-3);font:inherit;font-size:11px;padding:2px 9px;
+  border-radius:999px;cursor:pointer}
+.chrng button.on{background:var(--seg-thumb);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+/* Per-company cards (keywords, market footprint) as a carousel: three quarters wide, the next one peeking. */
+.chcar{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;margin-top:14px;padding-bottom:6px;
+  -webkit-overflow-scrolling:touch}
+.chcar > .chchart{flex:0 0 auto;margin-top:0;scroll-snap-align:start}
+.chpair.chstack{grid-template-columns:1fr}
 .chtip div{display:flex;align-items:center;gap:6px;white-space:nowrap}
 .chcnote{margin-top:12px;font-size:12.5px;color:var(--ink-3)}
 /* Two companies side by side: two columns on a wide screen, stacked on a phone. */
@@ -8778,9 +8789,9 @@ function chChartSpec(t) {
   ser = ser.filter(function (x) { return !/^no tracked/i.test(x.name); });
   var pre = ser.filter(function (x) { return /^other\b/i.test(x.name); });
   var named = ser.filter(function (x) { return !/^other\b/i.test(x.name); });
-  if (named.length > 4 || (pre.length && named.length > 3)) {
+  if (named.length > 7 || (pre.length && named.length > 6)) {
     named.sort(function (a, b) { return b.values.reduce(function (s, v) { return s + v; }, 0) - a.values.reduce(function (s, v) { return s + v; }, 0); });
-    pre = pre.concat(named.slice(3)); named = named.slice(0, 3);
+    pre = pre.concat(named.slice(6)); named = named.slice(0, 6);
   }
   if (pre.length) {
     named.push({ name: "Other", other: true,
@@ -8797,8 +8808,11 @@ function chChartSpec(t) {
    Plain SVG, colours written in as values (not CSS variables) so a copied or downloaded image looks
    the same outside the page. The categorical order was run through the colour-blind validator for
    both themes (light on #F7F7F9, dark on #1F1F22). */
-var CH_PAL_LIGHT = ["#1F57F5", "#06B6D4", "#F59E0B", "#8B5CF6"];
-var CH_PAL_DARK = ["#3B6BF6", "#0B98B3", "#C98208", "#9B6CF6"];
+/* Seven slots, in this order, passed the colour-blind validator for adjacent pairs in both themes
+   (light on #F7F7F9, dark on #1F1F22). The eighth company onwards folds into grey "Other" (user, 30 Sep:
+   every contributing company visible — seven is where distinct colours stop being distinguishable). */
+var CH_PAL_LIGHT = ["#1F57F5", "#06B6D4", "#F59E0B", "#8B5CF6", "#E87BA4", "#008300", "#E34948"];
+var CH_PAL_DARK = ["#3B6BF6", "#0B98B3", "#C98208", "#9B6CF6", "#D55181", "#008300", "#E66767"];
 function chTok(name, fb) {
   var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   return v || fb;
@@ -8857,6 +8871,19 @@ function chChartEl(spec, opt) {
   var dl = el("button", "chtblcp", "PNG");
   dl.title = "Download the chart as a PNG";
   acts.appendChild(cp); acts.appendChild(dl);
+  if (spec.type === "timeline") {
+    var rng = el("span", "chrng");
+    [["1M", "Last 4 weeks"], ["3M", "Last 13 weeks"], ["6M", "The whole period, by month"]].forEach(function (o) {
+      var b = el("button", (spec.win || "6M") === o[0] ? "on" : null, o[0]);
+      b.title = o[1];
+      b.onclick = function () {
+        spec.win = o[0];
+        if (box.parentNode) box.parentNode.replaceChild(chChartEl(spec, opt), box);
+      };
+      rng.appendChild(b);
+    });
+    acts.insertBefore(rng, acts.firstChild);
+  }
   head.appendChild(acts);
   box.appendChild(head);
 
@@ -8865,22 +8892,44 @@ function chChartEl(spec, opt) {
     return sv.faint ? (C.dark ? "#34353B" : "#DCDDE1") : sv.other ? C.other : C.pal[i % C.pal.length];
   };
   var unit = spec.unit || "";
+  /* A legend on every chart (user, 30 Sep). Several series: one entry each. One series, a timeline, a
+     heat map or gains and losses: what the mark means, and what hovering shows. */
+  var lg = el("div", "chleg");
+  var legItem = function (colr, text, shape) {
+    var it = el("span", "chlegi");
+    var sw = el("i"); sw.style.background = colr;
+    if (shape === "dot") sw.style.borderRadius = "50%";
+    it.appendChild(sw); it.appendChild(document.createTextNode(text));
+    lg.appendChild(it);
+  };
   if (spec.series.length > 1) {
-    var lg = el("div", "chleg");
-    spec.series.forEach(function (s, i) {
-      var it = el("span", "chlegi");
-      var sw = el("i"); sw.style.background = colour(i);
-      it.appendChild(sw); it.appendChild(document.createTextNode(s.name));
-      lg.appendChild(it);
-    });
-    box.appendChild(lg);
+    spec.series.forEach(function (s, i) { legItem(colour(i), s.name); });
+  } else if (spec.type === "timeline") {
+    legItem(C.pal[0], "One story", "dot");
+  } else if (spec.type === "diverge") {
+    legItem(C.pal[0], "Gained"); legItem(C.pal[2], "Lost");
+  } else if (spec.type === "heat") {
+    var hx0 = C.pal[(spec.hue || 0) % C.pal.length];
+    legItem(hx0 + "40", "Fewer stories"); legItem(hx0, "More stories");
+  } else if (spec.series.length === 1) {
+    legItem(colour(0), spec.series[0].name === "Stories" || !spec.series[0].name ? "Stories" : spec.series[0].name);
   }
+  var hint = spec.detail ? "Hover a bar for its split " + String(spec.detail.title || "").toLowerCase()
+           : spec.type === "timeline" ? "Hover a dot for the headline" : "";
+  if (hint) lg.appendChild(el("span", "chlegh", hint));
+  if (lg.firstChild) box.appendChild(lg);
 
   /* Sized to the conversation column as it is now drawn, so text stays at its real size. */
   var flowEl = document.querySelector(".chflow");
-  var W = Math.max(270, Math.min(760, flowEl && flowEl.clientWidth ? flowEl.clientWidth - 72 : (window.innerWidth || 800) - 80));
+  /* The full width of the answer card (user, 30 Sep: a single chart takes the full length). */
+  /* Measured on the answer column (.chpane, capped at 900px) less the reply card's padding and borders,
+     so the drawing is exactly as wide as the space and its text is never scaled down. */
+  var paneEl = document.querySelector(".chpane");
+  var paneW = Math.min(900, paneEl && paneEl.clientWidth ? paneEl.clientWidth : (window.innerWidth || 800) - 32);
+  var W = Math.max(260, paneW - 44);
   /* Half of a side-by-side pair; on a phone the pair stacks and each keeps the full width. */
   if (opt.half && (window.innerWidth || 800) >= 760) W = Math.max(270, Math.floor((W - 14) / 2));
+  if (opt.card) W = Math.max(270, Math.floor(W * ((window.innerWidth || 800) < 700 ? 0.86 : 0.74)));
   var fs = 12, svg, tipRows = [], wide = false;
   /* A label never runs past its column: cut to what fits, the full name stays in the tooltip. */
   /* A bar's tooltip: its figures, then what it is made of (spec.detail), with the chart's colour beside
@@ -8900,7 +8949,10 @@ function chChartEl(spec, opt) {
     return [lab, out];
   };
   var fitLab = function (l, px) { return chShortLab(l, Math.max(6, Math.min(30, Math.floor((px - 8) / 6.4)))); };
-  var tip = el("div", "chtip");
+  /* ONE tooltip for the page, fixed to the window: inside the chart it was clipped by the card and
+     vanished off the bottom. It flips above the pointer near the bottom edge, left near the right. */
+  var tip = document.getElementById("chTipG");
+  if (!tip) { tip = el("div", "chtip"); tip.id = "chTipG"; document.body.appendChild(tip); }
   var n = spec.labels.length, S = spec.series;
   var maxV = 0;
   if (spec.type === "heat") spec.grid.forEach(function (r) { r.forEach(function (v) { maxV = Math.max(maxV, v); }); });
@@ -8950,12 +9002,23 @@ function chChartEl(spec, opt) {
   } else if (spec.type === "timeline") {
     /* One lane per kind of activity, one dot per story, months along the top. */
     var tlw = Math.min(W * 0.34, 8 + 6.6 * Math.max.apply(null, spec.lanes.map(function (l) { return Math.min(30, l.length); })));
-    var tpw = W - tlw - 14, laneH = spec.series.length > 1 ? 30 : 24, top0 = 22, span = (spec.to - spec.from) || 1;
+    /* The window: the whole period by month, or the last 4 / 13 weeks up to the newest story, by week. */
+    var win = spec.win || "6M", tFrom = spec.from, tTo = spec.to, ticks = spec.ticks;
+    if (win !== "6M" && spec.points.length) {
+      var newestP = Math.max.apply(null, spec.points.map(function (p) { return p.ms; }));
+      tTo = chDay0(newestP) + 864e5;
+      var wk = win === "1M" ? 4 : 13;
+      var mon = new Date(chDay0(newestP)); mon.setDate(mon.getDate() - (mon.getDay() + 6) % 7);
+      tFrom = mon.getTime() - (wk - 1) * 7 * 864e5;
+      ticks = [];
+      for (var wt = tFrom; wt < tTo; wt += 7 * 864e5) ticks.push({ ms: wt, lab: new Date(wt).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) });
+    }
+    var tpw = W - tlw - 14, laneH = spec.series.length > 1 ? 30 : 24, top0 = 22, span = (tTo - tFrom) || 1;
     var TH = top0 + spec.lanes.length * laneH + 6;
     svg = chSvg("svg", { width: W, height: TH, viewBox: "0 0 " + W + " " + TH, role: "img", "aria-label": spec.title });
-    var tkEvery = Math.max(1, Math.ceil(46 / (tpw / Math.max(1, spec.ticks.length))));
-    spec.ticks.forEach(function (tk, ti) {
-      var tx = tlw + (tk.ms - spec.from) / span * tpw;
+    var tkEvery = Math.max(1, Math.ceil(46 / (tpw / Math.max(1, ticks.length))));
+    ticks.forEach(function (tk, ti) {
+      var tx = tlw + (tk.ms - tFrom) / span * tpw;
       svg.appendChild(chSvg("line", { x1: tx, x2: tx, y1: top0 - 4, y2: TH - 4, stroke: C.grid, "stroke-width": 1 }));
       if (ti % tkEvery) return;
       svg.appendChild(chSvg("text", { x: tx + 3, y: 13, "font-size": 10.5, fill: C.ink3 },
@@ -8967,9 +9030,9 @@ function chChartEl(spec, opt) {
       svg.appendChild(chSvg("text", { x: tlw - 8, y: ly + 4, "text-anchor": "end", "font-size": fs, fill: C.ink2 }, fitLab(l, tlw)));
     });
     var placed = {};
-    spec.points.slice().sort(function (a, b) { return a.ms - b.ms; }).forEach(function (p) {
+    spec.points.filter(function (p) { return p.ms >= tFrom && p.ms < tTo; }).sort(function (a, b) { return a.ms - b.ms; }).forEach(function (p) {
       var li = spec.lanes.indexOf(p.lane); if (li < 0) return;
-      var px = tlw + (p.ms - spec.from) / span * tpw, bucket = li + ":" + Math.round(px / 7);
+      var px = tlw + (p.ms - tFrom) / span * tpw, bucket = li + ":" + Math.round(px / 7);
       var k = placed[bucket] = (placed[bucket] || 0) + 1;
       /* With two or three companies, each rides its own line inside the lane. */
       var ns = spec.series.length, si = p.s || 0;
@@ -9108,7 +9171,7 @@ function chChartEl(spec, opt) {
 
   var plot = el("div", "chplot" + (wide ? " scroll" : ""));
   plot.appendChild(svg);
-  plot.appendChild(tip);
+
   box.appendChild(plot);
 
   /* Hover (and tap): the exact figures for one row or one period. */
@@ -9125,15 +9188,21 @@ function chChartEl(spec, opt) {
       row.appendChild(sw); row.appendChild(document.createTextNode(x[0] + ": " + x[1]));
       tip.appendChild(row);
     });
-    var pr = plot.getBoundingClientRect();
-    var x = (e.clientX || pr.left) - pr.left, y = (e.clientY || pr.top) - pr.top;
-    tip.style.left = Math.min(Math.max(4, x + 12), pr.width - 170) + "px";
-    tip.style.top = Math.max(0, y - 10) + "px";
     tip.classList.add("on");
+    var tw = tip.offsetWidth, th = tip.offsetHeight, vw = window.innerWidth, vh = window.innerHeight;
+    var cx = e.clientX, cy = e.clientY;
+    var tx = cx + 14 + tw > vw - 8 ? cx - tw - 14 : cx + 14;
+    var ty = cy + 12 + th > vh - 8 ? cy - th - 12 : cy + 12;
+    tip.style.left = Math.max(8, tx) + "px";
+    tip.style.top = Math.max(8, ty) + "px";
   };
   svg.addEventListener("mousemove", showTip);
   svg.addEventListener("click", showTip);
   svg.addEventListener("mouseleave", function () { tip.classList.remove("on"); });
+  if (!window.__chTipScroll) {
+    window.__chTipScroll = true;
+    document.addEventListener("scroll", function () { var g = document.getElementById("chTipG"); if (g) g.classList.remove("on"); }, true);
+  }
 
   if (spec.note) box.appendChild(el("div", "chtbln", spec.note));
 
@@ -9851,11 +9920,17 @@ function chAnsProfileMulti(q, comps, P, d, ix) {
   /* Words: each company's own list, side by side. */
   var kw = ok.map(function (p) { return find(p, /set .* apart/); }).filter(Boolean);
   if (kw.length) {
-    charts.push(pairOf(kw.map(function (t) { var sp = chChartSpec(t); return sp; }).filter(Boolean)));
+    var kwc = pairOf(kw.map(function (t) { var sp = chChartSpec(t); return sp; }).filter(Boolean));
+    if (kwc.pair) kwc.carousel = true;
+    charts.push(kwc);
     tables = tables.concat(kw);
   }
   var fp = ok.map(function (p) { return find(p, /by market, month by month/); }).filter(Boolean);
-  if (fp.length) { charts.push(pairOf(fp.map(chChartSpec).filter(Boolean))); tables = tables.concat(fp); }
+  if (fp.length) {
+    var fpc = pairOf(fp.map(chChartSpec).filter(Boolean));
+    if (fpc.pair) fpc.carousel = true;
+    charts.push(fpc); tables = tables.concat(fp);
+  }
   var aT = grouped(/Your attention/, "Your attention: what you did with each company's stories (%)", "%", "", 2);
   var SIG = { "Saved": function (x) { return x.buckets.indexOf("saved") >= 0; }, "Published": function (x) { return x.published; },
               "Verified": function (x) { return x.verified; }, "Liked": function (x) { return x.liked; },
@@ -11823,7 +11898,7 @@ function chRenderTurn(m) {
   /* A profile's KPIs come straight after its headline, in Basic and Smart alike. */
   if (!m.pending && m.kind === "profile" && arr(m.stats).length) bot.appendChild(chStatTiles(m.stats));
   if (!m.pending && arr(m.pairStats).length) {
-    var ps = el("div", "chpair");
+    var ps = el("div", "chpair" + (m.pairStats.length === 2 ? "" : " chstack"));
     var PAL = chInk().pal;
     m.pairStats.forEach(function (p) {
       var col = el("div", "chpcol");
@@ -11841,8 +11916,15 @@ function chRenderTurn(m) {
        added any) stay open — they are part of its answer, and carry the number check. */
     arr(m.charts).forEach(function (c) {
       if (!c.pair) { bot.appendChild(chChartEl(c)); return; }
-      var pr = el("div", "chpair");
-      c.pair.forEach(function (sp) { pr.appendChild(chChartEl(sp, { half: true })); });
+      if (c.carousel) {
+        var car = el("div", "chcar");
+        c.pair.forEach(function (sp) { car.appendChild(chChartEl(sp, { card: true })); });
+        bot.appendChild(car);
+        return;
+      }
+      var two = c.pair.length === 2;
+      var pr = el("div", "chpair" + (two ? "" : " chstack"));
+      c.pair.forEach(function (sp) { pr.appendChild(chChartEl(sp, { half: two })); });
       bot.appendChild(pr);
     });
     if (m.chartNote) bot.appendChild(el("div", "chcnote", m.chartNote));
