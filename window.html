@@ -7919,6 +7919,9 @@ function chAnsCompare(q, P, d, ix, T) {
     var mix = chTop(chCountBy(inAny, function (z) { return [z.category || "Uncategorised"]; }), 6);
     if (mix.length >= 2) {
       tables.push({ title: "Themes, side by side", cols: ["Theme"].concat(sides.map(function (x) { return x.t.label; })), bars: "row",
+        detail: chDetailBy(mix.map(function (m) { return m[0]; }), function (k) {
+          return inAny.filter(function (z) { return (z.category || "Uncategorised") === k; });
+        }, T.type === "competitor" ? "market" : "competitor"),
         rows: mix.map(function (m) {
           return [m[0]].concat(sides.map(function (x) {
             return String(x.docs.filter(function (z) { return (z.category || "Uncategorised") === m[0]; }).length);
@@ -8058,19 +8061,8 @@ function chAnsBreakdown(q, P, d, ix, dims) {
 
   /* What each bar is made of, for the hover: a theme's companies, a company's themes, a market's or a
      month's themes — or, in a cross view, the full second dimension rather than the top three. */
-  var compl = d2 || chDimByKey(d1.k === "category" ? "competitor" : "category");
-  if (tables[0] && compl) {
-    var det = {};
-    shown.forEach(function (kv) {
-      var sub = docsOf(kv[0]);
-      var parts = chTop(chCountBy(sub, compl.of), 10);
-      if (compl.k === "competitor") {
-        var none = sub.filter(function (z) { return !z.cm.length; }).length;
-        if (none) parts.push(["No tracked company", none]);
-      }
-      det[kv[0]] = { total: sub.length, parts: parts };
-    });
-    tables[0].detail = { title: "By " + compl.label.toLowerCase().replace(" of", ""), rows: det };
+  if (tables[0]) {
+    tables[0].detail = chDetailBy(shown.map(function (kv) { return kv[0]; }), docsOf, d2 ? d2.k : chComplOf(d1.k));
   }
   var leadKey = live[0] && live[0][0];
   if (d1.time && live.length) leadKey = live[live.length - 1][0];
@@ -8124,10 +8116,16 @@ function chAnsDigest(q, P, d, ix) {
     ["Competitors named", String(Object.keys(chCountBy(docs, function (z) { return z.cm; })).length), comps.length ? "most: " + comps[0][0] : ""],
     ["Published", String(docs.filter(function (z) { return z.published; }).length), "already in a report"]
   ];
-  var tables = [{ title: "By theme" + (scope ? " · " + scope : ""), cols: ["Theme", "Stories", "The one to read"], rows: rows, bars: "col" }];
+  var tables = [{ title: "By theme" + (scope ? " · " + scope : ""), cols: ["Theme", "Stories", "The one to read"], rows: rows, bars: "col",
+                  detail: chDetailBy(byCat.map(function (kv) { return kv[0]; }), function (k) {
+                    return docs.filter(function (z) { return (z.category || "Uncategorised") === k; });
+                  }, "competitor") }];
   if (lands.length >= 2) {
     tables.push({ title: "By market", cols: ["Market", "Stories", "Share"], bars: "col",
-                  rows: lands.map(function (kv) { return [kv[0], String(kv[1]), chPct(kv[1], docs.length)]; }) });
+                  rows: lands.map(function (kv) { return [kv[0], String(kv[1]), chPct(kv[1], docs.length)]; }),
+                  detail: chDetailBy(lands.map(function (kv) { return kv[0]; }), function (k) {
+                    return docs.filter(function (z) { return z.mk.indexOf(k) >= 0; });
+                  }, "category") });
   }
   var items = byCat.slice(0, 6).map(function (kv) { return pickOf(kv[0]); }).filter(Boolean);
   return { q: q, kind: "digest", shapeHint: "summary", lead: lead, stats: stats, tables: tables, allDocs: docs,
@@ -8629,6 +8627,27 @@ function chBuckets(docs, range) {
   }
   return { weekly: weekly, keys: keys };
 }
+/* HOVER DETAIL, one helper for every chart (user, 30 Sep: the hover must show what a bar is made of,
+   not repeat its count). `keys` are the bars; `subOf(key)` gives the stories behind one; `complKey` is
+   the dimension to split them by. Themes split by company (with "No tracked company"), anything else by
+   theme, unless the caller says otherwise. */
+function chDetailBy(keys, subOf, complKey) {
+  var compl = chDimByKey(complKey);
+  if (!compl) return null;
+  var det = {};
+  keys.forEach(function (k) {
+    var sub = subOf(k);
+    var parts = chTop(chCountBy(sub, compl.of), 10);
+    if (compl.k === "competitor") {
+      var none = sub.filter(function (z) { return !z.cm.length; }).length;
+      if (none) parts.push(["No tracked company", none]);
+    }
+    det[k] = { total: sub.length, parts: parts };
+  });
+  return { title: "By " + compl.label.toLowerCase().replace(" of", ""), rows: det };
+}
+function chComplOf(k) { return k === "category" ? "competitor" : "category"; }
+
 function chOverTime(groups, range, title) {
   var all = [];
   groups.forEach(function (g) { all = all.concat(g.docs); });
@@ -8642,7 +8661,11 @@ function chOverTime(groups, range, title) {
         return String(g.docs.filter(function (d) { return d.ms >= k.from && d.ms < k.to; }).length);
       }));
     }),
-    bars: "col", chart: groups.length > 1 ? "line" : "col"
+    bars: "col", chart: groups.length > 1 ? "line" : "col",
+    detail: chDetailBy(b.keys.map(function (k) { return k.lab; }), function (lab) {
+      var k = b.keys.filter(function (x) { return x.lab === lab; })[0];
+      return all.filter(function (d) { return d.ms >= k.from && d.ms < k.to; });
+    }, "category")
   };
 }
 function chByTable(docs, dimK, title, n) {
@@ -8650,7 +8673,10 @@ function chByTable(docs, dimK, title, n) {
   var rows = chTop(chCountBy(docs, dm.of), n || 8);
   if (rows.length < 2) return null;
   return { title: title, cols: [dm.label, "Stories"], rows: rows.map(function (r) { return [r[0], String(r[1])]; }),
-           bars: "col", chart: "hbar" };
+           bars: "col", chart: "hbar",
+           detail: chDetailBy(rows.map(function (r) { return r[0]; }), function (k) {
+             return docs.filter(function (d) { return dm.of(d).indexOf(k) >= 0; });
+           }, chComplOf(dimK)) };
 }
 
 function chAnalytics(m) {
@@ -8720,7 +8746,7 @@ function chChartSpec(t) {
     var keep = rows.filter(function (r) { return r.slice(1).every(isNum) && !/phone/i.test(r[0]); });
     if (!keep.length) return null;
     var series = cols.slice(1).map(function (c, i) { return { name: c, values: keep.map(function (r) { return num(r[i + 1]); }) }; });
-    return { type: "hbar", title: t.title, labels: keep.map(function (r) { return r[0]; }), series: series, table: t };
+    return { type: "hbar", title: t.title, labels: keep.map(function (r) { return r[0]; }), series: series, table: t, detail: t.detail };
   }
   /* Everything else: first column labels, the figure columns as series (Share and Total dropped —
      they restate the others). */
@@ -8838,7 +8864,11 @@ function chChartEl(spec) {
     if (!dd) return [lab, rows];
     var colourOf = {};
     rows.forEach(function (x) { colourOf[x[0]] = x[2]; });
-    var out = spec.series.length > 1 ? [["Stories", dd.total, null]] : rows;
+    /* In a cross view the parts ARE the series, so the total leads and the parts carry the colours. In
+       a side-by-side chart they are something else, so each side's figure stays, then the parts. */
+    var isCross = dd.parts.some(function (p) { return colourOf[p[0]]; });
+    var out = spec.series.length > 1 && isCross ? [["Stories", dd.total, null]] : rows;
+    if (!dd.parts.length) return [lab, out];
     out = out.concat([[spec.detail.title, "", null]]);
     dd.parts.forEach(function (p) { out.push([p[0], p[1], colourOf[p[0]] || null]); });
     return [lab, out];
@@ -9247,7 +9277,11 @@ function chAnsProfile(q, comp, P, d, ix) {
     note: "Peers = every story naming another tracked company (" + peers.length + "). Above 1× means " + comp.name + " talks about it more than they do." };
 
   var perMonth = { title: comp.name + ": stories per month", chart: "col", cols: ["Month", "Stories"],
-    rows: months.map(function (m) { return [m.lab, String(cnt(mine, m.from, m.to))]; }) };
+    rows: months.map(function (m) { return [m.lab, String(cnt(mine, m.from, m.to))]; }),
+    detail: chDetailBy(months.map(function (m) { return m.lab; }), function (lab) {
+      var mm = months.filter(function (x) { return x.lab === lab; })[0];
+      return mine.filter(function (x) { return x.ms >= mm.from && x.ms < mm.to; });
+    }, "activity") };
 
   var others = ix.docs.filter(function (x) { return !cf(x) && inR(x); });
   var tables = [heat, focusT].concat(chProfileMore(comp, mine, peers, others, months, d, ix), [perMonth]);

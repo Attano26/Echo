@@ -11,7 +11,7 @@
 
    Bump VERSION on every deploy. That is what tells every installed copy that
    something changed. */
-const VERSION = "echo-2026-09-30-ask-chartmenu";
+const VERSION = "echo-2026-09-30-ask-hover";
 
 const ASSETS = [
   "./",
