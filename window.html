@@ -9483,6 +9483,8 @@ function chProducts(mine, keyProduct) {
       if (/^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(first)) return;
       if (/^(on|in|at|by|class|part|phase|section|chapter|tier|grade|level|type|zone|top|vol|no|page|achieve|from|ecbc|q[1-4]|covid|iso|en|din|is|bis|gst|rs|inr|usd|eur|nbc|wave|round|stage|step|block|sector|plot|unit|floor|tower)$/i.test(first)) return;
       if (!(/^[A-Z]{2,4}$/.test(first) || /[a-z][A-Z]/.test(first))) return;
+      /* Four or more capitals scattered through a mixed-case word is an ID out of a link, not a product. */
+      if (/[a-z]/.test(first) && (first.match(/[A-Z]/g) || []).length >= 4) return;
     }
     var r = seen[k] || (seen[k] = { name: name, n: 0, first: Infinity, last: 0 });
     r.n++;
