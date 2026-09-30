@@ -1891,6 +1891,14 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
 .chtip{max-width:240px}
 .chtip div{display:flex;align-items:center;gap:6px;white-space:nowrap}
 .chcnote{margin-top:12px;font-size:12.5px;color:var(--ink-3)}
+/* Two companies side by side: two columns on a wide screen, stacked on a phone. */
+.chpair{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.chpair > .chchart{margin-top:0;min-width:0}
+.chpcol{min-width:0}
+.chpcol .chstat{margin-top:6px}
+.chphd{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:500;color:var(--ink)}
+.chphd i{width:10px;height:10px;border-radius:3px;display:inline-block}
+@media (max-width:760px){.chpair{grid-template-columns:1fr}}
 /* Folded: the data under the charts, and the sources and stories under any analytical answer. */
 .chfold{margin-top:12px}
 .chfold > summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
@@ -2779,6 +2787,9 @@ function applyTheme() {
     b.innerHTML = isDark() ? ICON_SUN : ICON_MOON;
     b.title = lbl;
   });
+  /* Ask's charts carry their colours as values (so a copied image looks right anywhere), which means a
+     theme change must redraw them — otherwise they keep the old theme's ink on the new background. */
+  if (typeof chRedrawCharts === "function") chRedrawCharts();
 }
 /* The theme ripple, as on the phone (build 89): the page in the new theme is revealed through a circle growing
    from the button, so every element changes as the edge reaches it rather than under a flat colour wash.
@@ -7456,7 +7467,7 @@ function chTimeRanges(q) {
   });
   each(/\b(this|current) year\b/g, function (m) { add(m, chMonth0(Y, 0), today + 864e5, "this year"); });
   each(/\blast year\b/g, function (m) { add(m, chMonth0(Y - 1, 0), chMonth0(Y, 0), "last year"); });
-  each(/\b(?:last|past|previous)\s+(\d{1,3}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|a)\s+(days?|weeks?|months?)\b/g, function (m) {
+  each(/\b(?:(?:last|past|previous)|(?:for|over|in|during|across)(?:\s+the)?)\s+(\d{1,3}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|a)\s+(days?|weeks?|months?)\b/g, function (m) {
     var n = /\d/.test(m[1]) ? +m[1] : CH_NUMW[m[1]], u = m[2].charAt(0);
     if (!n) return;
     var from = u === "d" ? today - (n - 1) * 864e5
@@ -8680,6 +8691,7 @@ function chByTable(docs, dimK, title, n) {
 }
 
 function chAnalytics(m) {
+  if (m.chartsPreset) return m;             /* a side-by-side profile builds its own charts */
   m.charts = [];
   if (m.kind === "profile") {
     m.charts = arr(m.tables).map(chChartSpec).filter(Boolean);
@@ -8820,7 +8832,19 @@ function chBarPath(x, y, w, h, horiz) {
          "a" + r + "," + r + " 0 0 1 " + r + "," + r + "v" + (h - r) + "z";
 }
 
-function chChartEl(spec) {
+/* Every chart on screen, drawn again in the current theme, where it stands. Also the company dots of a
+   side-by-side profile, which take their colour from the same palette. */
+function chRedrawCharts() {
+  document.querySelectorAll(".chchart").forEach(function (old) {
+    if (!old._spec || !old.parentNode) return;
+    old.parentNode.replaceChild(chChartEl(old._spec, old._opt), old);
+  });
+  var pal = chInk().pal;
+  document.querySelectorAll(".chphd i[data-hue]").forEach(function (d) { d.style.background = pal[+d.getAttribute("data-hue") % pal.length]; });
+}
+
+function chChartEl(spec, opt) {
+  opt = opt || {};
   spec.series = spec.series || [];          /* timelines and diverging bars carry their own data */
   spec.labels = spec.labels || spec.lanes || [];
   var C = chInk();
@@ -8855,6 +8879,8 @@ function chChartEl(spec) {
   /* Sized to the conversation column as it is now drawn, so text stays at its real size. */
   var flowEl = document.querySelector(".chflow");
   var W = Math.max(270, Math.min(760, flowEl && flowEl.clientWidth ? flowEl.clientWidth - 72 : (window.innerWidth || 800) - 80));
+  /* Half of a side-by-side pair; on a phone the pair stacks and each keeps the full width. */
+  if (opt.half && (window.innerWidth || 800) >= 760) W = Math.max(270, Math.floor((W - 14) / 2));
   var fs = 12, svg, tipRows = [], wide = false;
   /* A label never runs past its column: cut to what fits, the full name stays in the tooltip. */
   /* A bar's tooltip: its figures, then what it is made of (spec.detail), with the chart's colour beside
@@ -8886,7 +8912,9 @@ function chChartEl(spec) {
   if (spec.type === "heat") {
     /* One hue, light to dark: more stories, deeper colour. Figures in the cells, so the colour is never
        the only way to read it. */
-    var hueRGB = C.dark ? [59, 107, 246] : [31, 87, 245];
+    var hx = C.pal[(spec.hue || 0) % C.pal.length];
+    var hueRGB = [parseInt(hx.slice(1, 3), 16), parseInt(hx.slice(3, 5), 16), parseInt(hx.slice(5, 7), 16)];
+    if (spec.maxV) maxV = spec.maxV;         /* a pair shares one scale, so the shades compare */
     var hlw = Math.min(W * 0.36, 8 + 6.6 * Math.max.apply(null, spec.labels.map(function (l) { return Math.min(30, String(l).length); })));
     var nc = spec.cols.length, totW = 36;
     /* Too narrow for readable cells (a phone): keep the cells readable and let the map scroll sideways. */
@@ -8922,7 +8950,7 @@ function chChartEl(spec) {
   } else if (spec.type === "timeline") {
     /* One lane per kind of activity, one dot per story, months along the top. */
     var tlw = Math.min(W * 0.34, 8 + 6.6 * Math.max.apply(null, spec.lanes.map(function (l) { return Math.min(30, l.length); })));
-    var tpw = W - tlw - 14, laneH = 24, top0 = 22, span = (spec.to - spec.from) || 1;
+    var tpw = W - tlw - 14, laneH = spec.series.length > 1 ? 30 : 24, top0 = 22, span = (spec.to - spec.from) || 1;
     var TH = top0 + spec.lanes.length * laneH + 6;
     svg = chSvg("svg", { width: W, height: TH, viewBox: "0 0 " + W + " " + TH, role: "img", "aria-label": spec.title });
     var tkEvery = Math.max(1, Math.ceil(46 / (tpw / Math.max(1, spec.ticks.length))));
@@ -8943,12 +8971,16 @@ function chChartEl(spec) {
       var li = spec.lanes.indexOf(p.lane); if (li < 0) return;
       var px = tlw + (p.ms - spec.from) / span * tpw, bucket = li + ":" + Math.round(px / 7);
       var k = placed[bucket] = (placed[bucket] || 0) + 1;
-      var py = top0 + li * laneH + laneH / 2 + (k === 1 ? 0 : (k % 2 ? 1 : -1) * Math.min(8, 3 * Math.floor(k / 2)));
-      svg.appendChild(chSvg("circle", { cx: px, cy: py, r: 4.5, fill: C.pal[0], stroke: C.bg, "stroke-width": 2 }));
+      /* With two or three companies, each rides its own line inside the lane. */
+      var ns = spec.series.length, si = p.s || 0;
+      var base = ns > 1 ? (si - (ns - 1) / 2) * 7 : 0;
+      var py = top0 + li * laneH + laneH / 2 + base + (k === 1 ? 0 : (k % 2 ? 1 : -1) * Math.min(ns > 1 ? 3 : 8, 3 * Math.floor(k / 2)));
+      var dc = ns > 1 ? C.pal[si % C.pal.length] : C.pal[0];
+      svg.appendChild(chSvg("circle", { cx: px, cy: py, r: ns > 1 ? 4 : 4.5, fill: dc, stroke: C.bg, "stroke-width": 2 }));
       var hitd = chSvg("circle", { cx: px, cy: py, r: 9, fill: "transparent" });
       hitd.setAttribute("data-tip", tipRows.length);
       svg.appendChild(hitd);
-      tipRows.push([chClip(p.title, 120), [[p.lane, chShort(p.ms), C.pal[0]]]]);
+      tipRows.push([chClip(p.title, 120), [[(ns > 1 ? spec.series[si].name + " · " : "") + p.lane, chShort(p.ms), dc]]]);
     });
   } else if (spec.type === "diverge") {
     /* Gains to the right in blue, losses to the left in amber, from a shared zero. */
@@ -9152,6 +9184,8 @@ function chChartEl(spec) {
     });
   };
   dl.onclick = function () { toPng(download); };
+  /* Remembered, so a theme change can draw it again in place (chRedrawCharts). */
+  box._spec = spec; box._opt = opt;
   return box;
 }
 
@@ -9208,7 +9242,7 @@ function chActsOf(doc) {
 }
 
 var CH_PROFILE_MONTHS = 6;
-function chAnsProfile(q, comp, P, d, ix) {
+function chAnsProfile(q, comp, P, d, ix, opt) {
   var cf = chCompFilter(comp);
   var rng = P && P.range;
   var inR = function (x) { return chInRange(x, rng); };
@@ -9246,13 +9280,7 @@ function chAnsProfile(q, comp, P, d, ix) {
     .sort(function (a, b) { return b.s / b.ps - a.s / a.ps; })[0];
 
   /* Heat map: activity × the last six months up to the newest story (or the asked-for range). */
-  var newest = mine[0].ms || now;
-  var months = [];
-  var nd = new Date(newest);
-  for (var i = CH_PROFILE_MONTHS - 1; i >= 0; i--) {
-    var a0 = new Date(nd.getFullYear(), nd.getMonth() - i, 1).getTime();
-    months.push({ lab: chMonLabel(a0), from: a0, to: new Date(nd.getFullYear(), nd.getMonth() - i + 1, 1).getTime() });
-  }
+  var months = opt && opt.months ? opt.months : chProfileMonths(mine, rng);
   var heatRows = used.filter(function (l) { return mc[l]; });
   var heat = { title: "Where " + comp.name + "’s effort went, month by month", chart: "heat",
     cols: ["Activity"].concat(months.map(function (m) { return m.lab; }), ["Total"]),
@@ -9321,8 +9349,15 @@ function chAnsProfile(q, comp, P, d, ix) {
 /* In the profile skill every question about a company becomes its profile. A question about none
    asks which, with every tracked company one tap away. */
 function chProfileTurn(q, m) {
-  if (m.social || /^(story|compare|metric|help|count)$/.test(m.kind)) return m;
+  if (m.social || /^(story|metric|help|count)$/.test(m.kind)) return m;
   var P = m.P || chParse(q);
+  if (m.kind === "compare" && !P.ents.comps.length) return m;
+  /* Two or three companies named: profiled side by side. */
+  if (P.ents.comps.length >= 2) {
+    var mm = chAnsProfileMulti(q, P.ents.comps, P, S.data || {}, chIndex());
+    mm.P = P; mm.readAs = m.readAs; mm.base = m.base;
+    return mm;
+  }
   var comp = P.ents.comps[0];
   if (!comp) {
     var ix = chIndex();
@@ -9680,6 +9715,156 @@ function chChartMenu() {
     "Markets: " + ix.lands.map(function (c) { return c.name; }).join(", "),
     "Themes: " + themes.join(", ")
   ].join("\n");
+}
+
+
+/* ---------- two or three companies, profiled side by side (user, 30 Sep) ----------
+   "Fenesta vs Hindalco company profile": every view the single profile has, for each company, on the
+   same months, the same activity rows and the same colour scale, so they can be read against each
+   other. Each company keeps one colour everywhere: its dots on the timeline, its heat map, its bars. */
+function chMonthsSpan(from, to) {
+  var out = [], d0 = new Date(from), end = to - 1;
+  for (var k = 0; k < 24; k++) {
+    var a = new Date(d0.getFullYear(), d0.getMonth() + k, 1).getTime();
+    if (a > end) break;
+    out.push({ lab: chMonLabel(a), from: a, to: new Date(d0.getFullYear(), d0.getMonth() + k + 1, 1).getTime() });
+  }
+  return out.slice(-6);
+}
+function chProfileMonths(docs, rng) {
+  var now = chDay0(Date.now()) + 864e5;
+  if (rng) return chMonthsSpan(rng.from, Math.min(rng.to, now));
+  var dated = docs.filter(function (x) { return x.ms; });
+  var newest = dated.length ? Math.max.apply(null, dated.map(function (x) { return x.ms; })) : now - 1;
+  return chMonthsTo(newest, CH_PROFILE_MONTHS);
+}
+
+function chAnsProfileMulti(q, comps, P, d, ix) {
+  comps = comps.slice(0, 3);
+  var rng = P && P.range;
+  var all = ix.docs.filter(function (x) { return chInRange(x, rng) && comps.some(function (c) { return chCompFilter(c)(x); }); });
+  var months = chProfileMonths(all, rng);
+  var ps = comps.map(function (c) { return chAnsProfile(q, c, P, d, ix, { months: months }); });
+  var ok = ps.filter(function (p) { return p.kind === "profile"; });
+  var empty = comps.filter(function (c, i) { return ps[i].kind !== "profile"; }).map(function (c) { return c.name; });
+  if (ok.length < 2) {
+    var one = ok[0] || ps[0];
+    if (empty.length && ok.length) one.note = (one.note ? one.note + " " : "") + "Nothing on " + chList(empty) + (rng ? " for " + rng.label : "") + " to set beside it.";
+    return one;
+  }
+  var names = ok.map(function (p) { return p.profile; });
+  var find = function (p, re) { return arr(p.tables).filter(function (t) { return re.test(t.title); })[0]; };
+  var charts = [], tables = [];
+  var pairOf = function (specs) { return specs.length > 1 ? { pair: specs } : specs[0]; };
+
+  /* Heat maps: same rows (every activity either company has), same months, one colour scale. */
+  var heatT = ok.map(function (p) { return find(p, /effort went/); });
+  var rowSet = [];
+  CH_ACTS.map(function (a) { return a.label; }).concat([CH_ACT_OTHER]).forEach(function (l) {
+    if (heatT.some(function (t) { return t && t.rows.some(function (r) { return r[0] === l; }); })) rowSet.push(l);
+  });
+  var aligned = heatT.map(function (t, i) {
+    var byL = {};
+    arr(t && t.rows).forEach(function (r) { byL[r[0]] = r; });
+    var width = months.length;
+    return { title: names[i] + ": effort by month", chart: "heat", cols: t.cols,
+             rows: rowSet.map(function (l) { return byL[l] || [l].concat(months.map(function () { return "0"; }), ["0"]); }) };
+  });
+  var hmax = 0;
+  aligned.forEach(function (t) { t.rows.forEach(function (r) { r.slice(1, -1).forEach(function (v) { hmax = Math.max(hmax, +v || 0); }); }); });
+  charts.push(pairOf(aligned.map(function (t, i) {
+    var sp = chChartSpec(t); sp.hue = i; sp.maxV = hmax; return sp;
+  })));
+  tables = tables.concat(aligned);
+
+  /* Timeline: one chart, a colour per company. */
+  var tl = ok.map(function (p) { return find(p, /what happened when/); });
+  var pts = [], lanes = [];
+  tl.forEach(function (t, i) {
+    if (!t || !t.spec) return;
+    t.spec.points.forEach(function (p) { pts.push({ lane: p.lane, ms: p.ms, title: p.title, s: i }); });
+  });
+  CH_ACTS.map(function (a) { return a.label; }).concat([CH_ACT_OTHER]).forEach(function (l) {
+    if (pts.some(function (p) { return p.lane === l; })) lanes.push(l);
+  });
+  if (pts.length >= 2) {
+    var tlT = { title: names.join(" vs ") + ": what happened when", cols: ["Date", "Company", "Activity", "Story"],
+      rows: pts.slice().sort(function (a, b) { return b.ms - a.ms; }).slice(0, 50)
+        .map(function (p) { return [chShort(p.ms), names[p.s], p.lane, chClip(p.title, 100)]; }) };
+    charts.push({ type: "timeline", title: tlT.title, lanes: lanes, points: pts, from: months[0].from,
+                  to: months[months.length - 1].to, ticks: months.map(function (m) { return { ms: m.from, lab: m.lab }; }),
+                  series: names.map(function (n) { return { name: n, values: [] }; }), table: tlT });
+    tables.push(tlT);
+  }
+
+  /* Grouped: focus (share of each company's stories by activity), stories per month, attention. */
+  var grouped = function (re, title, unit, labelCol, valCol) {
+    var ts = ok.map(function (p) { return find(p, re); });
+    if (ts.some(function (t) { return !t; })) return;
+    var labs = [];
+    ts.forEach(function (t) { t.rows.forEach(function (r) { if (labs.indexOf(r[0]) < 0) labs.push(r[0]); }); });
+    var val = function (t, l) { var r = t.rows.filter(function (x) { return x[0] === l; })[0]; return r ? parseFloat(r[valCol]) || 0 : 0; };
+    var t2 = { title: title, cols: [labelCol].concat(names), rows: labs.map(function (l) {
+      return [l].concat(ts.map(function (t) { return String(val(t, l)) + (unit || ""); }));
+    }) };
+    tables.push(t2);
+    return t2;
+  };
+  var fT = grouped(/vs other tracked companies/, "What each company's stories are about (% of its stories)", "%", "Activity", 2);
+  if (fT) charts.push({ type: "hbar", title: fT.title, unit: "%", labels: fT.rows.map(function (r) { return r[0]; }),
+    series: names.map(function (n, i) { return { name: n, values: fT.rows.map(function (r) { return parseFloat(r[i + 1]) || 0; }) }; }), table: fT });
+  var mT = grouped(/stories per month/, "Stories per month", "", "Month", 1);
+  if (mT) {
+    mT.rows.sort(function (a, b) { return (Date.parse("1 " + a[0]) || 0) - (Date.parse("1 " + b[0]) || 0); });
+    charts.push({ type: "line", title: mT.title, labels: mT.rows.map(function (r) { return r[0]; }),
+      series: names.map(function (n, i) { return { name: n, values: mT.rows.map(function (r) { return parseFloat(r[i + 1]) || 0; }) }; }), table: mT });
+  }
+  /* Words: each company's own list, side by side. */
+  var kw = ok.map(function (p) { return find(p, /set .* apart/); }).filter(Boolean);
+  if (kw.length) {
+    charts.push(pairOf(kw.map(function (t) { var sp = chChartSpec(t); return sp; }).filter(Boolean)));
+    tables = tables.concat(kw);
+  }
+  var fp = ok.map(function (p) { return find(p, /by market, month by month/); }).filter(Boolean);
+  if (fp.length) { charts.push(pairOf(fp.map(chChartSpec).filter(Boolean))); tables = tables.concat(fp); }
+  var aT = grouped(/Your attention/, "Your attention: what you did with each company's stories (%)", "%", "", 2);
+  if (aT) charts.push({ type: "hbar", title: aT.title, unit: "%", labels: aT.rows.map(function (r) { return r[0]; }),
+    series: names.map(function (n, i) { return { name: n, values: aT.rows.map(function (r) { return parseFloat(r[i + 1]) || 0; }) }; }), table: aT });
+
+  /* Evidence, one table each, with the company named on every row. */
+  var moves = [];
+  ok.forEach(function (p) {
+    var t = find(p, /Latest moves/);
+    arr(t && t.rows).forEach(function (r) { moves.push([r[0], p.profile, r[1], r[2]]); });
+  });
+  moves.sort(function (a, b) { return (Date.parse(b[0]) || 0) - (Date.parse(a[0]) || 0); });
+  tables.push({ title: "Latest moves, one per kind", cols: ["Date", "Company", "Activity", "Story"], rows: moves, noChart: true });
+  var prods = [];
+  ok.forEach(function (p) {
+    var t = find(p, /Product lines/);
+    arr(t && t.rows).forEach(function (r) { prods.push([p.profile].concat(r)); });
+  });
+  if (prods.length) tables.push({ title: "Product lines named", cols: ["Company", "Product", "Stories", "First seen", "Last seen"], rows: prods, noChart: true });
+
+  var lead = ok.map(function (p) { return p.lead.replace(/<\/?b>/g, function (x) { return x; }); }).join("<br>");
+  var s30 = ok.map(function (p) { var st = p.stats.filter(function (x) { return x[0] === "Last 30 days"; })[0]; return st ? +st[1] : 0; });
+  var lead2 = ok.map(function (p) { return "<b>" + esc(p.profile) + "</b>: " + chPl(p.allDocs.length, "story", "stories") + ", mostly " +
+    esc(String((p.stats.filter(function (x) { return x[0] === "Main focus"; })[0] || [])[1] || "—")); }).join("; ") + ".";
+  var loud = s30[0] === s30[1] ? "Level over the last 30 days (" + s30[0] + " each)."
+           : "<b>" + esc(names[s30[0] > s30[1] ? 0 : 1]) + "</b> is louder over the last 30 days (" + Math.max(s30[0], s30[1]) + " to " + Math.min(s30[0], s30[1]) + ").";
+  var mine = [];
+  ok.forEach(function (p) { mine = mine.concat(p.allDocs); });
+  return { q: q, kind: "profile", shapeHint: "profile", multi: true, profile: names.join(" vs "),
+           lead: lead2 + " " + loud + (rng ? " Period: " + esc(rng.label) + "." : ""),
+           pairStats: ok.map(function (p, i) { return { name: p.profile, stats: p.stats, hue: i }; }),
+           stats: [], tables: tables, charts: charts, chartsPreset: true,
+           items: chWeave(ok.map(function (p) { return p.allDocs; }), 6), context: chWeave(ok.map(function (p) { return p.allDocs; }), 30),
+           allDocs: mine,
+           dbFacts: [].concat.apply([], ok.map(function (p) { return arr(p.dbFacts).map(function (f) { return [p.profile + " · " + f[0], f[1]]; }); })),
+           dbNotes: ok.map(function (p) { return p.dbNotes ? p.profile + ": " + p.dbNotes : ""; }).filter(Boolean).join("\n\n"),
+           why: "The newest stories of each, alternating.",
+           note: (empty.length ? "Nothing on " + chList(empty) + " in this period. " : "") +
+                 "Each company keeps one colour in every chart. Figures are counts of stories you hold." };
 }
 
 /* ---------- router ----------
@@ -11257,13 +11442,15 @@ function chAsk(q) {
   CH_PH_I++;                 /* next question gets a different hint */
   CH_DRAFT = "";
   var m = chAnswer(q);        // oldest first: the conversation grows DOWN into the composer
-  if (chAgent() === "profile") m = chProfileTurn(q, m);
+  /* The agent is the chip's, or "profile" for this turn when the question asks for a profile by name. */
+  var turnAgent = /\bprofiles?\b/i.test(q) && m.P && m.P.ents.comps.length ? "profile" : chAgent();
+  if (turnAgent === "profile") m = chProfileTurn(q, m);
   /* The composed reply is kept whatever happens next. It is the fallback if the call fails, and
      it is also part of the prompt, so the model rephrases figures rather than recounting them. */
   m.composed = m.lead;
   m.shape = chShapeOf(m);
   /* The agent is part of the turn: a chart question stays a chart answer after a reload. */
-  m.agent = chAgent();
+  m.agent = turnAgent;
   if (m.agent) chAnalytics(m);
   /* Layout follows the MODE, not how the call turns out. Reading it off `via` after the fact meant
      the composed answer's tiles rendered first and then vanished when the reply landed. */
@@ -11587,10 +11774,29 @@ function chRenderTurn(m) {
   }
   /* A profile's KPIs come straight after its headline, in Basic and Smart alike. */
   if (!m.pending && m.kind === "profile" && arr(m.stats).length) bot.appendChild(chStatTiles(m.stats));
+  if (!m.pending && arr(m.pairStats).length) {
+    var ps = el("div", "chpair");
+    var PAL = chInk().pal;
+    m.pairStats.forEach(function (p) {
+      var col = el("div", "chpcol");
+      var hd = el("div", "chphd");
+      var dot = el("i"); dot.style.background = PAL[p.hue % PAL.length]; dot.setAttribute("data-hue", p.hue);
+      hd.appendChild(dot); hd.appendChild(document.createTextNode(p.name));
+      col.appendChild(hd);
+      col.appendChild(chStatTiles(p.stats));
+      ps.appendChild(col);
+    });
+    bot.appendChild(ps);
+  }
   if (!m.pending && m.agent && arr(m.charts).length + arr(m.tables).length) {
     /* Charts first; the exact tables behind them folded underneath. The model's own tables (if it
        added any) stay open — they are part of its answer, and carry the number check. */
-    arr(m.charts).forEach(function (c) { bot.appendChild(chChartEl(c)); });
+    arr(m.charts).forEach(function (c) {
+      if (!c.pair) { bot.appendChild(chChartEl(c)); return; }
+      var pr = el("div", "chpair");
+      c.pair.forEach(function (sp) { pr.appendChild(chChartEl(sp, { half: true })); });
+      bot.appendChild(pr);
+    });
     if (m.chartNote) bot.appendChild(el("div", "chcnote", m.chartNote));
     var own = m.smartTurn && m.via === "model" ? arr(m.modelTables) : [];
     own.forEach(function (t) { m.shownTables.push(t); bot.appendChild(chTableEl(t, { known: chKnown(m) })); });
