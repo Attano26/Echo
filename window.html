@@ -10991,15 +10991,18 @@ function chShape(q, kind, ents) {
    budget, while covering a corpus several times the size of a normal one. Beyond that the list is
    trimmed to the newest and the model is TOLD it was trimmed, because a model that thinks it has
    seen everything will answer "you have nothing on X" about a story that was simply cut. */
-var CH_INVENTORY_MAX = 600;
+var CH_INVENTORY_MAX = 450;
 var CH_DETAIL_MAX = 14;
 /* Characters of summaries in DIGEST: ~8k tokens for a broad question (summary, comparison,
    breakdown), ~3k otherwise. The stories that get a summary are dropped from INVENTORY, so the
    prompt grows by the summaries only. */
-var CH_DIGEST_WIDE = 32000;
+var CH_DIGEST_WIDE = 22000;
 var CH_DIGEST_NARROW = 12000;
 
-function chPrompt(m) {
+function chPrompt(m, po) {
+  /* po.slim: the retry after a timeout, an empty reply or a rate limit — fewer stories in full, so the
+     call is smaller and faster. Everything else about the prompt is the same. */
+  po = po || {};
   var ix = chIndex();
 
   /* A GREETING DOES NOT NEED THE CORPUS.
@@ -11142,10 +11145,10 @@ function chPrompt(m) {
      INVENTORY: every other story, title only, so "you have nothing on that" stays checkable. */
   var all = ix.docs.slice().sort(function (a, b) { return (b.ms || 0) - (a.ms || 0); });
   var inDetail = {}, inDigest = {};
-  var detail = (m.context && m.context.length ? m.context : (m.items || [])).slice(0, CH_DETAIL_MAX);
+  var detail = (m.context && m.context.length ? m.context : (m.items || [])).slice(0, po.slim ? 8 : CH_DETAIL_MAX);
   detail.forEach(function (doc) { inDetail[doc.k] = 1; });
   var wide = /^(summary|compare|breakdown|trend|explain|timeline|competitor)$/.test(m.shape || "") || !detail.length;
-  var budget = wide ? CH_DIGEST_WIDE : CH_DIGEST_NARROW, used = 0, digest = [];
+  var budget = po.slim ? 6000 : (wide ? CH_DIGEST_WIDE : CH_DIGEST_NARROW), used = 0, digest = [];
   var pool = m.digestDocs ? m.digestDocs.slice() : (rng ? all.filter(function (x) { return chInRange(x, rng); }) : []);
   /* After the range (or with none), the newest of everything else, so a broad question still sees
      what recent stories say. */
@@ -11165,7 +11168,7 @@ function chPrompt(m) {
              "never that it does not exist.", "");
   }
   var rest = all.filter(function (x) { return !inDetail[x.k] && !inDigest[x.k]; });
-  var shown = rest.slice(0, CH_INVENTORY_MAX);
+  var shown = rest.slice(0, po.slim ? 200 : CH_INVENTORY_MAX);
   out.push("INVENTORY — " + all.length + " stories held in total; " + (detail.length + digest.length) +
            " appear with summaries further down, the other " + rest.length + " by title here" +
            (rest.length > shown.length ? " (newest " + shown.length + " listed)" : ""));
@@ -11247,7 +11250,7 @@ function chHistory(m) {
    showed the Basic answer with the reason hidden under "Usage", which read as "Smart gave a generic
    reply" (user, 2026-09-21). One quiet retry covers a rate blip or an overloaded model; a rejected
    key is never retried. */
-var CH_TIMEOUT_MS = 60000;
+var CH_TIMEOUT_MS = 75000;
 /* Whether Google accepted the table schema. Rejected once, the page stays on the plain schema until
    it is reloaded, rather than paying a failed round trip on every question. */
 var CH_TABLE_SCHEMA = true;
@@ -11272,17 +11275,29 @@ function chWhyFailed(status, e) {
   return "Google refused the request (" + status + ")" + said;
 }
 
+/* WHY A SMART CALL FAILED, kept (user, 1 Oct: "most of the times it defaults to the Basic reply"). The
+   last twenty attempts that did not go straight through, in this browser only: when, what Google said,
+   how big the question was and what the page tried next. Read it in the browser console as chDiag();
+   the turn itself says why it fell back, and Usage shows how many tries a Smart reply took. */
+var CH_DIAG_LS = "echo.ask.diag";
+function chDiagAdd(x) {
+  try {
+    var a = JSON.parse(localStorage.getItem(CH_DIAG_LS) || "[]");
+    a.push(Object.assign({ t: new Date().toISOString() }, x));
+    localStorage.setItem(CH_DIAG_LS, JSON.stringify(a.slice(-20)));
+  } catch (e) {}
+}
+function chDiag() { try { return JSON.parse(localStorage.getItem(CH_DIAG_LS) || "[]"); } catch (e) { return []; } }
+
 function chCallModel(m, done) {
   var key = chKey();
   if (!key) return done(null, "no API key is saved in this browser. Add one in Settings");
-  var tries = 0, rich = CH_TABLE_SCHEMA;
-  var contents = chHistory(m).concat([{ role: "user", parts: [{ text: chPrompt(m) }] }]);
-  /* A schema rather than a delimiter the model has to remember. The answer keeps its markdown;
-     tables and follow-ups arrive as real structures instead of text to be parsed back out of prose.
-     The ceiling is room, not a length rule: the rules ask for short answers, and a cut-off JSON
-     reply is worse than a long one.
-     IF GOOGLE REJECTS THE TABLE SCHEMA (a nested array of arrays), the call is made once more with
-     the plain schema and the model is told to write tables as pipes, which chProse draws. */
+  var rich = CH_TABLE_SCHEMA, slim = false, attemptN = 0, t0 = Date.now();
+  var waits = { 429: 0, net: 0, srv: 0 };
+  var makeContents = function () {
+    return (slim ? [] : chHistory(m)).concat([{ role: "user", parts: [{ text: chPrompt(m, { slim: slim }) }] }]);
+  };
+  var contents = makeContents();
   var build = function (withTables) {
     var props = {
       answer: { type: "STRING" },
@@ -11314,9 +11329,26 @@ function chCallModel(m, done) {
       }
     });
   };
-  var body = build(true);
-  (function attempt() {
-    tries++;
+  var body = build(rich);
+  /* Hand the result over OUTSIDE the network promise: if drawing the answer throws, that is a bug on this
+     page, not a failed call — it must not be retried as one, nor reported as Google's fault. */
+  var finish = function (out, err) {
+    if (err) chDiagAdd({ q: chClip(m.q, 60), final: true, why: err, tries: attemptN, ms: Date.now() - t0, chars: body.length });
+    setTimeout(function () {
+      try { done(out, err); }
+      catch (e) { if (window.console) console.error("Ask: drawing the Smart reply failed", e); }
+    }, 0);
+  };
+  /* Try again, smaller: no conversation history and fewer stories in full. */
+  var again = function (why, delay, makeSlim, plain) {
+    chDiagAdd({ q: chClip(m.q, 60), why: why, tries: attemptN, next: (makeSlim ? "smaller " : "") + (plain ? "plain " : "") + "retry in " + delay + "ms", chars: body.length });
+    if (makeSlim && !slim) { slim = true; contents = makeContents(); }
+    if (plain) rich = false;
+    body = build(rich);
+    setTimeout(attempt, delay);
+  };
+  function attempt() {
+    attemptN++;
     var ctrl = window.AbortController ? new AbortController() : null;
     var timer = setTimeout(function () { ctrl && ctrl.abort(); }, CH_TIMEOUT_MS);
     fetch(CH_ENDPOINT, {
@@ -11331,33 +11363,42 @@ function chCallModel(m, done) {
     }).then(function (res) {
       clearTimeout(timer);
       if (!res.ok) {
-        var emsg = String((res.j && res.j.error && res.j.error.message) || "");
-        if (rich && res.status === 400 && /schema|response_schema|responseSchema|generation_?config|Invalid JSON payload|Unknown name/i.test(emsg)) {
-          rich = false; CH_TABLE_SCHEMA = false; body = build(false); tries = 0;
-          return attempt();
-        }
-        if (tries < 2 && CH_RETRY[res.status]) return setTimeout(attempt, 2500);
-        return done(null, chWhyFailed(res.status, res.j && res.j.error));
+        var e0 = res.j && res.j.error, emsg = String((e0 && e0.message) || "");
+        var why = chWhyFailed(res.status, e0);
+        var keyBad = /API_KEY_INVALID|API key not valid|expired/i.test(emsg + " " + JSON.stringify((e0 && e0.details) || []));
+        /* A 400 that is not about the key: most likely the structured reply format. Once, plain. */
+        if (res.status === 400 && rich && !keyBad) { CH_TABLE_SCHEMA = false; return again(why, 0, false, true); }
+        /* Rate limit: wait, then once more smaller (fewer tokens per minute). */
+        if (res.status === 429 && waits[429] < 2) { waits[429]++; return again(why, waits[429] === 1 ? 4000 : 9000, waits[429] === 2, false); }
+        if (res.status >= 500 && waits.srv < 2) { waits.srv++; return again(why, waits.srv === 1 ? 2500 : 6000, waits.srv === 2, false); }
+        return finish(null, why + (attemptN > 1 ? " — after " + attemptN + " tries" : ""));
       }
       var cand = res.j && res.j.candidates && res.j.candidates[0];
       /* NEVER parts[0]. This is a thinking model: the first part can be a thought carrying no text
          at all, and reading it alone is how you get an empty answer out of a perfectly good reply. */
       var parts = (cand && cand.content && cand.content.parts) || [];
       var text = parts.map(function (x) { return x && x.text ? x.text : ""; }).join("").trim();
+      var fr = cand && cand.finishReason;
+      var blocked = res.j && res.j.promptFeedback && res.j.promptFeedback.blockReason;
       if (!text) {
-        var fr = cand && cand.finishReason;
-        var blocked = res.j && res.j.promptFeedback && res.j.promptFeedback.blockReason;
-        return done(null, blocked ? "Google blocked the question (" + blocked + ")"
-                        : fr ? "Gemini stopped before answering (" + fr + ")" : "Gemini sent an empty reply");
+        var whyE = blocked ? "Google blocked the question (" + blocked + ")"
+                 : fr ? "Gemini stopped before answering (" + fr + ")" : "Gemini sent an empty reply";
+        /* Out of room or empty: once more, smaller and in the plain format. */
+        if (!blocked && !slim) return again(whyE, 0, true, true);
+        return finish(null, whyE);
       }
 
       /* The parse is defended even with a schema in force: a reply truncated at the token ceiling is
-         still JSON-shaped enough to look right and not complete enough to parse, and the honest
-         fallback is to show what came back rather than to lose it. */
+         still JSON-shaped enough to look right and not complete enough to parse. Then the answer is dug
+         out of the JSON text if it can be, and the raw text is shown only as the last resort. */
       var payload = null;
       try { payload = JSON.parse(text); } catch (e) { payload = null; }
       if (!payload || typeof payload.answer !== "string" || !payload.answer.trim()) {
-        payload = { answer: text, followUps: [] };
+        var dug = /"answer"\s*:\s*"((?:[^"\\]|\\.)*)/.exec(text);
+        var ans = null;
+        if (dug) { try { ans = JSON.parse('"' + dug[1] + '"'); } catch (e2) { ans = null; } }
+        if (fr === "MAX_TOKENS" && !slim && !ans) return again("the reply was cut off (MAX_TOKENS)", 0, true, true);
+        payload = { answer: ans || text, followUps: [] };
       }
       var ups = arr(payload.followUps).map(function (x) { return String(x || "").trim(); })
         .filter(function (x) { return x.length > 3 && x.length <= 90; })
@@ -11380,18 +11421,21 @@ function chCallModel(m, done) {
 
       var u = res.j.usageMetadata || {};
       var reqs = arr(payload.charts).slice(0, 3).filter(function (c) { return c && c.x; });
-      done({ text: payload.answer, followUps: ups, tables: tabs, appTables: appT, charts: reqs,
-             inTok: u.promptTokenCount || 0, outTok: u.candidatesTokenCount || 0,
-             totalTok: u.totalTokenCount || 0, thoughtTok: u.thoughtsTokenCount || 0 }, null);
+      if (attemptN > 1) chDiagAdd({ q: chClip(m.q, 60), ok: true, tries: attemptN, ms: Date.now() - t0, chars: body.length });
+      finish({ text: payload.answer, followUps: ups, tables: tabs, appTables: appT, charts: reqs,
+               inTok: u.promptTokenCount || 0, outTok: u.candidatesTokenCount || 0,
+               totalTok: u.totalTokenCount || 0, thoughtTok: u.thoughtsTokenCount || 0, tries: attemptN }, null);
     }).catch(function (err) {
       clearTimeout(timer);
       var aborted = err && err.name === "AbortError";
-      /* A dropped connection gets one more go; a timeout does not, it would double the wait. */
-      if (!aborted && tries < 2) return setTimeout(attempt, 2500);
-      done(null, aborted ? "Gemini took longer than " + (CH_TIMEOUT_MS / 1000) + " seconds to answer"
-                         : "the call to Google did not go through (" + String((err && err.message) || err) + ")");
+      /* A timeout gets ONE more go, smaller; a dropped connection two. */
+      if (aborted && !slim) return again("no answer within " + (CH_TIMEOUT_MS / 1000) + " seconds", 0, true, false);
+      if (!aborted && waits.net < 2) { waits.net++; return again("network: " + String((err && err.message) || err), 2500, waits.net === 2, false); }
+      finish(null, aborted ? "Gemini took longer than " + (CH_TIMEOUT_MS / 1000) + " seconds to answer, twice"
+                           : "the call to Google did not go through (" + String((err && err.message) || err) + ")");
     });
-  })();
+  }
+  attempt();
 }
 
 /* Model output is UNTRUSTED TEXT and is escaped before anything else happens to it. Only then is
@@ -11710,6 +11754,7 @@ function chUsage(m) {
     row("Output", n(m.usage.outTok) + " tokens");
     if (m.usage.thoughtTok) row("Thinking", n(m.usage.thoughtTok) + " tokens");
     if (m.usage.totalTok) row("Total", n(m.usage.totalTok) + " tokens");
+    if (m.usage.tries > 1) row("Tries", m.usage.tries + " (Google was busy or refused the first)");
     row("Grounded on", chPl(chIndex().docs.length, "story", "stories"));
     row("Search grounding", "off — free tier");
   } else if (m.viaErr) {
