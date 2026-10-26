@@ -2179,6 +2179,9 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
 .askrow.eq .btn{width:100%;display:flex;align-items:center;justify-content:center;min-height:44px}
 .askrow.eq .btn.ghost{background:var(--surface-2);border-color:transparent;color:var(--ink)}
 .btn.danger{background:rgba(240,97,109,.14);color:var(--danger)}
+/* "Archive the rest" strip above News alerts (build 110) */
+.archrest{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px;
+  padding:10px 12px 10px 16px;border-radius:12px;background:var(--surface-2);font-size:14px}
 </style>
 </head>
 <body>
@@ -2726,6 +2729,62 @@ function publishedSet() {
   });
   return s;
 }
+/* ARCHIVE (phone build 110). True, relevant stories kept out of the newsletter: out of Alerts and
+   the Monthly Report, still counted everywhere else. The phone's set is the truth and this page's
+   pending requests are painted on top, exactly like verifiedSet. Only a phone that ships
+   `archivedTitles` can honour an archive request, so every control keys on phoneArchives(). */
+function phoneArchives() { return !!(S.data && Array.isArray(S.data.archivedTitles)); }
+function archivedSet() {
+  var s = new Set(arr(S.data && S.data.archivedTitles).map(key));
+  pendingRequests().forEach(function (r) {
+    if (r.op === "archive") s.add(key(r.title));
+    else if (r.op === "unarchive") s.delete(key(r.title));
+  });
+  return s;
+}
+function archived() {
+  var arc = archivedSet(), pub = publishedSet(), seen = new Set(), out = [];
+  arr(S.data && S.data.archived).concat(arr(S.data && S.data.alerts)).forEach(function (a) {
+    var k = key(a && a.title);
+    if (a && a.title && arc.has(k) && !pub.has(k) && !seen.has(k)) { seen.add(k); out.push(a); }
+  });
+  return out;
+}
+/* Several requests in one write: "Archive the rest" can be eighty stories, and requestOp would
+   push the actions file once per story. One pending request per story, as requestOp keeps it. */
+function requestOps(titles, op) {
+  var keys = new Set(titles.map(key));
+  var out = pendingRequests().filter(function (r) { return !keys.has(key(r.title)); });
+  titles.forEach(function (t) { out.push({ rid: newRid(), op: op, title: t }); });
+  S.actions.requests = out;
+  save(); render();
+  pushActions().catch(function (e) {
+    setStatus("Saved here, but not sent to your phone yet: " + e.message, true);
+  });
+}
+/* The phone's "Archive the rest": every unverified alert dated before the 1st of this month. */
+function archiveRestCandidates() {
+  var now = new Date(), start = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+  var ver = verifiedSet();
+  return alerts().filter(function (a) {
+    if (a.isSubscribed === false || ver.has(key(a.title))) return false;
+    var t = Date.parse(String(a.date || "").trim());
+    return !isNaN(t) && t < start;
+  });
+}
+async function archiveTheRest() {
+  var list = archiveRestCandidates();
+  if (!list.length) return;
+  var month = new Date().toLocaleDateString("en-GB", { month: "long" });
+  var ok = await askConfirm({
+    title: "Archive " + list.length + (list.length === 1 ? " story" : " stories") + " from before " + month + "?",
+    body: "Every unverified story dated before 1 " + month + " moves to Archive. Verified stories stay in " +
+      "News alerts for the report. Your phone applies it on its next sync, and any story can be moved back.",
+    ok: "Archive"
+  });
+  if (ok) requestOps(list.map(function (a) { return a.title; }), "archive");
+}
+
 /* Alerts = what the phone shows, minus anything published on either side.
    Publishing HIDES a story from Alerts; it never deletes it. */
 function alerts() {
@@ -2738,6 +2797,13 @@ function alerts() {
   arr(S.data && S.data.publishedNews).forEach(function (a) {
     var k = key(a.title);
     if (!pub.has(k) && !have.has(k)) { have.add(k); out.push(a); }
+  });
+  /* Archive (build 110): out of Alerts; a story moved back here returns before the phone syncs. */
+  var arc = archivedSet();
+  out = out.filter(function (a) { return !arc.has(key(a.title)); });
+  arr(S.data && S.data.archived).forEach(function (a) {
+    var k = key(a.title);
+    if (!arc.has(k) && !pub.has(k) && !have.has(k)) { have.add(k); out.push(a); }
   });
   return out;
 }
@@ -3104,6 +3170,7 @@ var TABS = [
      blank where every sibling carries a figure. */
   ["ask",       "Ask",       function () { return ""; }, "beta"],
   ["alerts",    "News alerts", function () { return alerts().length; }],
+  ["archive",   "Archive",   function () { return archived().length; }],
   ["saved",     "Saved",     function () { return arr(S.data && S.data.savedNews).length; }],
   ["published", "Published", function () { return published().length; }],
   ["reports",   "Monthly Report", function () { return editions().length; }],
@@ -3119,6 +3186,7 @@ var TAB_TITLE = {
   logs:      ["Cost log",    "Every refresh, what it cost and what it found"],
   ask:       ["Ask",       "Answers from what your phone has fetched"],
   alerts:    ["News alerts", "Window market intelligence"],
+  archive:   ["Archive",   "Relevant stories kept out of the newsletter"],
   saved:     ["Saved",     "Bookmarked stories"],
   published: ["Published", "Stories already in a report"],
   reports:   ["Monthly Report", "Pick the markets, preview, then download"],
@@ -4427,6 +4495,15 @@ function articleCard(a, opts) {
     fc.rel = "noopener noreferrer";
     foot.appendChild(fc);
 
+    /* Archive / Move to Alerts (build 110), a request the phone applies like Verify. */
+    if (opts.archivable && phoneArchives()) {
+      var into = opts.archivable === "in";
+      var ab = el("button", "nstate");
+      ab.appendChild(el("span", null, into ? "Archive" : "Move to Alerts"));
+      ab.title = into ? "Keep this story out of the newsletter, out of Alerts" : "Put this story back in News alerts";
+      ab.onclick = function (e) { e.stopPropagation(); requestOp(a.title, into ? "archive" : "unarchive"); };
+      foot.appendChild(ab);
+    }
     /* Bottom right: the state. On a verifiable page an unverified story is a BUTTON, so the
        commonest action costs one click from where the eye already is. */
     if (opts.publishedPill) {
@@ -12588,8 +12665,27 @@ function render() {
        drag-to-push: it is the overview OF this feed, so it belongs above it. */
     var wg = d.widgets || {};
     if (Object.keys(wg).length) app.appendChild(renderWidgetStrip(wg));
-    newsWall(app, alerts(), { verifiable: true, placeholder: "Search alerts",
+    /* "Archive the rest" (build 110): the monthly review's one click, as on the phone. */
+    if (phoneArchives()) {
+      var rest = archiveRestCandidates();
+      if (rest.length) {
+        var rb = el("div", "archrest");
+        rb.appendChild(el("span", null, rest.length + " unverified " + (rest.length === 1 ? "story" : "stories") +
+          " from before " + new Date().toLocaleDateString("en-GB", { month: "long" })));
+        var rbtn = el("button", "btn sm ghost", "Archive the rest");
+        rbtn.onclick = archiveTheRest;
+        rb.appendChild(rbtn);
+        app.appendChild(rb);
+      }
+    }
+    newsWall(app, alerts(), { verifiable: true, archivable: "in", placeholder: "Search alerts",
       empty: "No alerts. Everything here has been published, or your phone has not backed up yet.", art: "listen" });
+  }
+  else if (S.tab === "archive") {
+    newsWall(app, archived(), { archivable: "out", placeholder: "Search archive",
+      empty: phoneArchives()
+        ? "Nothing archived. Archive a story from News alerts, here or on the phone."
+        : "Archive arrives with phone build 110. Update the phone, then back up.", art: "layers" });
   }
   else if (S.tab === "saved") {
     newsWall(app, arr(d.savedNews), { placeholder: "Search saved stories",
