@@ -1281,6 +1281,61 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
 .momspark path.sparkfill{stroke:none}
 .momspark path.sparkdot{stroke-width:5.5;stroke-linecap:round}
 .momd{flex:0 0 auto;font-size:12.5px;font-weight:500;min-width:42px;text-align:right}
+/* Analytics, Apple style (phone build 116): headline numbers, rounded bars, Stocks rows. */
+.a2kick{font-size:11.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3)}
+.a2big{font-family:var(--fs-title);font-size:30px;font-weight:600;letter-spacing:-.6px;line-height:1.15;margin-top:4px;color:var(--ink)}
+.a2big small{font-size:15px;font-weight:500;letter-spacing:0;color:var(--ink-3)}
+.a2sub{font-size:12.5px;color:var(--ink-3);margin-top:4px;line-height:1.45}
+.a2bars{display:block;width:100%;height:auto;margin-top:12px;overflow:visible}
+.a2bars .grid{stroke:var(--line);stroke-width:1}
+.a2bars .base{stroke:var(--line);stroke-width:1.5}
+.a2bars .dash{stroke-width:2;stroke-dasharray:6 6}
+.a2bars .ax{font-size:11px;fill:var(--ink-3)}
+.anbody > .a2stock:first-child,.a2kick + .a2stock,.a2sub + .a2stock,.a2split + .a2row{border-top:0}
+.a2leg{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:12px;font-size:12px;color:var(--ink-3)}
+.a2leg span{display:inline-flex;align-items:center;gap:6px}
+.a2leg i{width:9px;height:9px;border-radius:3px;display:block}
+.a2split{display:flex;gap:2px;height:14px;border-radius:7px;overflow:hidden;margin-top:12px}
+.a2split.thin{height:8px;border-radius:4px;margin-top:7px}
+.a2split i{display:block;height:100%;min-width:2px}
+.a2line{display:flex;justify-content:space-between;gap:12px;padding-top:11px;margin-top:11px;border-top:1px solid var(--line);font-size:14px;font-weight:500}
+.a2line .v{color:var(--ink-3);font-weight:400;font-size:13px}
+.a2hl{display:flex;gap:12px;padding:4px 0}
+.a2hl+.a2hl{border-top:1px solid var(--line);padding-top:14px;margin-top:10px}
+.a2hl .ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:#fff;font-weight:700;flex:0 0 auto}
+.a2hl .t{flex:1;min-width:0}
+.a2hl b{font-weight:600;font-size:14.5px}
+.a2hl p{margin:4px 0 0;font-size:13px;color:var(--ink-3);line-height:1.45}
+.a2fun{display:flex;align-items:center;gap:10px;margin:8px 0}
+.a2fun .l{flex:0 0 74px;font-size:13px}
+.a2fun .t{flex:1;height:22px;border-radius:7px;background:var(--surface-2);overflow:hidden}
+.a2fun .t i{display:block;height:100%;border-radius:7px;background:var(--accent)}
+.a2fun .v{flex:0 0 58px;text-align:right;font-weight:600;font-size:13px}
+.a2fun .v small{display:block;font-weight:400;font-size:11px;color:var(--ink-3)}
+.a2minis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.a2minis div{background:var(--surface-2);border-radius:12px;padding:8px 12px}
+.a2minis b{display:block;font-size:17px}
+.a2minis small{font-size:12px;color:var(--ink-3)}
+.a2row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line);font-size:14px}
+.a2row i{width:10px;height:10px;border-radius:3px;display:block;flex:0 0 auto}
+.a2row .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.a2row .p{font-weight:600}
+.a2row .c{min-width:36px;text-align:right;color:var(--ink-3);font-size:12.5px}
+.a2stock{display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid var(--line)}
+.a2stock .n{flex:1;min-width:0}
+.a2stock b{display:block;font-weight:500;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.a2stock small{font-size:12px;color:var(--ink-3)}
+.a2spark{flex:0 0 96px;height:30px;overflow:visible}
+.a2spark path{fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.a2spark path.dot{stroke-width:5.5}
+.a2chip{flex:0 0 auto;min-width:48px;height:24px;border-radius:7px;display:inline-grid;place-items:center;font-size:12.5px;font-weight:600;color:#fff;padding:0 7px;box-sizing:border-box}
+.a2chip.up{background:#30D158}.a2chip.down{background:#FF453A}.a2chip.flat{background:var(--surface-2);color:var(--ink-3)}
+.a2topic{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;margin-top:12px}
+.a2topic .l{color:var(--ink-3);white-space:nowrap}
+.a2heat{display:grid;gap:4px;align-items:center;margin-top:10px}
+.a2heat .h{font-size:10.5px;font-weight:600;color:var(--ink-3);text-align:center}
+.a2heat .r{font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:6px}
+.a2heat .c{height:28px;border-radius:6px;background:var(--surface-2)}
 
 /* Narrative ownership: who leads named on the row, the whole split on the bar below it. */
 .narblk{margin-bottom:14px}
@@ -5796,12 +5851,22 @@ function sparkPath(vals, w, h, pad) {
   var pts = vals.map(function (v, i) {
     return [(i / (n - 1)) * w, h - pad - (v / mx) * (h - pad * 2)];
   });
+  /* Monotone cubic, as the phone (AnalyticsPane smoothPath) and Apple's charts: rounded at every
+     point and never past the data. 27 Oct, user: line graphs curved, not straight. */
+  var dx = [], sl = [], t = [], i;
+  for (i = 0; i < n - 1; i++) { dx[i] = pts[i + 1][0] - pts[i][0]; sl[i] = dx[i] ? (pts[i + 1][1] - pts[i][1]) / dx[i] : 0; }
+  for (i = 1; i < n - 1; i++) {
+    var q = (sl[i - 1] * dx[i] + sl[i] * dx[i - 1]) / (dx[i - 1] + dx[i]);
+    t[i] = (Math.sign(sl[i - 1]) + Math.sign(sl[i])) * Math.min(Math.abs(sl[i - 1]), Math.abs(sl[i]), 0.5 * Math.abs(q));
+  }
+  t[0] = n > 2 ? (3 * sl[0] - t[1]) / 2 : sl[0];
+  t[n - 1] = n > 2 ? (3 * sl[n - 2] - t[n - 2]) / 2 : sl[0];
   var d = "M" + pts[0][0].toFixed(1) + " " + pts[0][1].toFixed(1);
-  for (var i = 0; i < n - 1; i++) {
-    var p0 = pts[i], p1 = pts[i + 1], cx = (p0[0] + p1[0]) / 2;
-    d += " C" + cx.toFixed(1) + " " + p0[1].toFixed(1) +
-         " " + cx.toFixed(1) + " " + p1[1].toFixed(1) +
-         " " + p1[0].toFixed(1) + " " + p1[1].toFixed(1);
+  for (i = 0; i < n - 1; i++) {
+    var k = dx[i] / 3;
+    d += " C" + (pts[i][0] + k).toFixed(1) + " " + (pts[i][1] + t[i] * k).toFixed(1) +
+         " " + (pts[i + 1][0] - k).toFixed(1) + " " + (pts[i + 1][1] - t[i + 1] * k).toFixed(1) +
+         " " + pts[i + 1][0].toFixed(1) + " " + pts[i + 1][1].toFixed(1);
   }
   return { d: d, end: pts[n - 1] };
 }
@@ -5972,7 +6037,9 @@ function anOverview(host, cv, inFeed) {
   if (!surfaced) { anNote(host, "No news in this window."); return; }
   [["Liked", cv.liked, "#10B981"], ["Disliked", cv.disliked, "#EF4444"],
    ["Saved", cv.saved, "#F59E0B"], ["Verified", cv.verified, "#06B6D4"],
+   ["Archived", cv.archived, "#AF52DE"],
    ["Published", cv.published, "#1F57F5"]].forEach(function (r) {
+    if (r[0] === "Archived" && typeof cv.archived !== "number") return;   // a backup from before phone build 116
     var n = r[1] || 0, pct = Math.round((n / surfaced) * 100);
     anBar(host, r[0], n + " · " + pct + "%", pct, r[2]);
   });
@@ -5998,8 +6065,11 @@ function anFlow(host, s) {
   var A = [["In feed", s.inFeed || 0, "#1F57F5"], ["Not in feed", s.notInFeed || 0, AN_GREY]];
   var B = [["Saved", s.saved || 0, "#F59E0B"], ["Not saved", s.notSaved || 0, "#3B82F6"]];
   var out = arr(s.outcomeTotals);
-  var C = [["Published", out[0] || 0, "#10B981"], ["Verified", out[1] || 0, "#06B6D4"],
-           ["Deleted", out[2] || 0, "#EF4444"], ["Still open", out[3] || 0, AN_GREY]];
+  /* The phone's outcome order is [published, verified, deleted, still open, archived] (Archived appended on
+     27 Oct so an older backup still reads); drawn top to bottom with Archived among the chosen outcomes. */
+  var IDX = [0, 1, 4, 2, 3];
+  var OUT = [["Published", "#10B981"], ["Verified", "#06B6D4"], ["Deleted", "#EF4444"], ["Still open", AN_GREY], ["Archived", "#AF52DE"]];
+  var C = IDX.map(function (i) { return [OUT[i][0], out[i] || 0, OUT[i][1]]; });
 
   /* Height available once the gaps between a column's nodes are taken out. Working it out per
      column keeps all three the same total height even though they hold different node counts. */
@@ -6049,8 +6119,8 @@ function anFlow(host, s) {
 
   var savedTo = arr(s.savedTo), notSavedTo = arr(s.notSavedTo);
   var k;
-  for (k = 0; k < 4; k++) ribbon(col2[0], col3[k], savedTo[k] || 0, col3[k] && col3[k].c);
-  for (k = 0; k < 4; k++) ribbon(col2[1], col3[k], notSavedTo[k] || 0, col3[k] && col3[k].c);
+  for (k = 0; k < C.length; k++) ribbon(col2[0], col3[k], savedTo[IDX[k]] || 0, col3[k] && col3[k].c);
+  for (k = 0; k < C.length; k++) ribbon(col2[1], col3[k], notSavedTo[IDX[k]] || 0, col3[k] && col3[k].c);
 
   /* Nodes last, so they sit over the ribbons rather than under them. */
   [col1, col2, col3].forEach(function (col) {
@@ -6300,6 +6370,383 @@ function anTrends(host, a) {
     h.style.marginTop = "16px";
     host.appendChild(h);
     side[1].forEach(function (k) { anTrendRow(host, k.n, k.w, k.d, side[2]); });
+  });
+}
+
+/* ============================================================
+   ANALYTICS, APPLE STYLE (phone build 116, AnalyticsPane.kt; mock-up echo-analytics-redesign.html)
+   ------------------------------------------------------------
+   The same figures, drawn as the phone now draws them: a headline number over each chart, rounded
+   bars with one dashed reference line, Stocks-style rows with green / red chips, smooth monotone
+   lines, a funnel and one "where they ended up" bar in place of the Sankey. A backup from an older
+   phone (no moverName / series fields) falls back to the earlier cards above.
+   ============================================================ */
+var A2_SERIES = ["#0A84FF", "#64D2FF", "#FF9F0A", "#FF375F", "#BF5AF2"];
+var A2_GREY = "#8E8E93", A2_UP = "#30D158", A2_DOWN = "#FF453A", A2_ORANGE = "#FF9F0A", A2_CYAN = "#64D2FF", A2_ARCH = "#AF52DE";
+
+function a2Kick(host, t) { host.appendChild(el("div", "a2kick", t)); }
+function a2Big(host, v, unit) {
+  var b = el("div", "a2big", v);
+  if (unit) b.appendChild(el("small", null, " " + unit));
+  host.appendChild(b);
+}
+function a2Sub(host, t) { host.appendChild(el("div", "a2sub", t)); }
+function a2Line(host, k, v) {
+  var r = el("div", "a2line");
+  r.appendChild(el("span", null, k));
+  r.appendChild(el("span", "v", v));
+  host.appendChild(r);
+}
+function a2Legend(host, entries) {
+  var k = el("div", "a2leg");
+  entries.forEach(function (e) {
+    var i = el("span");
+    var d = el("i");
+    d.style.background = e[1];
+    i.appendChild(d);
+    i.appendChild(document.createTextNode(e[0]));
+    k.appendChild(i);
+  });
+  host.appendChild(k);
+}
+/* One capsule split by count, as Screen Time's usage bar. */
+function a2Split(host, parts, thin) {
+  var b = el("div", "a2split" + (thin ? " thin" : ""));
+  parts.forEach(function (p) {
+    if (!(p[0] > 0)) return;
+    var s = el("i");
+    s.style.flexGrow = String(p[0]);
+    s.style.background = p[1];
+    if (p[2]) s.title = p[2];
+    b.appendChild(s);
+  });
+  host.appendChild(b);
+}
+function a2Chip(d) {
+  return el("span", "a2chip " + (d > 0 ? "up" : (d < 0 ? "down" : "flat")), d > 0 ? "+" + d : (d < 0 ? "−" + (-d) : "0"));
+}
+/* A Stocks row: name (and a count), a smooth line coloured by direction, the change chip. */
+function a2Stock(host, name, sub, vals, d) {
+  var row = el("div", "a2stock");
+  var n = el("div", "n");
+  n.appendChild(el("b", null, name));
+  if (sub) n.appendChild(el("small", null, sub));
+  row.appendChild(n);
+  var colour = d > 0 ? A2_UP : (d < 0 ? A2_DOWN : A2_GREY);
+  var svg = svgNode("svg", { "class": "a2spark", viewBox: "0 0 100 30", preserveAspectRatio: "none" });
+  var p = sparkPath(arr(vals), 100, 30, 4);
+  if (p) {
+    var path = svgNode("path", { d: p.d, "vector-effect": "non-scaling-stroke" });
+    path.style.stroke = colour;
+    svg.appendChild(path);
+    var ex = p.end[0].toFixed(2), ey = p.end[1].toFixed(2);
+    var dot = svgNode("path", { d: "M" + ex + " " + ey + "L" + ex + " " + ey, "class": "dot", "vector-effect": "non-scaling-stroke" });
+    dot.style.stroke = colour;
+    svg.appendChild(dot);
+  }
+  row.appendChild(svg);
+  row.appendChild(a2Chip(d || 0));
+  host.appendChild(row);
+}
+/* Swift Charts-style bars: rounded tops, faint gridlines with two values on the right, labels under
+   the bars (thinned), an optional dashed average and a dashed cap. data = one stack per bar, bottom
+   first. o.hl: one colour, every bar but the newest in the track grey. */
+function a2Bars(host, data, colours, labels, o) {
+  o = o || {};
+  var W = 380, H = o.h || 130, AX = 40, LH = labels ? 20 : 0;
+  var totals = data.map(function (s) { return arr(s).reduce(function (a, b) { return a + (Number(b) || 0); }, 0); });
+  var peak = Math.max.apply(null, totals.concat([o.avg || 0, o.cap || 0, 0]));
+  var ymax = a2Nice(peak * 1.12), cw = W - AX, n = Math.max(1, data.length);
+  var fmt = o.fmt || function (v) { return String(Math.round(v)); };
+  function y(v) { return H - (v / ymax) * H; }
+  var svg = svgNode("svg", { "class": "a2bars", viewBox: "0 0 " + W + " " + (H + LH + 4) });
+  [0.25, 0.5, 0.75, 1].forEach(function (f) {
+    svg.appendChild(svgNode("line", { x1: 0, x2: cw, y1: H - H * f, y2: H - H * f, "class": "grid" }));
+  });
+  svg.appendChild(svgNode("line", { x1: 0, x2: cw, y1: H, y2: H, "class": "base" }));
+  [0.5, 1].forEach(function (f) {
+    var t = svgNode("text", { x: cw + 6, y: H - H * f + 4, "class": "ax" });
+    t.textContent = fmt(ymax * f);
+    svg.appendChild(t);
+  });
+  var slot = cw / n, bw = slot * (1 - (o.gap || 0.42)), r = Math.min(o.r || 7, bw / 2);
+  var step = labels ? Math.max(1, Math.ceil(labels.length / 8)) : 1;
+  data.forEach(function (stack, i) {
+    stack = arr(stack);
+    var x = i * slot + (slot - bw) / 2, acc = 0, last = -1;
+    stack.forEach(function (v, j) { if (v > 0) last = j; });
+    stack.forEach(function (v, j) {
+      if (!(v > 0)) return;
+      var top = y(acc + v), bot = y(acc), node;
+      if (j === last) {
+        var rr = Math.min(r, bot - top);
+        node = svgNode("path", { d: "M" + x + " " + bot + " V" + (top + rr) + " Q" + x + " " + top + " " + (x + rr) + " " + top +
+          " H" + (x + bw - rr) + " Q" + (x + bw) + " " + top + " " + (x + bw) + " " + (top + rr) + " V" + bot + " Z" });
+      } else node = svgNode("rect", { x: x, y: top, width: bw, height: bot - top + 0.6 });
+      node.style.fill = o.hl ? (i === data.length - 1 ? colours[0] : "var(--surface-2)") : (colours[j] || A2_GREY);
+      if (o.tip) { var tt = document.createElementNS("http://www.w3.org/2000/svg", "title"); tt.textContent = o.tip(i, j, v); node.appendChild(tt); }
+      svg.appendChild(node);
+      acc += v;
+    });
+    if (labels && labels[i] != null && i % step === 0) {
+      var t = svgNode("text", { x: x + bw / 2, y: H + 15, "text-anchor": "middle", "class": "ax" });
+      t.textContent = labels[i];
+      svg.appendChild(t);
+    }
+  });
+  function dash(v, colour, label) {
+    var l = svgNode("line", { x1: 0, x2: cw, y1: y(v), y2: y(v), "class": "dash" });
+    l.style.stroke = colour;
+    svg.appendChild(l);
+    if (label) {
+      var t = svgNode("text", { x: 2, y: Math.max(11, y(v) - 6), "class": "ax" });
+      t.style.fill = colour;
+      t.textContent = label;
+      svg.appendChild(t);
+    }
+  }
+  if (o.avg > 0) dash(o.avg, A2_UP, o.avgLabel || null);   // the cap's label sits above its line
+  if (o.cap > 0) dash(o.cap, A2_ORANGE, o.capLabel || null);
+  host.appendChild(svg);
+}
+/* A round top for the scale so its two labels are whole numbers (the phone's niceMax). */
+function a2Nice(v) {
+  if (v <= 2) return 2;
+  if (v <= 10) return Math.ceil(v / 2) * 2;
+  var m = Math.pow(10, Math.floor(Math.log10(v)));
+  return [1, 1.2, 1.6, 2, 3, 4, 5, 6, 8, 10].filter(function (f) { return f * m >= v; })[0] * m;
+}
+function a2Range(a) {
+  var s = Number(a.windowStart) || 0, e = Math.min(Number(a.windowEnd) || 0, Date.now());
+  if (!s || !e) return "";
+  var M = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  function f(ms) { var d = new Date(ms); return d.getDate() + " " + M[d.getMonth()]; }
+  return f(s) + " – " + f(e);
+}
+
+/* ---- Highlights (Health): the top mover and the emerging topic as sentences. ---- */
+function a2Highlights(host, a) {
+  function item(glyph, colour, title, text) {
+    var r = el("div", "a2hl");
+    var ic = el("div", "ic", glyph);
+    ic.style.background = colour;
+    r.appendChild(ic);
+    var c = el("div", "t");
+    c.appendChild(el("b", null, title));
+    c.appendChild(el("p", null, text));
+    r.appendChild(c);
+    host.appendChild(r);
+    return c;
+  }
+  var any = false;
+  if (a.moverName) {
+    any = true;
+    var c = item("↑", A2_ORANGE, a.moverName + " is getting more coverage",
+      "Its share of stories this " + anPeriod(AN_WIN) + " so far is " + (a.moverDeltaPts || 0) + " points above its usual share.");
+    var ms = arr(a.moverSeries);
+    if (ms.length >= 2) a2Bars(c, ms.map(function (v) { return [v]; }), [A2_ORANGE], arr(a.weekLabels), { h: 70, hl: true });
+  }
+  if (a.emergingName) {
+    any = true;
+    var span = AN_WIN === "1M" ? "7 days" : "30 days", dd = a.emergingDelta || 0;
+    item("↗", A2_CYAN, a.emergingName + " is rising",
+      dd + (dd === 1 ? " more story" : " more stories") + " in the last " + span + " than in the " + span + " before.");
+  }
+  if (!any) anNote(host, "Nothing stands out in this window.");
+}
+
+/* ---- Spending (Screen Time): the window's total, a bar per day (1M) or week, the cap. ---- */
+function a2Spending(host, st) {
+  var sw = (st.spendWindows || {})[AN_WIN] || null;
+  if (!sw || !sw.series) { anCost(host, st); return; }   // a phone from before build 116
+  var cap = Number(st.dailyCostCap) || 0, daily = AN_WIN === "1M";
+  a2Kick(host, AN_WIN === "1M" ? "Last 30 days" : "Last " + (Number(sw.days) || 0) + " days");
+  a2Big(host, "₹" + (Number(sw.rupees) || 0).toFixed(2));
+  a2Sub(host, (sw.searches || 0) + " searches · " + (sw.calls || 0) + (sw.calls === 1 ? " call" : " calls") + " · " +
+    (Number(sw.tokens) || 0).toLocaleString("en-IN") + " tokens");
+  a2Bars(host, arr(sw.series).map(function (v) { return [Number(v) || 0]; }), ["var(--accent)"], null, {
+    h: 120, gap: 0.3, r: 3, cap: daily ? cap : 0, capLabel: "Daily cap ₹" + Math.round(cap),
+    fmt: function (v) { return "₹" + Math.round(v); },
+    tip: function (i, j, v) { return "₹" + v.toFixed(2); }
+  });
+  a2Sub(host, daily ? "A bar per day, oldest on the left." : "A bar per week, oldest on the left.");
+  a2Line(host, "Today", "≈ ₹" + (Number(st.spendToday) || 0).toFixed(2) + " · " + (st.searchesToday || 0) + " searches");
+  a2Line(host, "Daily cap", "₹" + Math.round(cap) + " · in-app stop");
+  host.appendChild(el("div", "anfoot", anCostFoot(sw)));
+}
+
+/* ---- News volume: the total, the top four channels stacked, the rest grey, the average. ---- */
+function a2Volume(host, a) {
+  var weeks = arr(a.weekLabels), rows = arr(a.volPerWeek), cats = arr(a.volCategories);
+  var per = arr(a.totalPerWeek), total = per.reduce(function (t, v) { return t + v; }, 0);
+  var chan = cats.map(function (c, i) { return rows.reduce(function (t, wk) { return t + (arr(wk)[i] || 0); }, 0); });
+  var order = cats.map(function (c, i) { return i; }).filter(function (i) { return chan[i] > 0; })
+    .sort(function (x, y) { return chan[y] - chan[x]; });
+  var top = order.slice(0, 4), rest = cats.map(function (c, i) { return i; }).filter(function (i) { return top.indexOf(i) < 0; });
+  var colours = top.map(function (c, i) { return A2_SERIES[i % A2_SERIES.length]; }).concat([A2_GREY]);
+  var stacks = rows.map(function (wk) {
+    wk = arr(wk);
+    return top.map(function (i) { return wk[i] || 0; }).concat([rest.reduce(function (t, i) { return t + (wk[i] || 0); }, 0)]);
+  });
+  var other = rest.reduce(function (t, i) { return t + chan[i]; }, 0);
+  a2Kick(host, "Total");
+  a2Big(host, String(total), "stories");
+  a2Sub(host, a2Range(a) + " · by channel");
+  a2Bars(host, stacks, colours, weeks, {
+    avg: per.length ? total / per.length : 0,
+    tip: function (i, j, v) { return (j < top.length ? cats[top[j]] : "Other") + ": " + v; }
+  });
+  a2Legend(host, top.map(function (i, k) { return [cats[i] + " " + chan[i], colours[k]]; })
+    .concat(other ? [["Other " + other, A2_GREY]] : []));
+  a2Sub(host, "Dashed line: the average per " + anPeriod(AN_WIN) + ".");
+}
+
+/* ---- What happened to the news: the funnel, then where each story ended up. ---- */
+function a2Outcome(host, cv, s) {
+  s = s || {};
+  var fetched = cv.surfaced || 0;
+  a2Kick(host, "Fetched in the " + anPhrase(AN_WIN));
+  a2Big(host, String(fetched), "stories");
+  if (!fetched) { anNote(host, "No news in this window."); return; }
+  [["Fetched", fetched], ["In feed", s.inFeed || 0], ["Saved", cv.saved || 0],
+   ["Verified", cv.verified || 0], ["Published", cv.published || 0]].forEach(function (r) {
+    var pct = Math.round((r[1] / fetched) * 100);
+    var row = el("div", "a2fun");
+    row.appendChild(el("span", "l", r[0]));
+    var tr = el("span", "t");
+    var fill = el("i");
+    fill.style.width = (r[1] > 0 ? Math.max(2.5, Math.min(100, (r[1] / fetched) * 100)) : 0) + "%";
+    tr.appendChild(fill);
+    row.appendChild(tr);
+    var v = el("span", "v", String(r[1]));
+    v.appendChild(el("small", null, pct + " %"));
+    row.appendChild(v);
+    host.appendChild(row);
+  });
+  var out = arr(s.outcomeTotals);
+  var ends = [["Published", out[0] || 0, A2_UP], ["Verified", out[1] || 0, A2_CYAN], ["Archived", out[4] || 0, A2_ARCH],
+              ["Deleted", out[2] || 0, A2_DOWN], ["Still open", out[3] || 0, A2_GREY]];
+  if (ends.some(function (e) { return e[1] > 0; })) {
+    var k = el("div", "a2kick", "Where they ended up");
+    k.style.marginTop = "16px";
+    host.appendChild(k);
+    a2Split(host, ends.map(function (e) { return [e[1], e[2], e[0] + ": " + e[1]]; }));
+    a2Legend(host, ends.filter(function (e) { return e[1] > 0; }).map(function (e) { return [e[0] + " " + e[1], e[2]]; }));
+  }
+  var minis = el("div", "a2minis");
+  [["Liked", cv.liked || 0], ["Disliked", cv.disliked || 0]].forEach(function (m) {
+    var b = el("div");
+    b.appendChild(el("b", null, String(m[1])));
+    b.appendChild(el("small", null, m[0]));
+    minis.appendChild(b);
+  });
+  host.appendChild(minis);
+}
+
+/* ---- Share of voice: the leader, one split bar, a row per name with share and stories. ---- */
+function a2Sov(host, sov, colourFor) {
+  if (!sov.length) { anNote(host, "No competitor-matched news yet."); return; }
+  var total = sov.reduce(function (t, r) { return t + r.c; }, 0) || 1;
+  var lead = sov.filter(function (r) { return r.n !== "Market-wide"; })[0];
+  a2Kick(host, "Leader");
+  if (lead) a2Big(host, shortName(lead.n), Math.round((lead.c * 100) / total) + " %"); else a2Big(host, "—");
+  a2Sub(host, "Of all stories, " + anPhrase(AN_WIN));
+  a2Split(host, sov.map(function (r) { return [r.c, colourFor(r.n), r.n + ": " + r.c]; }));
+  sov.forEach(function (r) {
+    var row = el("div", "a2row");
+    var sw = el("i");
+    sw.style.background = colourFor(r.n);
+    row.appendChild(sw);
+    row.appendChild(el("span", "n", r.n === "Market-wide" ? "Market-wide" : shortName(r.n)));
+    row.appendChild(el("span", "p", Math.floor((r.c * 100) / total) + " %"));
+    row.appendChild(el("span", "c", String(r.c)));
+    host.appendChild(row);
+  });
+}
+
+/* ---- Momentum (Stocks rows). ---- */
+function a2Momentum(host, list) {
+  if (!list.length) { anNote(host, "Not enough competitor-matched news yet."); return; }
+  list.slice(0, 6).forEach(function (m) {
+    var sum = arr(m.w).reduce(function (t, v) { return t + v; }, 0);
+    a2Stock(host, shortName(m.n), sum + (sum === 1 ? " story" : " stories"), m.w, m.d);
+  });
+  a2Sub(host, "Stories per " + anPeriod(AN_WIN) + ", newest on the right; the chip is the newer half of the window against the older half.");
+}
+
+/* ---- Who leads each topic: one thin split bar per topic. ---- */
+function a2Topics(host, list, colourFor) {
+  if (!list.length) { anNote(host, "Not enough news yet."); return; }
+  var seen = [], names = {};
+  list.slice(0, 7).forEach(function (row) {
+    var segs = arr(row.seg), total = segs.reduce(function (t, x) { return t + x.c; }, 0) || 1;
+    var lead = segs.filter(function (x) { return x.n !== "Other"; }).reduce(function (a, b) { return (!a || b.c > a.c) ? b : a; }, null);
+    var h = el("div", "a2topic");
+    h.appendChild(el("span", null, row.cat));
+    if (lead) h.appendChild(el("span", "l", shortName(lead.n) + " " + Math.floor((lead.c * 100) / total) + " %"));
+    host.appendChild(h);
+    a2Split(host, segs.map(function (x) {
+      if (!names[x.n]) { names[x.n] = 1; seen.push(x.n); }
+      return [x.c, colourFor(x.n), x.n + ": " + x.c];
+    }), true);
+  });
+  a2Legend(host, seen.map(function (n) { return [n === "Other" ? "Other" : shortName(n), colourFor(n)]; }));
+}
+
+/* ---- Activity: rounded squares in the accent, deeper = more. ---- */
+function a2Activity(host, a) {
+  var rows = arr(a.heatRows), cols = arr(a.heatCols), grid = arr(a.heat);
+  if (!rows.length || !cols.length) { anNote(host, "Not enough competitor-matched news yet."); return; }
+  var max = 1;
+  grid.forEach(function (r) { arr(r).forEach(function (v) { max = Math.max(max, v); }); });
+  a2Sub(host, "Stories by competitor and topic · deeper = more");
+  var g = el("div", "a2heat");
+  g.style.gridTemplateColumns = "minmax(84px,1.4fr) repeat(" + cols.length + ", minmax(26px,1fr))";
+  g.appendChild(el("span"));
+  cols.forEach(function (c) { var h = el("span", "h", shortLabel(c)); h.title = c; g.appendChild(h); });
+  rows.forEach(function (rn, ri) {
+    var l = el("span", "r", shortName(rn));
+    l.title = rn;
+    g.appendChild(l);
+    cols.forEach(function (cn, ci) {
+      var v = arr(grid[ri])[ci] || 0, cell = el("span", "c");
+      if (v > 0) { cell.style.background = "var(--accent)"; cell.style.opacity = String(0.2 + 0.8 * v / max); }
+      cell.title = rn + " · " + cn + ": " + v;
+      g.appendChild(cell);
+    });
+  });
+  host.appendChild(g);
+}
+
+/* ---- Sources: the count, then the top outlets. ---- */
+function a2Sources(host, a) {
+  var src = arr(a.sources);
+  a2Kick(host, "Distinct sources");
+  a2Big(host, String(a.distinctSources || 0));
+  if (!src.length) { anNote(host, "No sources yet."); return; }
+  var max = src.reduce(function (t, r) { return Math.max(t, r.c); }, 1);
+  src.slice(0, 8).forEach(function (r) {
+    anBar(host, r.n, String(r.c), Math.round((r.c / max) * 100), "var(--accent)");
+  });
+}
+
+/* ---- Industry trends: the theme split, then rising and cooling as Stocks rows. ---- */
+function a2Trends(host, a) {
+  var g = arr(a.trendGroups);
+  if (!g.length) { anNote(host, "No tracked industry trends mentioned yet."); return; }
+  var col = function (i) { return (A2_SERIES.concat([A2_GREY]))[i % (A2_SERIES.length + 1)]; };
+  a2Kick(host, "By theme");
+  a2Split(host, g.map(function (r, i) { return [r.c, col(i), r.n + ": " + r.c]; }));
+  a2Legend(host, g.map(function (r, i) { return [r.n + " " + r.c, col(i)]; }));
+  var kw = arr(a.keywords);
+  var rising = kw.filter(function (k) { return k.d > 0; }).sort(function (x, y) { return y.d - x.d; }).slice(0, 5);
+  var cooling = kw.filter(function (k) { return k.d < 0; }).sort(function (x, y) { return x.d - y.d; }).slice(0, 4);
+  [["Rising", rising, "—"], ["Cooling", cooling, "Nothing cooling — coverage is concentrated in recent weeks."]].forEach(function (side) {
+    var k = el("div", "a2kick", side[0]);
+    k.style.marginTop = "16px";
+    host.appendChild(k);
+    if (!side[1].length) a2Sub(host, side[2]);
+    side[1].forEach(function (t) { a2Stock(host, t.n, null, t.w, t.d); });
   });
 }
 
@@ -6964,8 +7411,36 @@ function renderDashboard(app, d) {
 
   /* API cost, and the metal prices beside it — the two "what is this costing / what is it
      worth" figures, together at the top where the phone puts cost. */
-  c = anCard("API cost (estimate)", "What this app is spending on your key");
-  anCost(c.body, d.settings || {});
+  /* Phone build 116: the Apple-style cards, in the phone's order. One colour per rival across the
+     wall, by share-of-voice rank; Market-wide and Other are grey. */
+  var rivalNames = sov.map(function (r) { return r.n; }).filter(function (n) { return n !== "Market-wide" && n !== "Other"; });
+  var rival = function (name) {
+    var i = rivalNames.indexOf(name);
+    return i >= 0 ? A2_SERIES[i % A2_SERIES.length] : A2_GREY;
+  };
+
+  if (typeof a.moverName === "string") {
+    c = anCard("Highlights", null);
+    a2Highlights(c.body, a);
+    add(c);
+  } else {
+    /* A backup from a phone before build 116: the two stat tiles it can fill. */
+    var statCard = function (k, v, caption, colour) {
+      var s = el("div", "anstat");
+      s.appendChild(el("div", "k", k));
+      var val = el("div", "v", v || "—");
+      val.style.color = colour;
+      s.appendChild(val);
+      s.appendChild(el("div", "c", caption));
+      return s;
+    };
+    var espan = AN_WIN === "1M" ? "7 days" : "30 days";
+    add(statCard("Top mover", a.topMover, "Share of voice in the newest " + anPeriod(AN_WIN) + " so far, against its own average", AN_PALETTE[0]));
+    add(statCard("Emerging topic", a.emergingTopic, "Biggest gain among dated stories, last " + espan + " vs the " + espan + " before", AN_PALETTE[2]));
+  }
+
+  c = anCard("Spending", null);
+  a2Spending(c.body, d.settings || {});
   add(c);
 
   var np = arr(d.nalcoPrices);
@@ -6975,59 +7450,36 @@ function renderDashboard(app, d) {
     add(c);
   }
 
-  /* The phone's two headline stat cards. */
-  function statCard(k, v, caption, colour) {
-    var s = el("div", "anstat");
-    s.appendChild(el("div", "k", k));
-    var val = el("div", "v", v || "—");
-    val.style.color = colour;
-    s.appendChild(val);
-    s.appendChild(el("div", "c", caption));
-    return s;
-  }
-  /* Both captions name what the phone actually computed. Top mover measures the newest, still
-     in-progress period against the average of the earlier ones, so it says "so far"; Emerging topic
-     compares two equal rolling spans and skips stories with no parseable date. */
-  add(statCard("Top mover", a.topMover,
-    "Share of voice in the newest " + anPeriod(AN_WIN) + " so far, against its own average", AN_PALETTE[0]));
-  var espan = AN_WIN === "1M" ? "7 days" : "30 days";
-  add(statCard("Emerging topic", a.emergingTopic,
-    "Biggest gain among dated stories, last " + espan + " vs the " + espan + " before", AN_PALETTE[2]));
-
-  c = anCard("News volume", "Stories by channel over time");
-  anVolume(c.body, a);
+  c = anCard("News volume", null);
+  a2Volume(c.body, a);
   add(c);
 
-  c = anCard("News overview", "Of news fetched in the " + anPhrase(AN_WIN) + ", what you did with it");
-  anOverview(c.body, cv, typeof a.inFeed === "number" ? a.inFeed : arr(d.alerts).length);
+  c = anCard("What happened to the news", null);
+  a2Outcome(c.body, cv, a.sankey);
   add(c);
 
-  c = anCard("Conversion flow", "Where every story ended up, from the feed to a decision");
-  anFlow(c.body, a.sankey);
+  c = anCard("Share of voice", null);
+  a2Sov(c.body, sov, rival);
   add(c);
 
-  c = anCard("Share of voice", "By competitor · " + anPhrase(AN_WIN));
-  anSov(c.body, sov);
+  c = anCard("Momentum", null);
+  a2Momentum(c.body, arr(a.momentum));
   add(c);
 
-  c = anCard("Momentum", anUnit(AN_WIN) + " coverage trend by competitor");
-  anMomentum(c.body, arr(a.momentum), compColour);
+  c = anCard("Who leads each topic", null);
+  a2Topics(c.body, arr(a.narrative), rival);
   add(c);
 
-  c = anCard("Narrative ownership", "Who owns each topic's coverage");
-  anNarrative(c.body, arr(a.narrative), compColour);
+  c = anCard("Activity", null);
+  a2Activity(c.body, a);
   add(c);
 
-  c = anCard("Source diversity", "Where your intel comes from");
-  anSources(c.body, a);
+  c = anCard("Sources", null);
+  a2Sources(c.body, a);
   add(c);
 
-  c = anCard("Activity heatmap", "Competitor × category");
-  anHeat(c.body, a);
-  add(c);
-
-  c = anCard("Industry trends", "Which tracked fenestration trends are heating up");
-  anTrends(c.body, a);
+  c = anCard("Industry trends", null);
+  a2Trends(c.body, a);
   add(c);
 
   g._cards = cards;
@@ -8315,7 +8767,7 @@ function chPhoneFacts(d) {
     if (dn.length) L.push("- Cooling terms: " + dn.map(function (k) { return k.n + " " + chSigned(k.d); }).join(", "));
     var cv = a.conversion;
     if (cv) L.push("- Funnel: surfaced " + (cv.surfaced || 0) + ", liked " + (cv.liked || 0) + ", saved " + (cv.saved || 0) +
-                   ", verified " + (cv.verified || 0) + ", published " + (cv.published || 0) + ", deleted " + (cv.deleted || 0));
+                   ", verified " + (cv.verified || 0) + ", archived " + (cv.archived || 0) + ", published " + (cv.published || 0) + ", deleted " + (cv.deleted || 0));
     var bm = d.analyticsByMarket || {};
     Object.keys(bm).forEach(function (m) {
       var x = bm[m] && bm[m][AN_WIN];
