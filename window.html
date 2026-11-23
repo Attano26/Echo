@@ -62,6 +62,13 @@
 @font-face{font-family:'Arial Nova';src:url("ArialNova-Light.woff2") format("woff2");font-weight:300;font-style:normal;font-display:swap}
 @font-face{font-family:'Arial Nova';src:url("ArialNova.woff2") format("woff2");font-weight:400 600;font-style:normal;font-display:swap}
 @font-face{font-family:'Arial Nova';src:url("ArialNova-Bold.woff2") format("woff2");font-weight:700 900;font-style:normal;font-display:swap}
+/* Inter, the phone's own font files (weights 300-700), is the default face since the redesign of
+   24 Nov 2026. Arial Nova stays as the optional font in Settings > Font, as on the phone. */
+@font-face{font-family:'Inter';src:url("Inter-Light.woff2") format("woff2");font-weight:300;font-style:normal;font-display:swap}
+@font-face{font-family:'Inter';src:url("Inter-Regular.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Inter';src:url("Inter-Medium.woff2") format("woff2");font-weight:500;font-style:normal;font-display:swap}
+@font-face{font-family:'Inter';src:url("Inter-SemiBold.woff2") format("woff2");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:'Inter';src:url("Inter-Bold.woff2") format("woff2");font-weight:700 900;font-style:normal;font-display:swap}
 
 /* ============================================================
    ECHO
@@ -71,9 +78,12 @@
    ============================================================ */
 
 :root{
-  --paper:#F5F5F7;      /* page */
+  /* The phone's colours (iOS grouped page, white cells, iOS secondary labels), 24 Nov 2026. */
+  --paper:#F2F2F7;      /* page */
   --surface:#FFFFFF;    /* cards, sheets */
-  --surface-2:#F7F7F9;  /* inset panels, quiet chips */
+  --surface-2:#F2F2F7;  /* inset panels, quiet chips */
+  /* The page's glow: a blue-violet wash and a faint dot pattern behind everything. */
+  --glow-a:rgba(98,140,255,.30); --glow-b:rgba(170,140,255,.22); --glow-dot:rgba(31,87,245,.10);
   --track:#EAEAEF;      /* segmented-control track */
   /* The segmented controls, taken from the phone so the two products match exactly:
      AnalyticsPane uses #E9E9EE / #232329 for the track and White / #3D3D47 for the thumb.
@@ -85,11 +95,11 @@
   --st1:#2A78D6; --st2:#EB6834; --st3:#1BAF7A; --st4:#EDA100; --st5:#E87BA4;
   --st6:#008300; --st7:#4A3AA7; --st8:#E34948; --st9:#1198AD;
   --track-on:#FFFFFF;   /* selected segment */
-  --ink:#1D1D1F;
-  --ink-2:#3F4048;
-  --ink-3:#5D5E66;
-  --line:#E3E3E6;
-  --line-2:#EFEFF1;     /* hairline INSIDE a card, softer than the card's own edge */
+  --ink:#000000;
+  --ink-2:rgba(60,60,67,.85);
+  --ink-3:rgba(60,60,67,.60);
+  --line:rgba(60,60,67,.16);
+  --line-2:rgba(60,60,67,.10);     /* hairline INSIDE a card, softer than the card's own edge */
   --sh-1:0 1px 2px rgba(0,0,0,.04),0 6px 20px rgba(0,0,0,.05);
   --accent:#1F57F5;     /* Signal Blue — the single accent, matched to the phone */
   --accent-soft:rgba(31,87,245,.13);
@@ -125,14 +135,11 @@
   --r-card:18px;       /* Sightline's radius — the softer corner is most of its calm */
   --r-box:10px;
   --r-pill:999px;
-  /* TWO FACES FROM ONE FAMILY, SPLIT BY ROLE, NOT BY SIZE.
-     --fs is Arial Nova Light: body, captions, every secondary row. It is the default on <body>
-     and the reason the page reads as calm as it does.
-     --fs-title is Arial Nova: headings, card titles, key labels, and every large figure. Light
-     is lovely in a paragraph and goes soft the moment it has to hold the top of a hierarchy,
-     which is exactly what a card title does. */
-  --fs:'Arial Nova Light','Arial Nova','Segoe UI Light','Segoe UI',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;
-  --fs-title:'Arial Nova','Arial Nova Light','Segoe UI',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;
+  /* Inter, the phone's font, for body and titles (24 Nov 2026). The two roles stay separate so
+     Settings > Font can switch both to Arial Nova (Light for body, Regular for titles): see
+     :root.font-arialnova at the end of the stylesheet. */
+  --fs:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+  --fs-title:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
   --apph:100dvh;
   /* The page never declared one, so every browser-drawn surface — scrollbars, form
      controls, the built-in PDF viewer — rendered in the browser's default scheme rather
@@ -220,17 +227,20 @@
   --st6:#008300; --st7:#9085E9; --st8:#E66767; --st9:#1596A8;
 
 
-    --sheen:rgba(245,215,255,.20); --spark:rgba(245,215,255,.85);    --paper:#0E0E0E; --surface:#161618; --surface-2:#1F1F22;
-    --track:#232329; --track-on:#43434E;
-    --seg-track:#232329; --seg-thumb:#3D3D47;
-    --ink:#F5F5F7; --ink-2:#C9CAD3; --ink-3:#9A9CAB;
-    --line:#2A2A2F;
-    --line-2:#242427;
+    --sheen:rgba(245,215,255,.20); --spark:rgba(245,215,255,.85);
+    /* The phone's dark theme: true-black page, #1C1C1E cards (24 Nov 2026). */
+    --paper:#000000; --surface:#1C1C1E; --surface-2:#2C2C2E;
+    --track:#2C2C2E; --track-on:#48484A;
+    --seg-track:#1C1C1E; --seg-thumb:#636366;
+    --ink:#FFFFFF; --ink-2:rgba(235,235,245,.80); --ink-3:rgba(235,235,245,.60);
+    --line:rgba(84,84,88,.55);
+    --line-2:rgba(84,84,88,.35);
     --accent-soft:rgba(31,87,245,.20);
-    --accent-ink:#5982F8;
+    --accent-ink:#678DF8;
+    --glow-a:rgba(47,107,255,.32); --glow-b:rgba(132,84,255,.24); --glow-dot:rgba(255,255,255,.05);
     --nav-on:var(--ink);
     color-scheme:dark;
-    --hero-bg:#1A1A1F;
+    --hero-bg:#1C1C1E;
     --hero-ink:#F5F5F7;
     --hero-ink-3:#9A9CAB;
     --hero-sweep:
@@ -245,7 +255,7 @@
        because on this ground the bright colour is already legible as text. */
     --good-ink:rgb(var(--good-rgb)); --warn-ink:rgb(var(--warn-rgb));
     --crit-ink:rgb(var(--crit-rgb)); --info-ink:rgb(var(--info-rgb));
-    --track:rgba(235,235,245,.14);
+    --track:#2C2C2E;   /* the phone's iosFill track (24 Nov 2026) */
     --widget-shadow:0 1px 2px rgba(0,0,0,.5), 0 14px 32px -10px rgba(0,0,0,.7);
   }
 }
@@ -259,17 +269,19 @@
   --st1:#3987E5; --st2:#D95926; --st3:#199E70; --st4:#C98500; --st5:#D55181;
   --st6:#008300; --st7:#9085E9; --st8:#E66767; --st9:#1596A8;
   --sheen:rgba(245,215,255,.20); --spark:rgba(245,215,255,.85);
-  --paper:#0E0E0E; --surface:#161618; --surface-2:#1F1F22;
-  --track:#232329; --track-on:#43434E;
-  --seg-track:#232329; --seg-thumb:#3D3D47;
-  --ink:#F5F5F7; --ink-2:#C9CAD3; --ink-3:#9A9CAB;
-  --line:#2A2A2F;
-  --line-2:#242427;
+  /* The phone's dark theme: true-black page, #1C1C1E cards (24 Nov 2026). */
+  --paper:#000000; --surface:#1C1C1E; --surface-2:#2C2C2E;
+  --track:#2C2C2E; --track-on:#48484A;
+  --seg-track:#1C1C1E; --seg-thumb:#636366;
+  --ink:#FFFFFF; --ink-2:rgba(235,235,245,.80); --ink-3:rgba(235,235,245,.60);
+  --line:rgba(84,84,88,.55);
+  --line-2:rgba(84,84,88,.35);
   --accent-soft:rgba(31,87,245,.20);
-  --accent-ink:#5982F8;
+  --accent-ink:#678DF8;
+  --glow-a:rgba(47,107,255,.32); --glow-b:rgba(132,84,255,.24); --glow-dot:rgba(255,255,255,.05);
   --nav-on:var(--ink);
   color-scheme:dark;
-  --hero-bg:#1A1A1F;
+  --hero-bg:#1C1C1E;
   --hero-ink:#F5F5F7;
   --hero-ink-3:#9A9CAB;
   --hero-sweep:
@@ -284,7 +296,7 @@
      because on this ground the bright colour is already legible as text. */
   --good-ink:rgb(var(--good-rgb)); --warn-ink:rgb(var(--warn-rgb));
   --crit-ink:rgb(var(--crit-rgb)); --info-ink:rgb(var(--info-rgb));
-  --track:rgba(235,235,245,.14);
+  --track:#2C2C2E;   /* the phone's iosFill track (24 Nov 2026) */
   --widget-shadow:0 1px 2px rgba(0,0,0,.5), 0 14px 32px -10px rgba(0,0,0,.7);
 }
 
@@ -296,8 +308,15 @@
 html,body{height:100%}
 html,body{height:100dvh}
 body{
-  margin:0;background:var(--paper);color:var(--ink);
-  font-family:var(--fs);font-size:15px;line-height:1.55;font-weight:300;
+  margin:0;color:var(--ink);
+  /* The phone's glow: a blue-violet light top right and bottom left over a faint dot grid. */
+  background:
+    radial-gradient(55% 45% at 88% -5%, var(--glow-a), transparent 70%),
+    radial-gradient(45% 40% at 18% 105%, var(--glow-b), transparent 70%),
+    radial-gradient(circle, var(--glow-dot) 1px, transparent 1.4px) 0 0/15px 15px,
+    var(--paper);
+  background-attachment:fixed;
+  font-family:var(--fs);font-size:15px;line-height:1.55;font-weight:400;letter-spacing:-.011em;
   -webkit-font-smoothing:antialiased;
   overflow:hidden;
   /* Kills the double-tap zoom on a mis-tapped control, and the 300ms delay
@@ -686,13 +705,6 @@ body.in .dhead .mark{ animation:railsweep 9s linear infinite }
 .info .i{flex:0 0 20px;height:20px;border-radius:50%;background:var(--surface-2);
   color:var(--ink-3);display:grid;place-items:center;font-size:12px;font-weight:700;font-style:italic}
 .info b{color:var(--ink);font-weight:600;display:block;margin-bottom:4px}
-
-/* ---------- report bar ---------- */
-#repbar{flex:0 0 auto;background:var(--surface);border-top:1px solid var(--line);
-  padding:12px 0 max(12px,env(safe-area-inset-bottom));display:none}
-#repbar.on{display:block}
-#repbar .inner{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-#repbar .cnt{flex:1;font-size:14px;min-width:150px}
 
 /* ---------- states ---------- */
 .empty{text-align:center;color:var(--ink-3);padding:56px 20px;font-size:14px;line-height:1.7}
@@ -2234,9 +2246,372 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
 .askrow.eq .btn{width:100%;display:flex;align-items:center;justify-content:center;min-height:44px}
 .askrow.eq .btn.ghost{background:var(--surface-2);border-color:transparent;color:var(--ink)}
 .btn.danger{background:rgba(240,97,109,.14);color:var(--danger)}
-/* "Archive the rest" strip above News alerts (build 110) */
-.archrest{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px;
-  padding:10px 12px 10px 16px;border-radius:12px;background:var(--surface-2);font-size:14px}
+/* =====================================================================
+   THE NEWS PAGE, AS ON THE PHONE (redesign approved 24 Nov 2026)
+   ---------------------------------------------------------------------
+   S1 sidebar (News, Saved, Analytics, Ask, Monthly Report, Database), the T1 toolbar on News
+   (title, the Alerts / Archive / Published capsule with counts, the capsule search, the
+   Competitor / Market / Segment chip menus), the eight widgets as true squares, the phone's
+   story card in its expanded state (C3), month headers, the frosted card menu, the Edit story
+   pop-up, selecting stories, and the export sheet. "fp" / "fc" = feed page / feed card.
+   Every token below is declared in all three theme states, like the palette at the top.
+   ===================================================================== */
+:root{
+  --fp-pill:#FFFFFF; --fp-track:#DDDDE2; --fp-thumb:rgba(255,255,255,.96);
+  --fp-thumb-ink:rgba(0,0,0,.78); --fp-menu:rgba(255,255,255,.82); --fp-sep:rgba(0,0,0,.12);
+  --fp-rim:rgba(0,0,0,.06);
+  --fc-sec:rgba(60,60,67,.60); --fc-fill:rgba(118,118,128,.12); --fc-sep:rgba(0,0,0,.12);
+  --fc-menu:rgba(255,255,255,.78); --fc-menu-rim:rgba(0,0,0,.08); --fc-glass:rgba(255,255,255,.62);
+  --fc-sheen:rgba(255,255,255,.90); --fc-rim:rgba(0,0,0,.06); --fc-rimtop:rgba(0,0,0,.06);
+  --fc-violet:#7A3FF2; --fc-violet-wash:rgba(122,63,242,.12); --fc-red:#FF383C;
+  --fc-dim:rgba(0,0,0,.38); --fc-sheet:#FFFFFF; --fc-group:#F2F2F7; --fc-field:#F2F2F7;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --fp-pill:rgba(118,118,128,.24); --fp-track:rgba(118,118,128,.24); --fp-thumb:#636366;
+    --fp-thumb-ink:rgba(255,255,255,.82); --fp-menu:rgba(44,44,46,.80); --fp-sep:rgba(255,255,255,.17);
+    --fp-rim:rgba(255,255,255,.08);
+    --fc-sec:rgba(235,235,245,.70); --fc-fill:rgba(118,118,128,.24); --fc-sep:rgba(255,255,255,.17);
+    --fc-menu:rgba(44,44,46,.66); --fc-menu-rim:rgba(255,255,255,.16); --fc-glass:rgba(44,44,46,.62);
+    --fc-sheen:rgba(255,255,255,.07); --fc-rim:rgba(255,255,255,.06); --fc-rimtop:rgba(255,255,255,.22);
+    --fc-violet:#B794FF; --fc-violet-wash:rgba(183,148,255,.17); --fc-red:#FF4245;
+    --fc-dim:rgba(0,0,0,.62); --fc-sheet:#1C1C1E; --fc-group:#2C2C2E; --fc-field:#2C2C2E;
+  }
+}
+:root[data-theme="dark"]{
+  --fp-pill:rgba(118,118,128,.24); --fp-track:rgba(118,118,128,.24); --fp-thumb:#636366;
+  --fp-thumb-ink:rgba(255,255,255,.82); --fp-menu:rgba(44,44,46,.80); --fp-sep:rgba(255,255,255,.17);
+  --fp-rim:rgba(255,255,255,.08);
+  --fc-sec:rgba(235,235,245,.70); --fc-fill:rgba(118,118,128,.24); --fc-sep:rgba(255,255,255,.17);
+  --fc-menu:rgba(44,44,46,.66); --fc-menu-rim:rgba(255,255,255,.16); --fc-glass:rgba(44,44,46,.62);
+  --fc-sheen:rgba(255,255,255,.07); --fc-rim:rgba(255,255,255,.06); --fc-rimtop:rgba(255,255,255,.22);
+  --fc-violet:#B794FF; --fc-violet-wash:rgba(183,148,255,.17); --fc-red:#FF4245;
+  --fc-dim:rgba(0,0,0,.62); --fc-sheet:#1C1C1E; --fc-group:#2C2C2E; --fc-field:#2C2C2E;
+}
+
+/* The optional font (Settings > Font). Inter stays the default. */
+:root.font-arialnova{
+  --fs:'Arial Nova Light','Arial Nova','Segoe UI Light','Segoe UI',sans-serif;
+  --fs-title:'Arial Nova','Arial Nova Light','Segoe UI',sans-serif;
+}
+
+/* ---------- shell + toolbar ---------- */
+#drawerNav{padding-top:4px}
+/* News (and Saved): the toolbar takes the place of the title row; the theme button floats at its right. */
+#shell.fp-news #top .titlerow{display:none}
+#top .wrap{position:relative}
+.fp-tool:empty{display:none}
+@media (min-width:1000px){
+  #shell.fp-news #top .bar{position:absolute;top:0;right:20px;padding:0;z-index:2}
+  #shell.fp-news .fp-bar{padding-right:52px}
+}
+.fp-bar{display:flex;align-items:center;flex-wrap:wrap;gap:12px 14px;padding:2px 0 14px}
+.fp-bar-in{padding:0 0 16px}
+.fp-title{font-family:var(--fs-title);font-size:34px;line-height:1.1;letter-spacing:-.5px;font-weight:700;margin:0 4px 0 0}
+
+/* The phone's CapsuleSegmented: counts readable on the thumb and on the track. */
+.fp-seg{display:inline-flex;align-items:center;height:40px;padding:2px;border-radius:999px;
+  background:var(--fp-track);-webkit-backdrop-filter:blur(22px) saturate(1.8);backdrop-filter:blur(22px) saturate(1.8);flex:0 0 auto}
+.fp-segb{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 16px;border:0;border-radius:999px;
+  background:transparent;color:var(--ink);font-family:var(--fs-title);font-size:15px;font-weight:500;letter-spacing:-.2px;
+  cursor:pointer;transition:background var(--t-hover) var(--ease)}
+.fp-segb:hover:not(.on){background:var(--fp-rim)}
+.fp-segb .fp-segn{font-size:13px;font-weight:500;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.fp-segb.on{background:var(--fp-thumb);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.16),0 3px 8px rgba(0,0,0,.10)}
+.fp-segb.on .fp-segn{color:var(--fp-thumb-ink)}
+.fp-seg-sm{height:34px}
+.fp-seg-sm .fp-segb{height:30px;font-size:14px;padding:0 14px}
+
+/* The phone's CapsuleSearchField: one fixed size on every list, so it never changes from page to page. */
+.fp-search{display:flex;align-items:center;gap:8px;height:40px;flex:0 1 250px;min-width:180px;max-width:250px;
+  padding:0 4px 0 14px;border-radius:999px;background:var(--fp-pill);box-shadow:inset 0 0 0 1px var(--fp-rim);
+  -webkit-backdrop-filter:blur(22px) saturate(1.8);backdrop-filter:blur(22px) saturate(1.8);cursor:text}
+.fp-search:focus-within{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.fp-mag{display:flex;color:var(--ink-3)}
+.fp-mag svg{width:18px;height:18px}
+.fp-search input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--ink);
+  font:inherit;font-size:15px;padding:0}
+.fp-search input::placeholder{color:var(--ink-3)}
+.fp-search input::-webkit-search-cancel-button{display:none}
+.fp-sclear{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border:0;border-radius:50%;
+  background:transparent;color:var(--ink-3);cursor:pointer}
+.fp-sclear[hidden]{display:none}
+.fp-sclear:hover{background:var(--fp-rim)}
+
+/* The phone's FilterChipMenu chips. */
+.fp-chips{display:flex;gap:8px;flex:0 0 auto}
+.fp-chip{display:inline-flex;align-items:center;gap:4px;height:34px;padding:0 10px 0 14px;border:0;border-radius:17px;
+  background:var(--fp-pill);box-shadow:inset 0 0 0 1px var(--fp-rim);color:var(--ink);
+  font-family:var(--fs-title);font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap}
+.fp-chip:hover{box-shadow:inset 0 0 0 1px var(--line)}
+.fp-chev{display:flex;color:var(--ink-3)}
+.fp-chev svg{width:16px;height:16px}
+.fp-chip.on{background:var(--accent);color:#fff;box-shadow:none}
+.fp-chip.on .fp-chev{color:rgba(255,255,255,.85)}
+
+/* Frosted pop-up list under a chip. */
+.fp-menu{position:fixed;z-index:95;min-width:230px;max-width:300px;max-height:420px;overflow-y:auto;
+  padding:6px 0;border-radius:22px;background:var(--fp-menu);
+  -webkit-backdrop-filter:blur(22px) saturate(1.8);backdrop-filter:blur(22px) saturate(1.8);
+  box-shadow:0 0 0 .5px var(--fp-sep),0 18px 48px rgba(0,0,0,.28);animation:fpmenu .16s var(--ease)}
+@keyframes fpmenu{from{opacity:0;transform:translateY(-4px) scale(.98)}to{opacity:1;transform:none}}
+.fp-mrow{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:0 18px 0 12px;border:0;
+  background:transparent;color:var(--ink);font:inherit;font-size:15px;text-align:left;cursor:pointer;position:relative}
+.fp-mrow + .fp-mrow::before{content:"";position:absolute;top:0;left:40px;right:0;height:.5px;background:var(--fp-sep)}
+.fp-mrow:hover{background:var(--fp-rim)}
+.fp-mtick{display:flex;width:18px;flex:0 0 18px;color:var(--accent-ink);visibility:hidden}
+.fp-mtick svg{width:18px;height:18px}
+.fp-mrow.on .fp-mtick{visibility:visible}
+.fp-mclear{color:var(--accent-ink);font-weight:500;padding-left:40px}
+.fp-mempty{padding:12px 18px;color:var(--ink-3);font-size:14px}
+
+/* Settings: Your news / Data / Font. */
+.fp-setgrp .dsec{padding:16px 18px 7px}
+.fp-fontrow{padding:2px 18px 14px}
+.fp-back{margin:0 0 12px}
+/* The panel scrolls; its lower edge fades and the last row gets room, so no row is cut through. */
+#settingsPanel .sbody{padding-bottom:40px;
+  -webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 40px),transparent);
+  mask-image:linear-gradient(to bottom,#000 calc(100% - 40px),transparent)}
+
+/* ---------- the eight widgets: true squares, eight in one row ---------- */
+/* Every drawing keeps the phone's proportions: --u is worked out from the row's width, so the
+   squares shrink together. Under 900px they keep a readable size and the row scrolls sideways. */
+.widget{letter-spacing:-.02em}
+.w-unit{white-space:nowrap;font-size:calc(9.5 * var(--u))}
+.wstrip.sq{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:10px;overflow:visible;
+  container-type:inline-size;padding:4px 0 18px;cursor:default}
+.wstrip.sq .widget{--u:calc((100cqw - 70px) / 1240);width:calc(155 * var(--u));height:calc(155 * var(--u))}
+/* Squircle corners: the iOS continuous corner, as the phone's SquircleShape. Browsers without
+   corner-shape keep a plain rounded corner of the same size. */
+.wstrip.sq .widget{border-radius:calc(34 * var(--u));corner-shape:squircle}
+@media (max-width:900px){
+  .wstrip.sq{display:flex;gap:10px;overflow-x:auto;container-type:normal;cursor:grab}
+  .wstrip.sq .widget{--u:1px;flex:0 0 auto}
+}
+
+/* ---------- the wall ---------- */
+/* At most three equal columns, fewer when a column would drop under 300px. Rows line up in height. */
+.wall.fpwall{grid-template-columns:repeat(auto-fill,minmax(min(100%,max(300px,calc((100% - 28px) / 3))),1fr));gap:14px;align-items:stretch}
+
+/* Month header (FeedMonthHeaderRow) and the one-line section header (FeedSectionSortRow) */
+.fpmonth{grid-column:1/-1;display:flex;align-items:center;gap:6px;padding:2px 0 0 4px;min-height:44px}
+.fpmonth.next{padding-top:14px}
+.fpmt{display:flex;align-items:baseline;gap:10px;min-width:0}
+.fpmname{font-family:var(--fs-title);font-size:20px;font-weight:600;letter-spacing:-.3px;margin:0;color:var(--ink);line-height:1.2}
+.fpmsub{font-size:13px;color:var(--fc-sec);white-space:nowrap}
+.fpgrow{flex:1 1 auto}
+.fpsort{display:inline-flex;align-items:center;gap:3px;border:0;background:transparent;color:var(--accent-ink);
+  font-family:var(--fs-title);font-size:15px;font-weight:500;padding:8px 6px;border-radius:10px;cursor:pointer}
+.fpsort:hover{background:var(--fc-fill)}
+.fpsort svg{width:18px;height:18px}
+
+/* The ⋯ circle: 28px fill circle in a 44px target (MoreCircleButton) */
+.fpmore{flex:none;width:44px;height:44px;display:grid;place-items:center;border:0;background:transparent;padding:0;
+  color:var(--fc-sec);cursor:pointer;position:relative}
+.fpmore::before{content:"";position:absolute;left:8px;top:8px;width:28px;height:28px;border-radius:50%;background:var(--fc-fill);
+  transition:background var(--t-hover) var(--ease)}
+.fpmore svg{position:relative;width:18px;height:18px}
+.fpmore:hover::before,.fpmore.on::before{background:var(--fc-sep)}
+.fpmore:disabled{opacity:.35;cursor:default}
+
+/* The card: FeedStoryCard, expanded */
+.ncard.fpcard{position:relative;display:flex;flex-direction:column;min-width:0;
+  padding:4px 4px 0 16px;border-radius:26px;border:.5px solid var(--fc-rim);
+  background:linear-gradient(135deg,var(--fc-sheen),transparent 62%),var(--surface);
+  box-shadow:inset 0 .5px 0 var(--fc-rimtop),0 1px 2px rgba(0,0,0,.05);
+  transition:box-shadow var(--t-hover) var(--ease),transform var(--t-hover) var(--ease)}
+.ncard.fpcard:hover{border-color:var(--fc-rim);box-shadow:inset 0 .5px 0 var(--fc-rimtop),0 8px 26px rgba(0,0,0,.14)}
+.ncard.fpcard.picked{box-shadow:inset 0 0 0 2px var(--accent)}
+body.fp-selecting .ncard.fpcard{cursor:pointer;user-select:none}
+.fptop{display:flex;align-items:center;gap:8px;min-width:0;height:44px}
+.fptop .sdot{flex:none}
+.fpcat{font-family:var(--fs-title);font-size:12px;font-weight:600;letter-spacing:.5px;color:var(--fc-sec);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.fpseal{flex:none;display:inline-grid;place-items:center;color:var(--accent-ink);margin-left:-2px}
+.fpseal svg{width:14px;height:14px}
+.fptop .lpill{flex:none}
+.fpselc{flex:none;width:18px;height:18px;border-radius:50%;border:1.5px solid color-mix(in srgb,var(--fc-sec) 70%,transparent);
+  display:grid;place-items:center;color:#fff;box-sizing:border-box}
+.fpselc.on{background:var(--accent);border-color:var(--accent)}
+.fpttl{font-family:var(--fs-title);font-size:17px;line-height:22px;letter-spacing:-.2px;font-weight:600;color:var(--ink);
+  margin:2px 12px 0 0}
+:root.font-arialnova .fpttl{font-weight:500}
+.fpmeta{display:flex;align-items:center;gap:6px;margin:6px 12px 0 0;min-width:0;font-size:15px;line-height:20px;color:var(--fc-sec)}
+.fpsrc{color:var(--accent-ink);font-weight:500;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.fpsrc:hover{text-decoration:underline}
+.fpdotsep,.fpdate{flex:none;white-space:nowrap}
+/* The violet ✎ Edited pill, after the date. Violet is used for nothing else. */
+.fpedited{flex:none;display:inline-flex;align-items:center;margin-left:4px;padding:1px 8px;border-radius:999px;
+  background:var(--fc-violet-wash);color:var(--fc-violet);font-family:var(--fs-title);font-size:11.5px;font-weight:600;line-height:18px;white-space:nowrap}
+.fpsum{font-size:15px;line-height:20px;color:var(--fc-sec);margin:10px 12px 0 0;
+  display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.fpfoot{margin:auto -4px 0 -16px;display:flex;align-items:stretch;height:48px;flex:none;border-top:.5px solid var(--fc-sep)}
+.fpcard .fpsum{margin-bottom:14px}
+.fpcard.nosum .fpmeta{margin-bottom:14px}
+.fphalf{flex:1 1 0;display:flex;align-items:center;justify-content:center;gap:6px;border:0;background:transparent;
+  font-family:var(--fs-title);font-size:15px;font-weight:500;text-decoration:none;cursor:pointer;color:var(--fc-sec);padding:0 6px;min-width:0}
+.fphalf:hover{text-decoration:none}
+.fphalf svg{width:18px;height:18px;flex:none}
+.fphalf:hover{background:var(--fc-fill)}
+.fpfact{color:var(--accent-ink);border-bottom-left-radius:26px}
+.fpstate{border-bottom-right-radius:26px}
+.fpstate.on{color:var(--accent-ink)}
+span.fpstate{cursor:default}
+span.fpstate:hover{background:transparent}
+.fpvsep{flex:none;width:.5px;background:var(--fc-sep)}
+
+/* The ⋯ card menu: a dimmed page, the card lifted, the frosted menu hanging from its right edge */
+.fpdim{position:fixed;inset:0;z-index:80;background:var(--fc-dim);opacity:0;transition:opacity 180ms var(--ease)}
+.fpdim.in{opacity:1}
+.ncard.fpcard.fplift{position:fixed;z-index:81;margin:0;pointer-events:none;
+  box-shadow:inset 0 .5px 0 var(--fc-rimtop),0 22px 60px rgba(0,0,0,.45);transform:scale(1);transition:transform 260ms cubic-bezier(.3,1.35,.5,1)}
+.ncard.fpcard.fplift.in{transform:scale(1.015)}
+.fpmenu,.fpgmenu{position:fixed;z-index:82;width:250px;border-radius:34px;padding:10px 0;
+  background:var(--fc-menu);-webkit-backdrop-filter:blur(30px) saturate(1.8);backdrop-filter:blur(30px) saturate(1.8);
+  border:.5px solid var(--fc-menu-rim);box-shadow:0 16px 48px rgba(0,0,0,.32);
+  opacity:0;transform:scale(.9);transition:opacity 160ms var(--ease),transform 260ms cubic-bezier(.3,1.3,.5,1)}
+.fpmenu.in,.fpgmenu.in{opacity:1;transform:scale(1)}
+.fpgmenu{transform-origin:100% 0;border-radius:22px;padding:6px 0;z-index:90}
+.fpquick{display:flex;justify-content:space-between;padding:4px 14px 6px}
+.fpq{display:flex;flex-direction:column;align-items:center;gap:5px;border:0;background:transparent;color:var(--ink);cursor:pointer;
+  padding:0;width:50px;font-family:var(--fs-title)}
+.fpqc{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:var(--fc-fill);transition:background var(--t-hover) var(--ease)}
+.fpq:hover .fpqc{background:var(--fc-sep)}
+.fpq.on{color:var(--accent-ink)}
+.fpq.on .fpqc{background:color-mix(in srgb,var(--accent) 22%,transparent)}
+.fpql{font-size:12px;line-height:14px;white-space:nowrap}
+.fpq:disabled{opacity:.4;cursor:default}
+.fpgap{height:1px;background:var(--fc-sep);margin:6px 16px}
+.fpitem,.fpgitem{display:flex;align-items:center;gap:4px;width:100%;min-height:44px;padding:0 16px;border:0;background:transparent;
+  color:var(--ink);font-family:var(--fs-title);font-size:16px;letter-spacing:-.2px;text-align:left;cursor:pointer}
+.fpitem:hover,.fpgitem:hover:not(:disabled){background:var(--fc-fill)}
+.fpitem.red{color:var(--fc-red)}
+.fpiico,.fpgico,.fpgtick{flex:none;width:32px;display:flex;align-items:center}
+.fpiico svg,.fpgico svg{width:20px;height:20px}
+.fpgtick{color:var(--accent-ink)}
+.fpglab{display:flex;flex-direction:column;min-width:0;padding:8px 0}
+.fpglab small{font-size:13px;color:var(--fc-sec);margin-top:1px}
+.fpgitem.off{opacity:.4;cursor:default}
+
+/* Edit story pop-up. A light scrim, so the page behind still shows through the frosted glass; the
+   fields are translucent fills, not solid boxes, so the glass reads through them too. */
+.fpedwrap{position:fixed;inset:0;z-index:95;display:grid;place-items:center;padding:20px;background:rgba(0,0,0,.22);
+  opacity:0;transition:opacity 180ms var(--ease)}
+.fpedwrap.in{opacity:1}
+.fped{width:min(600px,100%);max-height:calc(100vh - 40px);overflow:auto;border-radius:30px;padding:18px 22px 16px;
+  background:linear-gradient(135deg,var(--fc-sheen),transparent 60%),var(--fc-menu);
+  -webkit-backdrop-filter:blur(30px) saturate(1.8);backdrop-filter:blur(30px) saturate(1.8);
+  border:.5px solid var(--fc-menu-rim);box-shadow:inset 0 .5px 0 var(--fc-rimtop),0 24px 70px rgba(0,0,0,.4);
+  transform:scale(.96);transition:transform 240ms cubic-bezier(.3,1.3,.5,1)}
+.fped .fpfield input,.fped .fpfield select,.fped .fpfield textarea{background:var(--fc-fill)}
+.fped .fpfield select option{background:var(--fc-sheet);color:var(--ink)}
+.fped .fpfield textarea.fpfade{-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 30px),transparent);
+  mask-image:linear-gradient(to bottom,#000 calc(100% - 30px),transparent)}
+.fpedwrap.in .fped{transform:scale(1)}
+.fpedhead,.fpexhead{display:flex;align-items:center;justify-content:space-between;margin:0 0 12px}
+.fpedhead h2,.fpexhead h2{font-family:var(--fs-title);font-size:22px;font-weight:700;letter-spacing:-.3px;margin:0}
+.fpedx{width:32px;height:32px;border-radius:50%;border:0;background:var(--fc-fill);color:var(--fc-sec);display:grid;place-items:center;cursor:pointer}
+.fpedx:hover{background:var(--fc-sep)}
+.fpfield{display:flex;flex-direction:column;gap:6px;margin:0 0 12px;min-width:0}
+.fpflab{display:flex;align-items:center;gap:8px;font-family:var(--fs-title);font-size:13px;font-weight:600;color:var(--fc-sec)}
+.fpchg{display:none;color:var(--fc-violet);font-weight:600;font-size:12px}
+.fpchg.on{display:inline}
+.fpfield input,.fpfield select,.fpfield textarea{font:inherit;font-size:15px;line-height:1.4;color:var(--ink);background:var(--fc-field);
+  border:1px solid transparent;border-radius:12px;padding:10px 12px;outline:0;width:100%;box-sizing:border-box;resize:vertical;color-scheme:light dark}
+.fpfield textarea{font-family:var(--fs)}
+.fpfield input:focus,.fpfield select:focus,.fpfield textarea:focus{border-color:var(--accent)}
+.fpfield.bad input{border-color:var(--fc-red)}
+.fperr{font-size:12.5px;color:var(--fc-red);min-height:0}
+.fperr:empty{display:none}
+.fprow{display:grid;grid-template-columns:1fr 180px;gap:12px}
+.fpedacts{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:4px}
+.fpbtn{height:40px;padding:0 18px;border-radius:20px;border:0;font-family:var(--fs-title);font-size:15px;font-weight:600;cursor:pointer;white-space:nowrap}
+.fpbtn.ghost{background:var(--fc-fill);color:var(--ink)}
+.fpbtn.restore{background:transparent;color:var(--accent-ink);padding:0 8px}
+.fpbtn.prim{background:var(--accent);color:#fff;min-width:88px}
+.fpbtn:disabled{opacity:.4;cursor:default}
+.fpednote{font-size:12.5px;color:var(--fc-sec);margin:10px 0 0}
+
+/* Selecting: the toolbar row's bar, and the floating glass toolbar */
+body.fp-selecting .fp-search,body.fp-selecting .fp-chips{display:none !important}
+.fpselbar{display:flex;align-items:center;gap:8px;height:44px;padding:0 4px;border-radius:22px;flex:1 1 360px;max-width:620px;
+  background:var(--fc-glass);-webkit-backdrop-filter:blur(22px) saturate(1.8);backdrop-filter:blur(22px) saturate(1.8);
+  box-shadow:inset 0 0 0 .5px var(--fc-menu-rim)}
+#app > .fpselbar{margin:0 0 16px}
+.fpselbar button{border:0;background:transparent;color:var(--accent-ink);font-family:var(--fs-title);font-size:16px;font-weight:500;
+  padding:10px 12px;border-radius:18px;cursor:pointer;white-space:nowrap}
+.fpselbar button:hover{background:var(--fc-fill)}
+.fpselbar button:disabled{opacity:.4;cursor:default}
+.fpselcount{flex:1;text-align:center;font-family:var(--fs-title);font-size:16px;font-weight:600;color:var(--ink)}
+.fptools{position:fixed;bottom:18px;z-index:60;display:flex;align-items:center;gap:0;transform:translateX(-50%);
+  padding:6px;border-radius:30px;background:var(--fc-menu);
+  -webkit-backdrop-filter:blur(30px) saturate(1.8);backdrop-filter:blur(30px) saturate(1.8);
+  border:.5px solid var(--fc-menu-rim);box-shadow:inset 0 .5px 0 var(--fc-rimtop),0 14px 40px rgba(0,0,0,.36)}
+.fptl,.fptr{display:flex;align-items:center;gap:8px}
+.fptgap{flex:none;width:40px;align-self:stretch;position:relative}
+.fptgap::before{content:"";position:absolute;left:50%;top:10px;bottom:10px;width:.5px;background:var(--fc-sep)}
+.fpcap,.fpcirc{height:44px;border:0;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;
+  background:var(--fc-fill);color:var(--accent-ink);font-family:var(--fs-title);transition:background var(--t-hover) var(--ease)}
+.fpcap:hover:not(:disabled),.fpcirc:hover:not(:disabled){background:var(--fc-sep)}
+.fpcap{padding:0 18px;border-radius:22px;font-size:17px;font-weight:500;white-space:nowrap}
+.fpcap svg{width:18px;height:18px}
+.fpcap.prim{background:var(--accent);color:#fff}
+.fpcirc{width:44px;border-radius:50%}
+.fpcirc svg{width:22px;height:22px}
+.fpcirc.red{color:var(--fc-red)}
+.fpcap:disabled span,.fpcirc:disabled svg{opacity:.3}
+.fpcap:disabled,.fpcirc:disabled{cursor:default;color:var(--ink)}
+.fpcap.prim:disabled{background:var(--fc-glass)}
+
+/* Export sheet, docked right */
+.fpexwrap{position:fixed;inset:0;z-index:94;background:rgba(0,0,0,0);transition:background 260ms var(--ease)}
+.fpexwrap.in{background:var(--fc-dim)}
+.fpex{position:absolute;top:12px;right:12px;bottom:12px;width:min(400px,calc(100% - 24px));overflow:auto;box-sizing:border-box;
+  padding:18px 18px 22px;border-radius:28px;background:var(--fc-sheet);border:.5px solid var(--fc-menu-rim);
+  box-shadow:0 24px 70px rgba(0,0,0,.45);transform:translateX(calc(100% + 24px));transition:transform 280ms var(--ease)}
+.fpexwrap.in .fpex{transform:none}
+.fpsech{font-family:var(--fs-title);font-size:13px;color:var(--fc-sec);text-transform:uppercase;letter-spacing:.02em;margin:16px 16px 7px}
+.fpgroup{border-radius:20px;background:var(--fc-group);overflow:hidden}
+.fprow1{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;padding:0 16px;border:0;background:transparent;
+  color:var(--ink);font-family:var(--fs-title);font-size:17px;text-align:left;cursor:pointer;box-shadow:inset 0 -.5px 0 var(--fc-sep)}
+.fprow1:last-child{box-shadow:none}
+.fprow1:hover{background:var(--fc-fill)}
+.fprl{flex:1}
+.fprv{color:var(--fc-sec);font-variant-numeric:tabular-nums}
+.fprc{width:20px;display:flex;color:var(--accent-ink)}
+.fpchoose .fprl{color:var(--accent-ink)}
+.fpchoose .fprc{color:var(--fc-sec)}
+.fpsecf{font-size:13px;color:var(--fc-sec);margin:7px 16px 0;line-height:1.4}
+.fpseg{display:flex;height:44px;padding:2px;border-radius:22px;background:var(--fc-group);box-sizing:border-box}
+.fpseg button{flex:1;border:0;border-radius:20px;background:transparent;color:var(--ink);font-family:var(--fs-title);font-size:15px;font-weight:500;cursor:pointer}
+.fpseg button.on{background:var(--fp-thumb,#636366);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.16),0 3px 8px rgba(0,0,0,.10)}
+.fpexgo{display:block;width:100%;height:50px;margin:22px 0 0;border:0;border-radius:25px;background:var(--accent);color:#fff;
+  font-family:var(--fs-title);font-size:17px;font-weight:600;cursor:pointer}
+.fpexgo:disabled{opacity:.35;cursor:default}
+.fpexfile{font-size:13px;color:var(--fc-sec);text-align:center;margin:10px 0 0;font-variant-numeric:tabular-nums}
+.fpmeasure{position:fixed;left:-20000px;top:0;visibility:hidden}
+
+/* Without the permanent rail the title sits in the top bar, between the menu and theme buttons,
+   so the toolbar below it is just the capsule, the search and the chips. */
+@media (max-width:999px){
+  #shell.fp-news .fp-title{position:absolute;top:2px;left:70px;font-size:28px;line-height:38px}
+}
+/* Phone width: the toolbar wraps into the capsule, a full-width search, then the chips. */
+@media (max-width:600px){
+  .fptgap{width:16px}
+  .fp-bar{gap:10px}
+  .fp-search{flex:1 1 100%;max-width:none;min-width:0}
+  .fp-chips{flex:1 1 100%;overflow-x:auto;scrollbar-width:none}
+  .fp-segb{padding:0 12px}
+  .fpselbar{flex:1 1 100%}
+  .fptools{bottom:max(12px,env(safe-area-inset-bottom));max-width:calc(100vw - 24px)}
+  .fpcap{padding:0 14px;font-size:16px}
+}
+@media (max-width:560px){
+  .fprow{grid-template-columns:1fr}
+  .fpmt{flex-direction:column;align-items:flex-start;gap:0}
+}
 </style>
 </head>
 <body>
@@ -2452,18 +2827,13 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
           <div class="srcchip" id="briefChip" hidden></div>
         </div>
       </div>
+      <!-- The News toolbar (title, Alerts · Archive · Published, search, filter chips); empty elsewhere. -->
+      <div class="fp-tool" id="fpTool"></div>
       <div class="status" id="status"></div>
     </div>
   </div>
 
   <div id="scroll"><div class="wrap"><div id="app" class="list"></div></div></div>
-
-  <div id="repbar">
-    <div class="wrap inner">
-      <div class="cnt"><b id="vcount">0</b> verified, ready for the Monthly Report</div>
-      <button class="btn sm" id="openReport">Open Monthly Report</button>
-    </div>
-  </div>
 </div>
 
 <div id="scrim" hidden></div>
@@ -2641,11 +3011,15 @@ var S = {
   data: null,
   actions: {
     schema: 2, updatedAtMillis: 0,
-    /* What this page has ASKED the phone to do, one entry per story, newest replacing older.
+    /* What this page has ASKED the phone to do, one entry per story and axis (see reqAxis),
+       newest replacing older.
        The three arrays below are no longer state — they are a legacy PROJECTION written at push
        time so a phone too old to read requests still sees publishes and verifies. */
     requests: [],
-    verifiedTitles: [], publishedTitles: [], publishedNews: [], reportEditions: []
+    verifiedTitles: [], publishedTitles: [], publishedNews: [], reportEditions: [],
+    /* What the web changed that the phone has no request for yet (24 Nov 2026): story edits and
+       Save / Like / Dislike / Delete marks. See "EDITS AND MARKS" below. */
+    edits: [], marks: []
   },
   // News alerts is the landing page, on EVERY visit. It used to be the landing page for new
   // arrivals only, because load() restored a returning reader's last tab over it — so anyone who
@@ -2691,15 +3065,31 @@ function newRid() {
   return "r-" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 }
 function pendingRequests() { return arr(S.actions.requests); }
+/* One pending request per story PER AXIS, not per story. verify/unverify, archive/unarchive and
+   pub/unpub are three independent questions, so an answer replaces only the earlier answer to the
+   SAME question: verify → unverify → verify is still one request, but verifying a story and then
+   archiving it is two, and neither clobbers the other. Keyed by title alone (as until 24 Nov 2026),
+   verifying an archived story from the Archive list dropped its pending archive and it jumped
+   back into Alerts. The phone applies requests in order and dedupes nothing by title, so two
+   requests for one story are exactly what it expects. */
+function reqAxis(op) {
+  op = String(op || "").toLowerCase();
+  return op === "verify" || op === "unverify" ? "verify"
+       : op === "archive" || op === "unarchive" ? "archive"
+       : op === "pub" || op === "unpub" ? "pub" : op;
+}
+function reqKey(r) { return key(r && r.title) + "\u0001" + reqAxis(r && r.op); }
 /* Rids the phone says it has honoured. The phone ships its WHOLE ledger, not the last sync's
    delta: this page loads once per visit, so a delta would be missed by any tab that was not open
    at the right moment and the request would stay pending forever. */
 function ackedRids() {
   return new Set(arr(S.data && S.data.webAck && S.data.webAck.honoured));
 }
-function pendingFor(title) {
+function pendingFor(title, axis) {
   var k = key(title);
-  return pendingRequests().filter(function (r) { return key(r.title) === k; })[0] || null;
+  return pendingRequests().filter(function (r) {
+    return key(r.title) === k && (!axis || reqAxis(r.op) === axis);
+  })[0] || null;
 }
 /* True when the phone has shipped a receipt block at all — i.e. it is new enough to honour
    requests. An older build ignores them, so undo controls stay hidden rather than offering an
@@ -2707,34 +3097,10 @@ function pendingFor(title) {
 function phoneHonoursRequests() {
   return !!(S.data && S.data.webAck && arr(S.data.webAck.honoured));
 }
-/* The Published state control. A dead "Published" label until now — there was no way to undo a
-   publish from this page at all. Against a phone that honours requests it becomes the Unpublish
-   button; against an older one it stays a label, because the request would not be read. */
-function publishedControl(title) {
-  var pend = pendingFor(title);
-  if (pend && pend.op === "unpub") {
-    var w = el("span", "nstate");
-    w.appendChild(el("span", null, "Waiting for your phone"));
-    w.title = "Un-published here. Your phone applies it on the next sync.";
-    return w;
-  }
-  if (!phoneHonoursRequests()) {
-    var lbl = el("span", "nstate pub");
-    lbl.appendChild(el("span", null, "Published"));
-    lbl.title = "Update the phone app to un-publish from here.";
-    return lbl;
-  }
-  var b = el("button", "nstate pub");
-  b.appendChild(el("span", null, "Published"));
-  b.title = "Click to move this back to Alerts";
-  b.onclick = function () { unpublishOnWeb(title); };
-  return b;
-}
-
 function requestOp(title, op, article) {
-  var k = key(title);
-  var out = pendingRequests().filter(function (r) { return key(r.title) !== k; });
   var entry = { rid: newRid(), op: op, title: title };
+  var k = reqKey(entry);
+  var out = pendingRequests().filter(function (r) { return reqKey(r) !== k; });
   if (article) entry.article = article;
   out.push(entry);
   S.actions.requests = out;
@@ -2801,15 +3167,15 @@ function archived() {
   var arc = archivedSet(), pub = publishedSet(), seen = new Set(), out = [];
   arr(S.data && S.data.archived).concat(arr(S.data && S.data.alerts)).forEach(function (a) {
     var k = key(a && a.title);
-    if (a && a.title && arc.has(k) && !pub.has(k) && !seen.has(k)) { seen.add(k); out.push(a); }
+    if (a && a.title && arc.has(k) && !pub.has(k) && !seen.has(k) && !isDeletedStory(a)) { seen.add(k); out.push(a); }
   });
   return out;
 }
 /* Several requests in one write: "Archive the rest" can be eighty stories, and requestOp would
    push the actions file once per story. One pending request per story, as requestOp keeps it. */
 function requestOps(titles, op) {
-  var keys = new Set(titles.map(key));
-  var out = pendingRequests().filter(function (r) { return !keys.has(key(r.title)); });
+  var keys = new Set(titles.map(function (t) { return reqKey({ title: t, op: op }); }));
+  var out = pendingRequests().filter(function (r) { return !keys.has(reqKey(r)); });
   titles.forEach(function (t) { out.push({ rid: newRid(), op: op, title: t }); });
   S.actions.requests = out;
   save(); render();
@@ -2840,6 +3206,133 @@ async function archiveTheRest() {
   if (ok) requestOps(list.map(function (a) { return a.title; }), "archive");
 }
 
+/* ---------- EDITS AND MARKS: what the web changes that the phone has no request for yet ----------
+   The phone applies only verify / unverify / archive / unarchive / pub / unpub requests and receipts
+   anything else as notFound, which would drop it. So Edit story, Save, Like, Dislike and Delete are
+   NOT requests. They travel in two fields of their own in echo-web-actions.json:
+
+     edits: [{ title, at, category?, headline?, source?, sourceUrl?, date?, summary? }]
+            one per story, keyed by the ORIGINAL title (so the phone, search, dedup and every
+            request still know the story by the name the fetch gave it). Only changed fields are
+            present; a missing field means "as fetched". { title, at, restored: true } is
+            "Restore original": it stays in the file so an older copy of the edit cannot come back.
+     marks: [{ title, op, at }]   op = save | unsave | like | unlike | dislike | undislike | delete
+            one per story and axis (save/unsave; like/unlike/dislike/undislike; delete).
+
+   Both merge read-modify-write with the copy in Drive, last write (by `at`) wins. This page applies
+   them at once when it draws. The phone applies them from build 118; older phones read the file
+   with org.json, which ignores fields it does not know, so nothing changes there. */
+var EDIT_FIELDS = ["category", "headline", "source", "date", "summary", "sourceUrl"];
+function markAxis(op) {
+  op = String(op || "");
+  return op === "save" || op === "unsave" ? "save"
+       : op === "delete" ? "delete" : "taste";   // like / unlike / dislike / undislike
+}
+function editKey(e) { return key(e && e.title); }
+function markKey(m) { return key(m && m.title) + "\u0001" + markAxis(m && m.op); }
+/* Last write wins per key; on a tie the second list (this tab) wins. */
+function mergeLww(theirs, mine, keyFn) {
+  var by = {};
+  arr(theirs).concat(arr(mine)).forEach(function (x) {
+    if (!x || !x.title) return;
+    var k = keyFn(x), cur = by[k];
+    if (!cur || (x.at || 0) >= (cur.at || 0)) by[k] = x;
+  });
+  return Object.keys(by).map(function (k) { return by[k]; });
+}
+/* Lookups, rebuilt only when the array is replaced (every change replaces it). */
+var EM_CACHE = { edits: null, editMap: null, marks: null, markMap: null };
+function editMap() {
+  if (EM_CACHE.edits !== S.actions.edits) {
+    EM_CACHE.edits = S.actions.edits; EM_CACHE.editMap = {};
+    arr(S.actions.edits).forEach(function (e) { if (e && e.title && !e.restored) EM_CACHE.editMap[editKey(e)] = e; });
+  }
+  return EM_CACHE.editMap;
+}
+function markMap() {
+  if (EM_CACHE.marks !== S.actions.marks) {
+    EM_CACHE.marks = S.actions.marks; EM_CACHE.markMap = {};
+    arr(S.actions.marks).forEach(function (m) { if (m && m.title) EM_CACHE.markMap[markKey(m)] = m.op; });
+  }
+  return EM_CACHE.markMap;
+}
+function storyEdit(a) { return (a && editMap()[key(a.title)]) || null; }
+function storyMark(title, axis) { return markMap()[key(title) + "\u0001" + axis] || null; }
+/* The story as it should be shown, searched and exported: the edit laid over the original. The
+   copy carries the original as _orig, so actions keep using the original title. */
+function editedStory(a) {
+  var e = storyEdit(a);
+  if (!e) return a;
+  var c = {};
+  for (var p in a) c[p] = a[p];
+  if (e.headline != null) c.title = e.headline;
+  ["category", "source", "date", "summary", "sourceUrl"].forEach(function (f) { if (e[f] != null) c[f] = e[f]; });
+  c._orig = a;
+  return c;
+}
+function setStoryEdit(a, diff) {
+  var entry = { title: a.title, at: Date.now() };
+  if (diff && Object.keys(diff).length) EDIT_FIELDS.forEach(function (f) { if (diff[f] != null) entry[f] = diff[f]; });
+  else entry.restored = true;
+  var k = editKey(entry);
+  S.actions.edits = arr(S.actions.edits).filter(function (e) { return editKey(e) !== k; }).concat([entry]);
+  save(); render();
+  pushActions().catch(function (e) { setStatus("Saved here, but not sent to Drive yet: " + e.message, true); });
+}
+function setMarks(titles, op) {
+  var now = Date.now();
+  var add = titles.map(function (t) { return { title: t, op: op, at: now }; });
+  var keys = new Set(add.map(markKey));
+  S.actions.marks = arr(S.actions.marks).filter(function (m) { return !keys.has(markKey(m)); }).concat(add);
+  save(); render();
+  pushActions().catch(function (e) { setStatus("Saved here, but not sent to Drive yet: " + e.message, true); });
+}
+function isDeletedStory(a) { return storyMark(a && a.title, "delete") === "delete"; }
+function isSavedStory(a) {
+  var m = storyMark(a.title, "save");
+  if (m) return m === "save";
+  return setOf(arr(S.data && S.data.savedNews).map(function (x) { return x && x.title; })).has(key(a.title));
+}
+/* "like", "dislike" or "": the phone's lists, with this page's newest mark on top. */
+function tasteOf(a) {
+  var m = storyMark(a.title, "taste");
+  if (m === "like" || m === "dislike") return m;
+  if (m === "unlike" || m === "undislike") return "";
+  var k = key(a.title);
+  if (setOf(S.data && S.data.likedTitles).has(k)) return "like";
+  if (setOf(S.data && S.data.dislikedTitles).has(k)) return "dislike";
+  return "";
+}
+/* Every story this page knows, for finding the one a mark names. */
+function storyPool() {
+  var d = S.data || {};
+  return arr(d.alerts).concat(arr(d.archived), arr(d.publishedNews), arr(d.newsArticles), arr(d.savedNews), arr(S.actions.publishedNews));
+}
+/* Saved = the phone's saved list, minus what was un-saved here, plus what was saved here. */
+function savedStories() {
+  var out = arr(S.data && S.data.savedNews).filter(function (a) { return a && a.title && storyMark(a.title, "save") !== "unsave"; });
+  var have = new Set(out.map(function (a) { return key(a.title); }));
+  var want = arr(S.actions.marks).filter(function (m) { return m && m.op === "save" && !have.has(key(m.title)); });
+  if (want.length) {
+    var pool = storyPool();
+    want.forEach(function (m) {
+      var k = key(m.title), hit = pool.filter(function (a) { return a && key(a.title) === k; })[0];
+      if (hit && !have.has(k)) { have.add(k); out.unshift(hit); }
+    });
+  }
+  return out;
+}
+/* Liked or disliked titles (lower-case keys), the phone's list with this page's marks applied. */
+function tasteTitles(which) {
+  var base = arr(S.data && (which === "like" ? S.data.likedTitles : S.data.dislikedTitles)).map(key);
+  var drop = which === "like" ? ["dislike", "unlike"] : ["like", "undislike"];
+  var out = base.filter(function (k) { return drop.indexOf(storyMark(k, "taste")) < 0; });
+  arr(S.actions.marks).forEach(function (m) {
+    if (m && m.op === which && out.indexOf(key(m.title)) < 0) out.unshift(key(m.title));
+  });
+  return out;
+}
+
 /* Alerts = what the phone shows, minus anything published on either side.
    Publishing HIDES a story from Alerts; it never deletes it. */
 function alerts() {
@@ -2860,13 +3353,17 @@ function alerts() {
     var k = key(a.title);
     if (!arc.has(k) && !pub.has(k) && !have.has(k)) { have.add(k); out.push(a); }
   });
+  /* Deleted here (a mark, see EDITS AND MARKS): gone from this page at once. */
+  if (arr(S.actions.marks).length) out = out.filter(function (a) { return !isDeletedStory(a); });
   return out;
 }
 function published() {
   var seen = new Set(), out = [];
+  /* Un-published here and not yet synced: it is back in Alerts (see alerts()), so not here too. */
+  var back = new Set(pendingRequests().filter(function (r) { return r.op === "unpub"; }).map(function (r) { return key(r.title); }));
   arr(S.actions.publishedNews).concat(arr(S.data && S.data.publishedNews)).forEach(function (a) {
     var k = key(a && a.title);
-    if (a && a.title && !seen.has(k)) { seen.add(k); out.push(a); }
+    if (a && a.title && !seen.has(k) && !back.has(k)) { seen.add(k); out.push(a); }
   });
   return out;
 }
@@ -3136,9 +3633,9 @@ function pushActions(immediate) {
         var remote = null;
         try { remote = await readJson(ACTIONS_FILE); } catch (e2) { remote = null; }
         var mine = pendingRequests();
-        var mineKeys = new Set(mine.map(function (r) { return key(r.title); }));
+        var mineKeys = new Set(mine.map(reqKey));
         var merged = arr(remote && remote.requests)
-          .filter(function (r) { return r && r.title && !mineKeys.has(key(r.title)); })
+          .filter(function (r) { return r && r.title && !mineKeys.has(reqKey(r)); })
           .concat(mine);
 
         /* Drop anything the phone has already receipted, on BOTH sides of the merge. Filtering only
@@ -3146,7 +3643,10 @@ function pushActions(immediate) {
            closes — the file grows forever and the pending pill never clears. */
         var done = ackedRids();
         merged = merged.filter(function (r) { return !done.has(r.rid); });
-        S.actions.requests = merged.filter(function (r) { return mineKeys.has(key(r.title)); });
+        S.actions.requests = merged.filter(function (r) { return mineKeys.has(reqKey(r)); });
+        /* Edits and marks: every one is kept (this page draws them all), newest per story wins. */
+        S.actions.edits = mergeLww(remote && remote.edits, S.actions.edits, editKey);
+        S.actions.marks = mergeLww(remote && remote.marks, S.actions.marks, markKey);
 
         /* Legacy projection: a phone too old to read `requests` still reads these three arrays, so
            write what the pending requests MEAN. An `unpub`/`unverify` simply omits the title, which
@@ -3163,7 +3663,10 @@ function pushActions(immediate) {
           verifiedTitles: S.actions.verifiedTitles,
           publishedTitles: S.actions.publishedTitles,
           publishedNews: S.actions.publishedNews,
-          reportEditions: S.actions.reportEditions
+          reportEditions: S.actions.reportEditions,
+          /* Not requests: the phone applies these from build 118 (see EDITS AND MARKS). */
+          edits: S.actions.edits,
+          marks: S.actions.marks
         };
         S.actions.updatedAtMillis = body.updatedAtMillis;
         await writeJson(ACTIONS_FILE, body);
@@ -3216,34 +3719,32 @@ function askConfirm(opts) {
 /* ============================================================
    RENDER
    ============================================================ */
-var TABS = [
-  /* Ids stay "dashboard" and "alerts": S.tab is restored from localStorage and both are
-     named in WIDE_TABS, so only the labels move. */
-  ["dashboard", "Analytics",   function () { return ""; }],
-  /* A fourth slot: a badge that stands in for the count. Ask has no number to report — it
-     answers from the same stories the other tabs count — and the row would otherwise sit
-     blank where every sibling carries a figure. */
+/* The rail (S1, 24 Nov 2026): six rows, as on the phone. News holds Alerts, Archive and Published
+   behind its capsule; Liked, Disliked, Restore points and the Cost log live in Settings.
+   Ids stay "dashboard" and "alerts": both are named in WIDE_TABS. */
+var NAV_ROWS = [
+  ["alerts",    "News",      function () { return alerts().length; }],
+  ["saved",     "Saved",     function () { return savedStories().length; }],
+  ["dashboard", "Analytics", function () { return ""; }],
+  /* A badge stands in for the count: Ask has no number of its own to report. */
   ["ask",       "Ask",       function () { return ""; }, "beta"],
-  ["alerts",    "News alerts", function () { return alerts().length; }],
-  ["archive",   "Archive",   function () { return archived().length; }],
-  ["saved",     "Saved",     function () { return arr(S.data && S.data.savedNews).length; }],
-  ["published", "Published", function () { return published().length; }],
-  ["reports",   "Monthly Report", function () { return editions().length; }],
-  ["liked",     "Liked",     function () { return arr(S.data && S.data.likedTitles).length; }],
-  ["disliked",  "Disliked",  function () { return arr(S.data && S.data.dislikedTitles).length; }],
-  ["database",  "Database",  function () { return arr(S.data && S.data.competitors).length; }],
-  ["restorepoints", "Restore points", function () { return arr(S.data && S.data.restorePoints).length; }],
-  /* Cost log. The count is REFRESHES, not calls — that is the unit the cards below show. */
-  ["logs",      "Cost log",  function () { return costRuns().length; }]
+  /* The phone's report badge: verified stories waiting for the report (the Ready to publish
+     figure), blank when there are none. */
+  ["reports",   "Monthly Report", function () { return readyArticles().length || ""; }],
+  ["database",  "Database",  function () { return arr(S.data && S.data.competitors).length; }]
 ];
+var NEWS_TABS = ["alerts", "archive", "published"];
+function isNewsTab(t) { return NEWS_TABS.indexOf(t) >= 0; }
+/* Pages reached from Settings rather than the rail; each gets a "‹ Settings" link back. */
+var SETTINGS_TABS = ["liked", "disliked", "restorepoints", "logs"];
 var TAB_TITLE = {
   dashboard: ["Analytics",   "What the feed has been doing"],
   logs:      ["Cost log",    "Every refresh, what it cost and what it found"],
   ask:       ["Ask",       "Answers from what your phone has fetched"],
-  alerts:    ["News alerts", "Window market intelligence"],
-  archive:   ["Archive",   "Relevant stories kept out of the newsletter"],
+  alerts:    ["News", "Window market intelligence"],
+  archive:   ["News",      "Relevant stories kept out of the newsletter"],
   saved:     ["Saved",     "Bookmarked stories"],
-  published: ["Published", "Stories already in a report"],
+  published: ["News",      "Stories already in a report"],
   reports:   ["Monthly Report", "Pick the markets, preview, then download"],
   liked:     ["Liked",     "What you marked useful"],
   disliked:  ["Disliked",  "What you pushed away"],
@@ -3276,29 +3777,6 @@ function closeDrawer() {
   setTimeout(function () { if (!$("#drawer").classList.contains("on")) $("#scrim").hidden = true; }, 240);
 }
 function drawerOpen() { return $("#drawer").classList.contains("on"); }
-
-/* The rail, grouped by what each destination is FOR.
- *
- * It used to be eight equal rows under one "Sections" heading, which made finding anything a
- * left-to-right read of all eight. Grouped, you land on the pair you want first and pick one of
- * two. The pairs follow a story's actual life in the app:
- *
- *   Feed       what arrived, and what you kept
- *   Reporting  what went into a report, and the reports themselves
- *   Signals    what you told the app to prefer
- *   Data       reference data, and the backups of it
- *
- * The generic "Sections" heading is gone — a heading naming the page's own furniture tells the
- * reader nothing. These four DO say something, which is the difference.
- */
-var NAV_GROUPS = [
-  // Order is reading order: the feed first, then what you kept from it, then the numbers about
-  // it, then the tool that queries it. Ask sits last in Feed because it acts ON these stories.
-  ["Feed",      ["alerts", "saved", "dashboard", "ask"]],
-  ["Reporting", ["published", "reports"]],
-  ["Signals",   ["liked", "disliked"]],
-  ["Data",      ["database", "restorepoints", "logs"]]
-];
 
 /* One icon per tab id. A tab with no entry simply renders without one rather than breaking the
    row, the same way an uncategorised tab still appears under "More". */
@@ -3347,28 +3825,18 @@ function drawerRow(t) {
 
 function renderDrawerNav() {
   var n = $("#drawerNav"); n.innerHTML = "";
-  var byId = {};
-  TABS.forEach(function (t) { byId[t[0]] = t; });
-
-  NAV_GROUPS.forEach(function (grp) {
-    n.appendChild(el("div", "dsec", grp[0]));
-    grp[1].forEach(function (id) {
-      var t = byId[id];
-      if (!t) return;              // a tab removed from TABS just drops out of its group
-      delete byId[id];
-      n.appendChild(drawerRow(t));
-    });
+  NAV_ROWS.forEach(function (t) {
+    var b = drawerRow(t);
+    if (t[0] === "alerts") {
+      /* News is one row for its three lists; it stays on whichever of them you were reading. */
+      b.classList.toggle("on", isNewsTab(S.tab));
+      b.onclick = function () {
+        if (!isNewsTab(S.tab)) S.tab = "alerts";
+        save(); render(); $("#scroll").scrollTop = 0; closeDrawer();
+      };
+    }
+    n.appendChild(b);
   });
-
-  // Anything added to TABS but not yet placed in a group still appears, rather than silently
-  // vanishing from the rail because someone forgot to categorise it.
-  var leftover = TABS.filter(function (t) { return byId[t[0]]; });
-  if (leftover.length) {
-    n.appendChild(el("div", "dsec", "More"));
-    leftover.forEach(function (t) {
-      n.appendChild(drawerRow(t));
-    });
-  }
 }
 
 /* ============================================================
@@ -4180,6 +4648,7 @@ function renderDrawerSettings() {
   n.appendChild(navRow(SVG_KEY, "Gemini API key", chKey() ? "Saved" : "Not set",
     function () { setSettingsView("apikey"); }));
   n.appendChild(el("div", "sdiv"));
+  settingsMoreInto(n);
 
   if (!g) {
     n.appendChild(el("div", "dnote",
@@ -4203,6 +4672,46 @@ function renderDrawerSettings() {
     "the phone owns every setting, which is what stops this page overwriting anything."));
   watchProfileRow();
 }
+/* The four pages that left the rail (S1), where the phone keeps them, and the font. */
+function settingsMoreInto(n) {
+  var d = S.data || {};
+  var icon = function (id) {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" ' +
+      'stroke-linejoin="round">' + NAV_ICONS[id] + '</svg>';
+  };
+  var go = function (t) {
+    return function () { closeSettingsPanel(); S.tab = t; save(); render(); $("#scroll").scrollTop = 0; closeDrawer(); };
+  };
+  var cnt = function (v) { return v ? String(v) : "None"; };
+  var grp = el("div", "fp-setgrp");
+  grp.appendChild(el("div", "dsec", "Your news"));
+  grp.appendChild(navRow(icon("liked"), "Liked", cnt(tasteTitles("like").length), go("liked")));
+  grp.appendChild(navRow(icon("disliked"), "Disliked", cnt(tasteTitles("dislike").length), go("disliked")));
+  grp.appendChild(el("div", "dsec", "Data"));
+  var rp = arr(d.restorePoints).length;
+  grp.appendChild(navRow(icon("restorepoints"), "Restore points", rp ? rp + " saved" : "", go("restorepoints")));
+  var runs = costRuns().length;
+  grp.appendChild(navRow(icon("logs"), "Cost log", runs ? runs + (runs === 1 ? " refresh" : " refreshes") : "", go("logs")));
+  grp.appendChild(el("div", "dsec", "Font"));
+  var fr = el("div", "fp-fontrow");
+  var seg = el("div", "fp-seg fp-seg-sm");
+  [["inter", "Inter"], ["arialnova", "Arial Nova"]].forEach(function (o) {
+    var b = el("button", "fp-segb" + (fontPref() === o[0] ? " on" : ""));
+    b.appendChild(el("span", "fp-segt", o[1]));
+    b.onclick = function () { setFontPref(o[0]); renderDrawerSettings(); };
+    seg.appendChild(b);
+  });
+  fr.appendChild(seg);
+  grp.appendChild(fr);
+  grp.appendChild(el("div", "sdiv"));
+  n.appendChild(grp);
+}
+/* Settings > Font: Inter (the phone's default) or Arial Nova, per browser like the theme. */
+var FONT_LS = "echo.font";
+function fontPref() { try { return localStorage.getItem(FONT_LS) === "arialnova" ? "arialnova" : "inter"; } catch (e) { return "inter"; } }
+function applyFont() { document.documentElement.classList.toggle("font-arialnova", fontPref() === "arialnova"); }
+function setFontPref(v) { try { localStorage.setItem(FONT_LS, v); } catch (e) {} applyFont(); }
+
 function renderTitle() {
   var t = TAB_TITLE[S.tab] || TAB_TITLE.alerts;
   $("#pageTitle").textContent = t[0];
@@ -4268,10 +4777,13 @@ var ICON_TICK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
    query you were part way through typing on Alerts. */
 var WALL = {};
 function wallState() {
-  if (!WALL[S.tab]) WALL[S.tab] = { q: "", open: false, comp: [], land: [], chan: [], state: [] };
+  /* Alerts, Archive and Published are one News page: one search and one set of filters across
+     the capsule, so switching between them keeps what you were looking for. */
+  var id = isNewsTab(S.tab) ? "news" : S.tab;
+  if (!WALL[id]) WALL[id] = { q: "", open: false, comp: [], land: [], chan: [], state: [] };
   /* Older sessions restored a wall state from before this filter existed. */
-  if (!WALL[S.tab].state) WALL[S.tab].state = [];
-  return WALL[S.tab];
+  if (!WALL[id].state) WALL[id].state = [];
+  return WALL[id];
 }
 function toggleIn(list, v) {
   var i = list.indexOf(v);
@@ -4485,126 +4997,8 @@ function repaintCard(a, opts) {
   if (n && n.isConnected) n.replaceWith(articleCard(a, opts));
 }
 
-/* One story, laid out like the phone's card. */
-function articleCard(a, opts) {
-  opts = opts || {};
-  var k = key(a.title);
-  var lang = storyLang(a);
-  var card = el("div", "ncard");
-  CARD_NODES[k] = card;
-
-  var top = el("div", "ntop");
-  var kind = sourceKind(a);
-  var dot = el("span", "sdot " + kind);
-  dot.title = SOURCE_LABEL[kind];
-  top.appendChild(dot);
-  top.appendChild(el("span", "nchan", catShort(a.category) || "News"));
-  if (verifiedSet().has(k)) {
-    var vb = el("span", "nverified");
-    vb.innerHTML = ICON_TICK;
-    vb.title = "Verified";
-    top.appendChild(vb);
-  }
-  top.appendChild(el("span", "ngrow"));
-  if (lang) top.appendChild(langPill(a, lang, opts));
-  var sh = el("button", "nact");
-  sh.innerHTML = ICON_SHARE;
-  sh.title = "Share this story";
-  sh.setAttribute("aria-label", "Share this story");
-  sh.onclick = function (e) { e.stopPropagation(); shareStory(a, lang); };
-  top.appendChild(sh);
-  card.appendChild(top);
-
-  card.appendChild(el("p", "nttl", lang && lang.english ? lang.tr.t : decodeEnt(a.title)));
-
-  var meta = el("div", "nmeta");
-  if (a.date) meta.appendChild(el("span", "ndate", newsDate(a.date)));
-  if (a.source || a.sourceUrl) {
-    if (a.date) meta.appendChild(el("span", null, "·"));
-    if (a.sourceUrl) {
-      var link = el("a", "nsrc");
-      link.href = sourceHref(a);
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      link.title = "Open " + (a.source || "the source") + " in a new tab";
-      link.appendChild(document.createTextNode(a.source || "Source"));
-      link.appendChild(el("span", "ext", "↗"));
-      meta.appendChild(link);
-    } else {
-      meta.appendChild(el("span", "nsrc plain", a.source));
-    }
-  }
-  card.appendChild(meta);
-  /* pmAdvisory is deliberately not rendered. The feature is retired; the field is left in
-     the payload so nothing is lost, but nothing on this page reads it. */
-
-  {
-    var sum = lang && lang.english ? (lang.tr.s || a.summary) : a.summary;
-    if (sum) card.appendChild(el("p", "nsum", decodeEnt(sum)));
-
-    var foot = el("div", "ncorners foot");
-    /* Bottom left: the same plain Google search the phone's Fact check opens. */
-    var fc = el("a", "nfact", "Fact check");
-    fc.href = "https://www.google.com/search?q=" + encodeURIComponent(decodeEnt(a.title) + " is this news true?");
-    fc.target = "_blank";
-    fc.rel = "noopener noreferrer";
-    foot.appendChild(fc);
-
-    /* Archive / Move to Alerts (build 110), a request the phone applies like Verify. */
-    if (opts.archivable && phoneArchives()) {
-      var into = opts.archivable === "in";
-      var ab = el("button", "nstate");
-      ab.appendChild(el("span", null, into ? "Archive" : "Move to Alerts"));
-      ab.title = into ? "Keep this story out of the newsletter, out of Alerts" : "Put this story back in News alerts";
-      ab.onclick = function (e) { e.stopPropagation(); requestOp(a.title, into ? "archive" : "unarchive"); };
-      foot.appendChild(ab);
-    }
-    /* Bottom right: the state. On a verifiable page an unverified story is a BUTTON, so the
-       commonest action costs one click from where the eye already is. */
-    if (opts.publishedPill) {
-      foot.appendChild(publishedControl(a.title));
-    } else if (opts.verifiable) {
-      var on = verifiedSet().has(k);
-      if (on && verifiedOnPhone(a.title)) {
-        var fixed = el("span", "nstate on");
-        fixed.innerHTML = ICON_TICK;
-        fixed.appendChild(el("span", null, "Verified"));
-        fixed.title = "Verified on the phone. Change it there.";
-        foot.appendChild(fixed);
-      } else if (on) {
-        // Verified here, so it is ours to undo, from exactly where the mis-click happened.
-        var undo = el("button", "nstate on");
-        undo.innerHTML = ICON_TICK;
-        undo.appendChild(el("span", null, "Verified"));
-        undo.title = "Verified here. Click to undo.";
-        undo.onclick = function () { toggleVerify(a.title); };
-        foot.appendChild(undo);
-      } else {
-        var b = el("button", "nstate");
-        b.innerHTML = ICON_TICK;
-        b.appendChild(el("span", null, "Mark as correct"));
-        b.title = "Click to mark this story correct";
-        b.onclick = function () { toggleVerify(a.title); };
-        foot.appendChild(b);
-      }
-    }
-    card.appendChild(foot);
-  }
-
-  return card;
-}
-
-/* The three source dots, explained once, on the same line as the cards/list switch. */
-function sourceLegend() {
-  var box = el("div", "srclegend");
-  ["rss", "grounded", "hybrid"].forEach(function (k) {
-    var item = el("span");
-    item.appendChild(el("span", "sdot " + k));
-    item.appendChild(document.createTextNode(SOURCE_LABEL[k]));
-    box.appendChild(item);
-  });
-  return box;
-}
+/* One story: the phone's card in its expanded state (C3). Drawn by THE NEWS PAGE below. */
+function articleCard(a, opts) { return Feed.card(a, opts); }
 
 /* Everything a story can be matched on. articleText keeps the case (the competitor rule checks
    capitals); articleHaystack is the same text lowercased once. */
@@ -4612,29 +5006,14 @@ function articleText(a) {
   /* No pmAdvisory here. Matching on text the card does not show produces a result you
      cannot explain by looking at it. */
   var tr = storyTranslation(key(a.title)) || {};
-  return [decodeEnt(a.title), decodeEnt(a.summary), a.source, a.category, catShort(a.category), tr.t, tr.s]
+  /* An edited story is found by its edited words as well as the original ones. */
+  var e = storyEdit(a) || {};
+  return [decodeEnt(a.title), decodeEnt(a.summary), a.source, a.category, catShort(a.category), tr.t, tr.s,
+          e.headline, e.summary, e.source, e.category]
     .filter(Boolean).join(" ");
 }
 function articleHaystack(a) {
   return articleText(a).toLowerCase();
-}
-
-/* The wall: search, filters, then the cards that survive both. */
-/* Which view the reader picked, per browser. Cards by default: it is the richer one, and a first
-   visit has no reason to prefer density. */
-var NEWS_VIEW_LS = "echo.news.view";
-function newsView() {
-  try { return localStorage.getItem(NEWS_VIEW_LS) === "list" ? "list" : "cards"; }
-  catch (e) { return "cards"; }
-}
-function setNewsView(v) {
-  try { localStorage.setItem(NEWS_VIEW_LS, v === "list" ? "list" : "cards"); } catch (e) {}
-}
-/* The stored choice does not apply on a narrow screen — see the media query above. */
-function newsViewEffective() {
-  var narrow = false;
-  try { narrow = window.matchMedia("(max-width:760px)").matches; } catch (e) {}
-  return narrow ? "cards" : newsView();
 }
 
 /* ---------- competitor coverage: mirrors the phone's competitorCoverage() ----------
@@ -4754,186 +5133,34 @@ function inMarket(a, hay, market) {
   return storyMarketOf(a).toLowerCase() === market.toLowerCase() || hay.indexOf(market.toLowerCase()) >= 0;
 }
 
+/* The wall: the toolbar, then the cards that survive the chips and the search.
+   On News (Alerts, Archive, Published) and Saved the toolbar is the T1 row at the top of the page:
+   the title, the capsule (News only), the capsule search and the three chip menus. Liked and
+   Disliked carry the same search and chips inside the page. */
 function newsWall(app, list, opts) {
   opts = opts || {};
   var st = wallState();
-  var d = S.data || {};
-
-  /* Channel and market chips come from what is actually in this list, not from the whole
-     database: a chip that filters to nothing is a dead control. */
-  var chanSet = {}, landSet = {};
-  var landNames = arr(d.countries).map(function (c) { return c && c.name; }).filter(Boolean);
-  list.forEach(function (a) {
-    if (a.category) chanSet[a.category] = 1;
-    var hay = articleHaystack(a);
-    landNames.forEach(function (n) { if (inMarket(a, hay, n)) landSet[n] = 1; });
-  });
-  var chans = Object.keys(chanSet).sort();
-  /* Competitors are the exception (user, 2026-09-21): every one you track gets a chip, as on the
-     phone, so a name can always be found here; "0 of 197 stories" then says this list has none.
-     Until then a chip appeared only when a story carried the competitor's FULL saved name, which
-     most never do ("Schueco India pvt Ltd", "TOSTEM (LIXIL) India"): 3 of 10 showed on alerts. */
-  var comps = arr(d.competitors).map(function (c) { return c && c.name; }).filter(Boolean)
-    .filter(function (n, i, all) { return all.indexOf(n) === i; }).sort();
-  var lands = Object.keys(landSet).sort();
-
+  var byChips = Feed.filterList(list, st);
   var q = st.q.trim().toLowerCase();
-  /* Published and verified are computed the same way the cards are, so a chip can never
-     disagree with the badge on the card it filters. OR inside the group, AND across groups,
-     which is how every other chip here already behaves. */
-  var pubKeys = publishedSet(), verKeys = verifiedSet();
-  var stateOf = function (a) {
-    var k = key(a.title);
-    return { published: pubKeys.has(k), verified: verKeys.has(k) };
-  };
-  var byChips = list.filter(function (a) {
-    var hay = articleHaystack(a);
-    if (st.state.length) {
-      var sv = stateOf(a);
-      var hit = st.state.some(function (f) {
-        return f === "published"   ? sv.published
-             : f === "unpublished" ? !sv.published
-             : f === "verified"    ? sv.verified
-             : !sv.verified;
-      });
-      if (!hit) return false;
-    }
-    if (st.chan.length && st.chan.indexOf(a.category) < 0) return false;
-    if (st.comp.length) {
-      var txt = articleText(a);
-      if (!st.comp.some(function (n) { return compMentioned(txt, n); })) return false;
-    }
-    if (st.land.length && !st.land.some(function (n) { return inMarket(a, hay, n); })) return false;
-    return true;
-  });
-  var shown = q
-    ? byChips.filter(function (a) { return articleHaystack(a).indexOf(q) >= 0; })
-    : byChips;
-
+  var shown = Feed.byQuery(byChips, q);
   var active = st.comp.length + st.land.length + st.chan.length + st.state.length;
 
-  var box = el("div", "nsearch");
-
-  var field = el("div", "nfield");
-  var mag = el("span");
-  mag.innerHTML = ICON_SEARCH;
-  field.appendChild(mag.firstChild);
-
-  var input = el("input");
-  input.type = "search";
-  input.value = st.q;
-  input.placeholder = opts.placeholder || "Search these stories";
-  input.setAttribute("aria-label", "Search stories");
-  /* Filter as you type, without re-rendering the whole page on every keystroke: only the wall
-     is rebuilt, and the field keeps focus and caret because it is never replaced. */
-  input.oninput = function () { st.q = input.value; repaintWall(); };
-  field.appendChild(input);
-
-  if (st.q) {
-    var clear = el("button", "nfbtn");
-    clear.innerHTML = ICON_X;
-    clear.title = "Clear search";
-    clear.setAttribute("aria-label", "Clear search");
-    clear.onclick = function () { st.q = ""; render(); };
-    field.appendChild(clear);
+  var bar = el("div", "fp-bar");
+  if (isNewsTab(S.tab) || S.tab === "saved") {
+    var news = isNewsTab(S.tab);
+    bar.appendChild(el("h1", "fp-title", news ? "News" : "Saved"));
+    if (news) bar.appendChild(Feed.capsule(st));
+    bar.appendChild(Feed.searchField(st,
+      { alerts: "Search", archive: "Search Archive", published: "Search Published", saved: "Search Saved" }[S.tab]));
+    bar.appendChild(Feed.chipRow(st, list));
+    var slot = $("#fpTool"); slot.innerHTML = ""; slot.appendChild(bar);
+    $("#shell").classList.add("fp-news");
+  } else {
+    bar.classList.add("fp-bar-in");
+    bar.appendChild(Feed.searchField(st, opts.placeholder || "Search"));
+    bar.appendChild(Feed.chipRow(st, list));
+    app.appendChild(bar);
   }
-
-  var fbtn = el("button", "nfbtn" + (st.open ? " on" : ""));
-  fbtn.innerHTML = ICON_SLIDERS;
-  fbtn.title = st.open ? "Hide filters" : "Show filters";
-  fbtn.setAttribute("aria-expanded", st.open ? "true" : "false");
-  if (active) fbtn.appendChild(el("span", "badge", String(active)));
-  fbtn.onclick = function () {
-    if (st.open) { nfClose(); return; }
-    st.open = true; st.nfJustOpened = true; render();
-  };
-  field.appendChild(fbtn);
-  box.appendChild(field);
-
-  if (st.open) {
-    var panel = el("div", "nfilters");
-    NF_OPEN = { st: st, panel: panel };
-    if (st.nfJustOpened) { st.nfJustOpened = false; nfAnimateOpen(panel); }
-    /* State first: it is the one group whose options are fixed, and the one most reached for on
-       a feed you are working through.
-
-       A state only earns a chip if it would actually divide THIS list. On News alerts every story
-       is unpublished, because alerts() filters published ones out by definition — so "Published"
-       would always return nothing and "Not published" would always return everything. Both are
-       dead controls. The vocabularies below already follow this rule; so does this. */
-    (function () {
-      var n = list.length, c = { published: 0, unpublished: 0, verified: 0, unverified: 0 };
-      list.forEach(function (a) {
-        var sv = stateOf(a);
-        if (sv.published) c.published++; else c.unpublished++;
-        if (sv.verified) c.verified++; else c.unverified++;
-      });
-      var opts = [["published", "Published"], ["unpublished", "Not published"],
-                  ["verified", "Verified"], ["unverified", "Not verified"]]
-        .filter(function (o) { return c[o[0]] > 0 && c[o[0]] < n; });
-      if (!opts.length) return;
-      var g = el("div", "nfgroup");
-      g.appendChild(el("h4", null, "By state"));
-      var chips = el("div", "nchips");
-      var all = el("button", "nchip" + (st.state.length ? "" : " on"), "All");
-      all.onclick = function () { st.state.length = 0; render(); };
-      chips.appendChild(all);
-      opts.forEach(function (o) {
-        var b = el("button", "nchip" + (st.state.indexOf(o[0]) >= 0 ? " on" : ""), o[1]);
-        b.onclick = function () { toggleIn(st.state, o[0]); render(); };
-        chips.appendChild(b);
-      });
-      g.appendChild(chips);
-      panel.appendChild(g);
-    })();
-    [["By channel", chans, st.chan],
-     ["By competitor", comps, st.comp],
-     ["By market", lands, st.land]
-    ].forEach(function (grp) {
-      if (!grp[1].length) return;
-      var g = el("div", "nfgroup");
-      g.appendChild(el("h4", null, grp[0]));
-      var chips = el("div", "nchips");
-      var all = el("button", "nchip" + (grp[2].length ? "" : " on"), "All");
-      all.onclick = function () { grp[2].length = 0; render(); };
-      chips.appendChild(all);
-      grp[1].forEach(function (name) {
-        var c = el("button", "nchip" + (grp[2].indexOf(name) >= 0 ? " on" : ""),
-          grp[2] === st.chan ? catShort(name) : name);
-        c.onclick = function () { toggleIn(grp[2], name); render(); };
-        chips.appendChild(c);
-      });
-      g.appendChild(chips);
-      panel.appendChild(g);
-    });
-    if (panel.children.length) box.appendChild(panel);
-  }
-
-  /* The COUNT is conditional and the SWITCH is not. "6 of 268" only means something while a
-     search or a filter is narrowing the list, but the choice between cards and list has to be
-     reachable whenever there are stories — which is nearly always, and was never while I had the
-     switch inside this condition. */
-  var countRow = el("div", "ncountrow");
-  /* The legend shares this line rather than taking one of its own. It only explains the card
-     dots, so the list view, which has none, goes without it. */
-  if (list.length && newsViewEffective() === "cards") countRow.appendChild(sourceLegend());
-  var rowEnd = el("div", "nrowend");
-  if (q || active) {
-    rowEnd.appendChild(el("div", "ncount",
-      shown.length + " of " + list.length + (list.length === 1 ? " story" : " stories")));
-  }
-  if (list.length) {
-    var view = el("div", "nview");
-    [["cards", "Cards"], ["list", "List"]].forEach(function (o) {
-      var b = el("button", newsView() === o[0] ? "on" : "", o[1]);
-      b.onclick = function () { setNewsView(o[0]); render(); };
-      view.appendChild(b);
-    });
-    rowEnd.appendChild(view);
-  }
-  if (rowEnd.children.length) countRow.appendChild(rowEnd);
-  if (countRow.children.length) box.appendChild(countRow);
-  app.appendChild(box);
 
   var wall = el("div", "wall");
   wall.id = "wall";
@@ -4953,64 +5180,9 @@ function wallEmpty(filtering, opts) {
   n.classList.add("wallx");   /* so a repaint can find and replace it */
   return n;
 }
-function fillWall(wall, items, opts) {
-  wall.innerHTML = "";
-  if (newsViewEffective() === "list") { wall.appendChild(newsLedger(items, opts)); return; }
-  items.forEach(function (a) { wall.appendChild(articleCard(a, opts)); });
-}
+function fillWall(wall, items, opts) { Feed.fill(wall, items, opts); }
 
-/* The list view: the same ledger the reference pages use, with the columns a story has.
-   The state cell reuses the card's own verify logic rather than restating it — three states, and
-   getting them subtly different between the two views is exactly the drift this avoids. */
-function newsLedger(items, opts) {
-  var cols = [
-    { t: "Date", w: ".8fr", cls: "m" },
-    { t: "Category", w: ".9fr", cls: "m" },
-    { t: "Story", w: "2.6fr", cls: "p" },
-    { t: "Source", w: ".9fr", cls: "m" }
-  ];
-  if (opts.publishedPill || opts.verifiable) cols.push({ t: "State", w: ".8fr" });
-
-  return ledger(cols, items.map(function (a) {
-    var src;
-    if (a.sourceUrl) {
-      src = el("a", "nsrc");
-      src.href = sourceHref(a); src.target = "_blank"; src.rel = "noopener noreferrer";
-      src.title = "Open " + (a.source || "the source") + " in a new tab";
-      src.appendChild(document.createTextNode(a.source || "Source"));
-      src.appendChild(el("span", "ext", "↗"));
-    } else src = a.source || "";
-
-    var row = [newsDate(a.date), catShort(a.category), decodeEnt(a.title), src];
-    if (opts.publishedPill) {
-      row.push(publishedControl(a.title));
-    } else if (opts.verifiable) {
-      var on = verifiedSet().has(key(a.title));
-      var st;
-      if (on && verifiedOnPhone(a.title)) {
-        st = el("span", "nstate on");
-        st.innerHTML = ICON_TICK;
-        st.appendChild(el("span", null, "Verified"));
-        st.title = "Verified on the phone. Change it there.";
-      } else if (on) {
-        st = el("button", "nstate on");
-        st.innerHTML = ICON_TICK;
-        st.appendChild(el("span", null, "Verified"));
-        st.title = "Verified here. Click to undo.";
-        st.onclick = function () { toggleVerify(a.title); };
-      } else {
-        st = el("button", "nstate");
-        st.appendChild(el("span", null, "Mark as correct"));
-        st.title = "Click to mark this verified";
-        st.onclick = function () { toggleVerify(a.title); };
-      }
-      row.push(st);
-    }
-    return row;
-  }));
-}
-
-/* Rebuild only the cards and the count, so typing never costs the field its focus or caret.
+/* Rebuild only the cards and the capsule counts, so typing never costs the field its focus or caret.
    Re-filters from the pooled data with the same predicate the full render uses. */
 function repaintWall() {
   var wall = document.getElementById("wall");
@@ -5026,12 +5198,1152 @@ function repaintWall() {
   var prev = wall.parentNode && wall.parentNode.querySelector(".wallx");
   if (prev) prev.remove();
   if (!shown.length) wall.parentNode.insertBefore(wallEmpty(q || true, wall._opts), wall.nextSibling);
-  var count = document.querySelector(".ncount");
-  if (count) {
-    count.textContent = shown.length + " of " + wall._pool.length +
-      (wall._pool.length === 1 ? " story" : " stories");
-  }
+  Feed.refreshCounts();
 }
+
+/* ============================================================
+   THE NEWS PAGE, AS ON THE PHONE (redesign approved 24 Nov 2026)
+   ------------------------------------------------------------
+   The phone's story card in its expanded state (C3), month headers, the frosted ⋯ card menu,
+   the Edit story pop-up, selecting stories, the export sheet, and the T1 toolbar's pieces (the
+   Alerts / Archive / Published capsule, the capsule search, the Competitor / Market / Segment
+   chip menus). Kept in one module so its many small helpers cannot meet the page's own names;
+   the page reaches it through articleCard, fillWall, newsWall and render.
+
+   What each action does:
+     Verify, Mark as correct, Archive, Move to Alerts   requests the phone applies (requestOp)
+     Delete from Published                              an unpub request (back to Alerts)
+     Edit story, Save, Like, Dislike, Delete             S.actions.edits / .marks (see EDITS AND MARKS)
+   ============================================================ */
+var Feed = (function () {
+  "use strict";
+
+  function svg(body, w) {
+    return '<svg viewBox="0 0 24 24" width="' + (w || 18) + '" height="' + (w || 18) + '" fill="none" stroke="currentColor" ' +
+      'stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + body + '</svg>';
+  }
+  var I = {
+    more: '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5.5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="18.5" r="1.9"/></svg>',
+    shield: svg('<path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6z"/><path d="M9 12l2.2 2.2L15.5 10"/>'),
+    save: svg('<path d="M7 3.5h10a1 1 0 0 1 1 1V21l-6-4-6 4V4.5a1 1 0 0 1 1-1z"/>', 22),
+    saved: '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M7 3.5h10a1 1 0 0 1 1 1V21l-6-4-6 4V4.5a1 1 0 0 1 1-1z"/></svg>',
+    like: svg('<path d="M7 10v10H4V10zM7 10l4-7c1.4 0 2.3 1.1 2 2.5L12.3 9H19a2 2 0 0 1 2 2.3l-1.2 7A2 2 0 0 1 17.8 20H7"/>', 22),
+    dislike: svg('<path d="M7 14V4H4v10zM7 14l4 7c1.4 0 2.3-1.1 2-2.5L12.3 15H19a2 2 0 0 0 2-2.3l-1.2-7A2 2 0 0 0 17.8 4H7"/>', 22),
+    verify: svg('<path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6z"/><path d="M9 12l2.2 2.2L15.5 10"/>', 22),
+    edit: svg('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>', 20),
+    open: svg('<path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>', 20),
+    share: svg('<path d="M12 3v12"/><path d="M7.5 7.5L12 3l4.5 4.5"/><path d="M6 11H5v9h14v-9h-1"/>', 20),
+    search: svg('<circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.8-4.8"/>', 18),
+    searchL: svg('<circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.8-4.8"/>', 20),
+    archive: svg('<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9"/><path d="M10 13h4"/>', 20),
+    unarchive: svg('<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9"/><path d="M12 18v-6M9.5 14.5L12 12l2.5 2.5"/>', 20),
+    trash: svg('<path d="M4 7h16"/><path d="M9 7V4.5h6V7"/><path d="M6 7l1 13h10l1-13"/><path d="M10 11v6M14 11v6"/>', 20),
+    check: svg('<path d="M5 12.5l4.5 4.5L19 7.5"/>', 18),
+    checkc: '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-1.4 14.2L6.5 12l1.4-1.4 2.7 2.7 5.5-5.5 1.4 1.4z"/></svg>',
+    selc: svg('<circle cx="12" cy="12" r="9"/><path d="M8 12.3l2.8 2.8L16 9.8"/>', 20),
+    doc: svg('<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6M9 16h6"/>', 20),
+    export: svg('<path d="M12 3v12"/><path d="M7.5 7.5L12 3l4.5 4.5"/><path d="M6 11H5v9h14v-9h-1"/>', 20),
+    chevd: svg('<path d="M6 9l6 6 6-6"/>', 16),
+    chevr: svg('<path d="M9 6l6 6-6 6"/>', 18),
+    x: svg('<path d="M6 6l12 12M18 6L6 18"/>', 16),
+    tickW: svg('<path d="M5 12.5l4.5 4.5L19 7.5"/>', 12)
+  };
+  function node(tag, cls, html) { var n = document.createElement(tag); if (cls) n.className = cls; if (html != null) n.innerHTML = html; return n; }
+  function txt(tag, cls, t) { var n = document.createElement(tag); if (cls) n.className = cls; if (t != null) n.textContent = t; return n; }
+  function plural(n, one, many) { return n + " " + (n === 1 ? one : many); }
+
+  /* The app's 13 categories, in the order GeminiService.CANONICAL_CATEGORIES lists them, then any
+     other category the phone's stories carry (the façade and sliders apps add their own). */
+  var BASE_CATEGORIES = ["New Product", "Market Related News", "Pricing & Promotions", "Project Wins & Specs",
+    "Tenders & Project Opportunities", "Certifications & Standards", "Partnerships & Distribution",
+    "Expansion & Investment", "Sustainability & Green", "R&D & Technology", "Regulations & Codes",
+    "Material Prices", "Market Demand"];
+  function categories() {
+    var out = BASE_CATEGORIES.slice();
+    storyPool().forEach(function (a) {
+      var c = a && String(a.category || "").trim();
+      if (c && out.indexOf(c) < 0) out.push(c);
+    });
+    return out;
+  }
+
+  /* ---------- dates: the phone's rules ---------- */
+  /* Only a date we can trust: a real day, a year from 2000 on, not more than two days ahead.
+     "Recent", "July 2026" (no day) and the mis-stored "June 01, 0012" give null, and the card then
+     shows no date at all rather than a wrong one. */
+  function dayMs(raw) {
+    var s = String(raw || "").trim(), t;
+    var m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) t = new Date(+m[1], +m[2] - 1, +m[3]).getTime();
+    else {
+      if (!/\b(19|20)\d{2}\b/.test(s)) return null;
+      if (!/\b\d{1,2}(st|nd|rd|th)?\b/.test(s.replace(/\b\d{4}\b/g, ""))) return null;
+      t = Date.parse(s.replace(/(\d)(st|nd|rd|th)\b/, "$1"));
+    }
+    if (isNaN(t)) return null;
+    var y = new Date(t).getFullYear();
+    if (y < 2000 || t > Date.now() + 2 * 86400000) return null;
+    return t;
+  }
+  /* Every HTML entity, named or numeric, decoded (twice, for Google's double escaping). decodeEnt
+     only knows numeric ones, which is how "Aluminium&rsquo;s" reached a card. */
+  var DP = new DOMParser();
+  function dec(s) {
+    s = String(s == null ? "" : s);
+    for (var i = 0; i < 2 && /&(#\d+|#x[0-9a-f]+|[a-z][a-z0-9]{1,31});/i.test(s); i++) {
+      s = DP.parseFromString("<!doctype html><body>" + s.replace(/</g, "&lt;"), "text/html").body.textContent;
+    }
+    return s;
+  }
+  var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  var MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  function day0(t) { var d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); }
+  /* AluDashboard.relativeNewsDate: Today, Yesterday, N days ago, then "16 Sep" (or "16 Sep 2025"). */
+  function relDate(raw) {
+    var ms = dayMs(raw);
+    if (ms == null) return "";
+    var days = Math.round((day0(Date.now()) - day0(ms)) / 86400000);
+    if (days <= 0) return "Today";
+    if (days === 1) return "Yesterday";
+    if (days < 7) return days + " days ago";
+    var d = new Date(ms);
+    return d.getDate() + " " + MON[d.getMonth()] + (d.getFullYear() === new Date().getFullYear() ? "" : " " + d.getFullYear());
+  }
+  function isoDay(raw) {
+    var ms = dayMs(raw);
+    if (ms == null) return "";
+    var d = new Date(ms);
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function monthKey(a) {
+    var ms = dayMs(a.date);
+    if (ms == null) return "";
+    var d = new Date(ms);
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+  }
+  function monthTitle(k) {
+    if (!k) return "Undated";
+    var y = +k.slice(0, 4), m = +k.slice(5, 7);
+    return MONTHS[m - 1] + (y === new Date().getFullYear() ? "" : " " + y);
+  }
+
+  /* Where the source name goes: an edited link wins, otherwise the page's own rule. */
+  function storyHref(a) {
+    var e = storyEdit(a);
+    if (e && e.sourceUrl) return e.sourceUrl;
+    return sourceHref(a);
+  }
+  function factHref(a) { return "https://www.google.com/search?q=" + encodeURIComponent(dec(a.title) + " is this news true?"); }
+
+  /* ---------- per-list facts ---------- */
+  function feedKind() {
+    var t = S.tab;
+    return t === "alerts" ? "alerts" : t === "archive" ? "archive" : t === "published" ? "published"
+      : t === "saved" ? "saved" : (t === "liked" || t === "disliked") ? t : "other";
+  }
+  function inAlerts(a) {
+    if (!FP.alertKeys) FP.alertKeys = new Set(alerts().map(function (x) { return key(x.title); }));
+    return FP.alertKeys.has(key(a.title));
+  }
+
+  /* ---------- state ---------- */
+  var FP = {
+    sel: { on: false, tab: null, set: new Set() },
+    sort: {},          // tab -> "latest" | "date"
+    shown: [],         // the stories the wall shows right now (after search and filters)
+    byKey: {},
+    alertKeys: null
+  };
+  function sortOf() { return FP.sort[S.tab] || "latest"; }
+
+  /* ================================================================
+     THE CARD — FeedStoryCard, expanded (C3)
+     dot · CATEGORY · seal … ⋯ / headline / Source · date ✎ Edited / summary / Fact check | Mark as correct
+     ================================================================ */
+  function card(a, opts) {
+    opts = opts || {};
+    var k = key(a.title), ea = editedStory(a), e = storyEdit(a);
+    var lang = storyLang(a);
+    var sel = FP.sel.on;
+    var c = node("article", "ncard fpcard" + (sel && FP.sel.set.has(k) ? " picked" : ""));
+    c.dataset.k = k;
+    CARD_NODES[k] = c;
+    FP.byKey[k] = a;
+
+    var top = node("div", "fptop");
+    if (sel) {
+      top.appendChild(node("span", "fpselc" + (FP.sel.set.has(k) ? " on" : ""), FP.sel.set.has(k) ? I.tickW : ""));
+    } else {
+      var sk = sourceKind(a);
+      var dot = node("span", "sdot " + sk);
+      dot.title = SOURCE_LABEL[sk];     // the source dots explain themselves on hover
+      top.appendChild(dot);
+    }
+    top.appendChild(txt("span", "fpcat", dec(String(catShort(ea.category) || "News")).toUpperCase()));
+    if (verifiedSet().has(k)) {
+      var vb = node("span", "fpseal", I.shield);
+      vb.title = "Verified";
+      top.appendChild(vb);
+    }
+    top.appendChild(node("span", "fpgrow"));
+    /* The EN/DE pill belongs to the ORIGINAL story's language, so an edit never takes it away. */
+    if (lang) top.appendChild(langPill(a, lang, opts));
+    var more = node("button", "fpmore", I.more);
+    more.title = "More";
+    more.setAttribute("aria-label", "More actions for this story");
+    more.disabled = sel;
+    more.onclick = function (ev) { ev.stopPropagation(); openCardMenu(a, c, opts); };
+    top.appendChild(more);
+    c.appendChild(top);
+
+    var title = e && e.headline != null ? e.headline : (lang && lang.english ? lang.tr.t : a.title);
+    c.appendChild(txt("h3", "fpttl", dec(title)));
+
+    var meta = node("div", "fpmeta");
+    var srcName = dec(ea.source) || (a.sourceUrl ? "Source" : "");
+    if (srcName) {
+      var s = document.createElement("a");
+      s.className = "fpsrc";
+      s.textContent = srcName;
+      s.href = storyHref(a);
+      s.target = "_blank"; s.rel = "noopener noreferrer";
+      s.title = "Open " + srcName + " in a new tab";
+      meta.appendChild(s);
+    }
+    var rd = relDate(ea.date);
+    if (rd) {
+      if (srcName) meta.appendChild(txt("span", "fpdotsep", "·"));
+      var dt = txt("span", "fpdate", rd);
+      dt.title = newsDate(ea.date);
+      meta.appendChild(dt);
+    }
+    if (e) {
+      var pill = txt("span", "fpedited", "✎ Edited");
+      pill.title = "Edited on the web. The original is kept; ⋯ › Edit story › Restore original brings it back.";
+      meta.appendChild(pill);
+    }
+    c.appendChild(meta);
+
+    var sum = e && e.summary != null ? e.summary : (lang && lang.english ? (lang.tr.s || a.summary) : a.summary);
+    if (sum) c.appendChild(txt("p", "fpsum", dec(sum)));
+    else c.classList.add("nosum");
+
+    /* The two-part footer, edge to edge: Fact check | Mark as correct. */
+    var foot = node("div", "fpfoot");
+    var fc = document.createElement("a");
+    fc.className = "fphalf fpfact";
+    fc.href = factHref(ea);
+    fc.target = "_blank"; fc.rel = "noopener noreferrer";
+    fc.innerHTML = I.search + "<span>Fact check</span>";
+    foot.appendChild(fc);
+    foot.appendChild(node("span", "fpvsep"));
+    foot.appendChild(stateHalf(a));
+    c.appendChild(foot);
+
+    /* Right-click = the same menu; Shift-click = start selecting (the long-press equivalent). */
+    c.addEventListener("contextmenu", function (ev) {
+      if (FP.sel.on) return;
+      ev.preventDefault();
+      openCardMenu(a, c, opts);
+    });
+    c.addEventListener("click", function (ev) {
+      if (FP.sel.on) {
+        ev.preventDefault(); ev.stopPropagation();
+        toggleSel(k);
+        return;
+      }
+      if (ev.shiftKey && feedKind() !== "other") {
+        ev.preventDefault();
+        startSelect(k);
+      }
+    }, true);
+    return c;
+  }
+
+  function stateHalf(a) {
+    var k = key(a.title), on = verifiedSet().has(k), kd = feedKind();
+    var b;
+    if (kd === "published") {
+      b = node("span", "fphalf fpstate on", I.checkc + "<span>Published</span>");
+      b.title = "In a report. ⋯ › Move to Alerts takes it back out.";
+      return b;
+    }
+    var canAct = (kd === "alerts" || kd === "archive" || inAlerts(a));
+    if (on) {
+      if (verifiedOnPhone(a.title) || !canAct) {
+        b = node("span", "fphalf fpstate on", I.checkc + "<span>Verified</span>");
+        b.title = "Verified on the phone. Change it there.";
+      } else {
+        b = node("button", "fphalf fpstate on", I.checkc + "<span>Verified</span>");
+        b.title = "Verified. Click to undo.";
+        b.onclick = function (ev) { ev.stopPropagation(); toggleVerify(a.title); };
+      }
+      return b;
+    }
+    b = node("button", "fphalf fpstate", "<span>Mark as correct</span>" + I.check);
+    if (!canAct) {
+      /* Same secondary colour as on News (the phone never greys it out); a click says why it cannot. */
+      b.setAttribute("aria-disabled", "true");
+      b.title = "Only a story in News alerts can be marked correct.";
+      b.onclick = function (ev) { ev.stopPropagation(); toast("Only a story in News alerts can be marked correct."); };
+    } else {
+      b.title = "Mark this story correct";
+      b.onclick = function (ev) { ev.stopPropagation(); toggleVerify(a.title); };
+    }
+    return b;
+  }
+
+  /* ================================================================
+     THE WALL — month headers (Alerts, Archive), one section line (Published, Saved, results)
+     ================================================================ */
+  function fill(wall, items, opts) {
+    var kd = feedKind();
+    FP.alertKeys = null;
+    FP.shown = items;
+    wall.innerHTML = "";
+    FP.byKey = {};
+    if (kd === "other") { wall.classList.remove("fpwall"); items.forEach(function (a) { wall.appendChild(card(a, opts)); }); return; }
+    wall.classList.add("fpwall");
+    if (!items.length) return;
+
+    var st = wallState();
+    var filtering = !!(st.q.trim() || st.comp.length || st.land.length || st.chan.length || st.state.length);
+    var ordered = items.slice();
+    /* An edited date moves the story: sorting and the month groups read the edited one. */
+    var when = function (a) { return dayMs(editedStory(a).date) || 0; };
+    if (sortOf() === "date") ordered.sort(function (x, y) { return when(y) - when(x); });
+
+    var monthly = (kd === "alerts" || kd === "archive") && !filtering;
+    if (!monthly) {
+      var label = filtering ? "Results" : ({ published: "Published", saved: "Saved", liked: "Liked", disliked: "Disliked",
+        alerts: "Alerts", archive: "Archive" })[kd];
+      wall.appendChild(sectionHeader(label, plural(ordered.length, "story", "stories"), true));
+      ordered.forEach(function (a) { wall.appendChild(card(a, opts)); });
+      return;
+    }
+    var groups = {}, keys = [];
+    ordered.forEach(function (a) {
+      var mk = monthKey(editedStory(a));
+      if (!groups[mk]) { groups[mk] = []; keys.push(mk); }
+      groups[mk].push(a);
+    });
+    keys.sort(function (x, y) { return x === "" ? 1 : y === "" ? -1 : (x < y ? 1 : x > y ? -1 : 0); });
+    var ver = verifiedSet();
+    keys.forEach(function (mk, i) {
+      var rows = groups[mk];
+      var sub = plural(rows.length, "story", "stories");
+      if (kd === "alerts") {
+        var nv = rows.filter(function (a) { return ver.has(key(a.title)); }).length;
+        if (nv && nv === rows.length) sub += " · all verified";
+        else if (nv) sub += " · " + nv + " verified";
+      }
+      var h = sectionHeader(monthTitle(mk), sub, i === 0);
+      if (i > 0) h.classList.add("next");
+      wall.appendChild(h);
+      rows.forEach(function (a) { wall.appendChild(card(a, opts)); });
+    });
+  }
+
+  function sectionHeader(title, sub, withSort) {
+    var h = node("div", "fpmonth");
+    var t = node("div", "fpmt");
+    t.appendChild(txt("h2", "fpmname", title));
+    t.appendChild(txt("span", "fpmsub", sub));
+    h.appendChild(t);
+    h.appendChild(node("span", "fpgrow"));
+    if (FP.sel.on) return h;
+    if (withSort) {
+      var sb = node("button", "fpsort", "<span>" + (sortOf() === "date" ? "By date" : "Latest") + "</span>" + I.chevd);
+      sb.onclick = function (ev) {
+        ev.stopPropagation();
+        openGlassMenu(sb, [
+          { label: "Latest", tick: sortOf() === "latest", run: function () { FP.sort[S.tab] = "latest"; render(); } },
+          { label: "By date", tick: sortOf() === "date", run: function () { FP.sort[S.tab] = "date"; render(); } }
+        ], { ticks: true, width: 200 });
+      };
+      h.appendChild(sb);
+    }
+    /* The ⋯ sits immediately right of Latest, in every list (Published included). */
+    var mb = node("button", "fpmore", I.more);
+    mb.title = "More";
+    mb.setAttribute("aria-label", "More for this list");
+    mb.onclick = function (ev) { ev.stopPropagation(); openGlassMenu(mb, monthMenuItems()); };
+    h.appendChild(mb);
+    return h;
+  }
+
+  function monthMenuItems() {
+    var kd = feedKind(), items = [];
+    if (kd === "alerts") {
+      var rest = phoneArchives() ? archiveRestCandidates().length : 0;
+      items.push({ icon: I.archive, label: "Archive the rest",
+        /* It acts on every month in Alerts, not just this one, so the line says so. */
+        sub: !phoneArchives() ? "Arrives with phone build 110"
+          : rest ? "All " + plural(rest, "unverified story", "unverified stories") + " in Alerts" : "Every story in Alerts is verified",
+        disabled: !rest, run: function () { archiveTheRest(); } });
+    }
+    items.push({ icon: I.selc, label: "Select stories", run: function () { startSelect(null); } });
+    items.push({ icon: I.export, label: "Export…", sub: "Word or PDF", run: function () { openExport(null); } });
+    if (kd === "alerts" || kd === "archive") {
+      items.push({ gap: true });
+      items.push({ icon: I.doc, label: "Open Monthly Report", run: function () {
+        S.tab = "reports"; save(); render(); $("#scroll").scrollTop = 0; } });
+    }
+    return items;
+  }
+
+  /* ---------- a small frosted drop-down (sort, month ⋯) ---------- */
+  var GM = null;
+  function closeGlassMenu() { if (GM) { GM.remove(); GM = null; document.removeEventListener("mousedown", gmAway, true); } }
+  function gmAway(ev) { if (GM && !GM.contains(ev.target)) closeGlassMenu(); }
+  function openGlassMenu(anchor, items, o) {
+    closeGlassMenu();
+    o = o || {};
+    var m = node("div", "fpgmenu" + (o.ticks ? " ticks" : ""));
+    m.setAttribute("role", "menu");
+    items.forEach(function (it) {
+      if (it.gap) { m.appendChild(node("div", "fpgap")); return; }
+      var b = node("button", "fpgitem" + (it.disabled ? " off" : ""));
+      b.setAttribute("role", "menuitem");
+      b.disabled = !!it.disabled;
+      if (o.ticks) b.appendChild(node("span", "fpgtick", it.tick ? I.check : ""));
+      else b.appendChild(node("span", "fpgico", it.icon || ""));
+      var lab = node("span", "fpglab");
+      lab.appendChild(txt("span", null, it.label));
+      if (it.sub) lab.appendChild(txt("small", null, it.sub));
+      b.appendChild(lab);
+      b.onclick = function () { closeGlassMenu(); it.run(); };
+      m.appendChild(b);
+    });
+    document.body.appendChild(m);
+    var r = anchor.getBoundingClientRect(), w = o.width || 260;
+    m.style.width = w + "px";
+    var left = Math.min(window.innerWidth - w - 12, Math.max(12, r.right - w));
+    var topY = r.bottom + 6;
+    m.style.left = left + "px";
+    m.style.top = topY + "px";
+    var mh = m.offsetHeight;
+    if (topY + mh > window.innerHeight - 12) { m.style.top = Math.max(12, r.top - 6 - mh) + "px"; m.style.transformOrigin = "100% 100%"; }
+    requestAnimationFrame(function () { m.classList.add("in"); });
+    GM = m;
+    setTimeout(function () { document.addEventListener("mousedown", gmAway, true); }, 0);
+  }
+
+  /* ================================================================
+     THE ⋯ CARD MENU: the card lifts over a dimmed page, the frosted menu hangs from its right edge
+     ================================================================ */
+  var CM = null;
+  function closeCardMenu() {
+    if (!CM) return;
+    var c = CM;
+    CM = null;
+    c.dim.classList.remove("in");
+    c.menu.classList.remove("in");
+    c.lift.classList.remove("in");
+    setTimeout(function () {
+      c.dim.remove(); c.menu.remove(); c.lift.remove();
+      if (c.card) c.card.style.visibility = "";
+    }, 180);
+  }
+  function openCardMenu(a, cardNode, opts) {
+    closeGlassMenu(); closeCardMenu(); closeChipMenu();
+    var kd = feedKind(), k = key(a.title), ver = verifiedSet().has(k);
+    var r = cardNode.getBoundingClientRect();
+
+    var dim = node("div", "fpdim");
+    dim.onclick = closeCardMenu;
+    dim.oncontextmenu = function (ev) { ev.preventDefault(); closeCardMenu(); };
+
+    var lift = cardNode.cloneNode(true);
+    lift.classList.add("fplift");
+    lift.style.left = r.left + "px"; lift.style.top = r.top + "px";
+    lift.style.width = r.width + "px"; lift.style.height = r.height + "px";
+    lift.querySelectorAll("a,button").forEach(function (x) { x.tabIndex = -1; });
+    lift.addEventListener("click", function (ev) { ev.preventDefault(); ev.stopPropagation(); }, true);
+    var liftMore = lift.querySelector(".fpmore");
+    if (liftMore) liftMore.classList.add("on");
+
+    var m = node("div", "fpmenu");
+    m.setAttribute("role", "menu");
+    /* Round buttons: Save, Like, Dislike, Verify. */
+    var quick = node("div", "fpquick");
+    var saved = isSavedStory(a), taste = tasteOf(a), liked = taste === "like", disliked = taste === "dislike";
+    var canVerify = kd === "alerts" || kd === "archive" || inAlerts(a);
+    [
+      { icon: saved ? I.saved : I.save, label: saved ? "Saved" : "Save", on: saved,
+        run: function () { setMarks([a.title], saved ? "unsave" : "save"); toast(saved ? "Removed from Saved" : "Saved"); } },
+      { icon: I.like, label: liked ? "Liked" : "Like", on: liked,
+        run: function () { setMarks([a.title], liked ? "unlike" : "like"); toast(liked ? "Like removed" : "Liked"); } },
+      { icon: I.dislike, label: disliked ? "Disliked" : "Dislike", on: disliked,
+        run: function () { setMarks([a.title], disliked ? "undislike" : "dislike"); toast(disliked ? "Dislike removed" : "Disliked"); } },
+      { icon: I.verify, label: ver ? "Verified" : "Verify", on: ver, disabled: !canVerify || kd === "published" || (ver && verifiedOnPhone(a.title)),
+        run: function () { toggleVerify(a.title); } }
+    ].forEach(function (q) {
+      var b = node("button", "fpq" + (q.on ? " on" : ""));
+      b.setAttribute("role", "menuitem");
+      b.disabled = !!q.disabled;
+      b.appendChild(node("span", "fpqc", q.icon));
+      b.appendChild(txt("span", "fpql", q.label));
+      b.onclick = function () { closeCardMenu(); q.run(); };
+      quick.appendChild(b);
+    });
+    m.appendChild(quick);
+    m.appendChild(node("div", "fpgap"));
+
+    var items = [
+      { icon: I.edit, label: "Edit story", run: function () { openEditor(a); } },
+      { icon: I.open, label: "Open article", run: function () { window.open(storyHref(a), "_blank", "noopener"); } },
+      { icon: I.share, label: "Share", run: function () { var ea = editedStory(a); shareStory(ea, ea === a ? storyLang(a) : null); } },
+      { icon: I.searchL, label: "Fact check", run: function () { window.open(factHref(editedStory(a)), "_blank", "noopener"); } }
+    ];
+    if (kd === "alerts" && phoneArchives()) items.push({ icon: I.archive, label: "Archive", run: function () { requestOp(a.title, "archive"); } });
+    if (kd === "archive") items.push({ icon: I.unarchive, label: "Move to Alerts", run: function () { requestOp(a.title, "unarchive"); } });
+    if (kd === "published" && phoneHonoursRequests()) items.push({ icon: I.unarchive, label: "Move to Alerts", run: function () { unpublishOnWeb(a.title); } });
+    if (kd !== "published" || phoneHonoursRequests()) {
+      items.push({ gap: true });
+      items.push({ icon: I.trash, label: kd === "published" ? "Delete from Published" : kd === "saved" ? "Remove from Saved" : "Delete",
+        red: true, run: function () { deleteStories([a]); } });
+    }
+    items.forEach(function (it) {
+      if (it.gap) { m.appendChild(node("div", "fpgap")); return; }
+      var b = node("button", "fpitem" + (it.red ? " red" : ""));
+      b.setAttribute("role", "menuitem");
+      b.appendChild(node("span", "fpiico", it.icon));
+      b.appendChild(txt("span", "fpilab", it.label));
+      b.onclick = function () { closeCardMenu(); it.run(); };
+      m.appendChild(b);
+    });
+
+    document.body.appendChild(dim);
+    document.body.appendChild(lift);
+    document.body.appendChild(m);
+    cardNode.style.visibility = "hidden";
+
+    /* Right edges line up; the menu hangs under the ⋯, or rises above it when there is no room. */
+    var W = 250, mh = m.offsetHeight, btn = cardNode.querySelector(".fpmore");
+    var br = btn ? btn.getBoundingClientRect() : r;
+    var left = Math.min(window.innerWidth - W - 20, Math.max(20, r.right - W));
+    var topY = br.bottom + 8;
+    m.style.transformOrigin = "100% 0";
+    if (topY + mh > window.innerHeight - 16) {
+      topY = br.top - 8 - mh;
+      m.style.transformOrigin = "100% 100%";
+      if (topY < 12) topY = Math.max(12, window.innerHeight - 16 - mh);
+    }
+    m.style.left = left + "px"; m.style.top = topY + "px";
+    requestAnimationFrame(function () { dim.classList.add("in"); lift.classList.add("in"); m.classList.add("in"); });
+    CM = { dim: dim, lift: lift, menu: m, card: cardNode };
+    var first = m.querySelector("button:not(:disabled)");
+    if (first) first.focus({ preventScroll: true });
+  }
+
+  /* Delete, by list. Published: an unpub request (the phone moves it back to Alerts). Saved: an
+     unsave mark. Everywhere else: a delete mark (gone from this page now; the phone deletes it from
+     build 118). */
+  async function deleteStories(list) {
+    if (!list.length) return;
+    var kd = feedKind(), titles = list.map(function (a) { return a.title; });
+    var n = plural(list.length, "story", "stories");
+    var o = kd === "published"
+      ? { title: "Delete " + n + " from Published?", ok: "Delete", body: "They go back to News alerts, out of Published. " +
+          "Your phone applies it on its next sync." }
+      : kd === "saved"
+      ? { title: "Remove " + n + " from Saved?", ok: "Remove", body: "Only the bookmark goes; the stories stay in News. " +
+          "Your phone applies it on its next sync." }
+      : { title: "Delete " + n + "?", ok: "Delete", body: "They disappear from this page now. Your phone deletes them " +
+          "too once it is on build 118 or later." };
+    o.danger = true;
+    if (!(await askConfirm(o))) return;
+    exitSelect(true);
+    if (kd === "published") requestOps(titles, "unpub");
+    else setMarks(titles, kd === "saved" ? "unsave" : "delete");
+  }
+
+  /* ================================================================
+     EDIT STORY (P, revised): Category, Headline, Source name | Date, Description, Source link
+     ================================================================ */
+  var ED = null;
+  function closeEditor() {
+    if (!ED) return;
+    var e = ED; ED = null;
+    e.wrap.classList.remove("in");
+    document.removeEventListener("keydown", e.keys, true);
+    setTimeout(function () { e.wrap.remove(); }, 180);
+  }
+  function openEditor(a) {
+    closeEditor();
+    var FIELDS = ["category", "headline", "source", "date", "summary", "sourceUrl"];
+    var orig = {
+      category: a.category || "", headline: dec(a.title), source: dec(a.source || ""),
+      date: isoDay(a.date), summary: dec(a.summary || ""), sourceUrl: a.sourceUrl ? realArticleUrl(a.sourceUrl) : ""
+    };
+    var had = storyEdit(a) || {};
+    var cur = {};
+    FIELDS.forEach(function (f) { cur[f] = had[f] != null ? (f === "date" ? isoDay(had[f]) || had[f] : had[f]) : orig[f]; });
+
+    var wrap = node("div", "fpedwrap");
+    var box = node("div", "fped");
+    box.setAttribute("role", "dialog");
+    box.setAttribute("aria-modal", "true");
+    box.setAttribute("aria-label", "Edit story");
+    var head = node("div", "fpedhead");
+    head.appendChild(txt("h2", null, "Edit story"));
+    var xb = node("button", "fpedx", I.x);
+    xb.title = "Cancel (Esc)";
+    xb.setAttribute("aria-label", "Cancel");
+    xb.onclick = closeEditor;
+    head.appendChild(xb);
+    box.appendChild(head);
+
+    var marks = {};
+    function field(f, label, control, cls) {
+      var w = node("label", "fpfield" + (cls ? " " + cls : ""));
+      var l = node("span", "fpflab");
+      l.appendChild(txt("span", null, label));
+      var mk = txt("span", "fpchg", "● changed");
+      l.appendChild(mk);
+      marks[f] = mk;
+      w.appendChild(l);
+      w.appendChild(control);
+      control.addEventListener("input", refresh);
+      control.addEventListener("change", refresh);
+      return w;
+    }
+    var sel = document.createElement("select");
+    var cats = categories();
+    if (orig.category && cats.indexOf(orig.category) < 0) cats.push(orig.category);
+    if (cur.category && cats.indexOf(cur.category) < 0) cats.push(cur.category);
+    cats.forEach(function (c) { var o = document.createElement("option"); o.value = c; o.textContent = c; sel.appendChild(o); });
+    sel.value = cur.category;
+    var ttl = document.createElement("textarea"); ttl.rows = 2; ttl.value = cur.headline;
+    var src = document.createElement("input"); src.type = "text"; src.value = cur.source; src.placeholder = "Shown on the card";
+    var dt = document.createElement("input"); dt.type = "date"; dt.value = cur.date;
+    var sum = document.createElement("textarea"); sum.rows = 5; sum.value = cur.summary;
+    var url = document.createElement("input"); url.type = "url"; url.value = cur.sourceUrl; url.placeholder = "https://…";
+
+    box.appendChild(field("category", "Category", sel));
+    box.appendChild(field("headline", "Headline", ttl));
+    var row = node("div", "fprow");
+    row.appendChild(field("source", "Source name", src));
+    row.appendChild(field("date", "Date", dt, "date"));
+    box.appendChild(row);
+    box.appendChild(field("summary", "Description", sum));
+    var urlField = field("sourceUrl", "Source link", url);
+    var err = txt("span", "fperr", "");
+    urlField.appendChild(err);
+    box.appendChild(urlField);
+
+    var acts = node("div", "fpedacts");
+    var restore = txt("button", "fpbtn ghost restore", "Restore original");
+    var cancel = txt("button", "fpbtn ghost", "Cancel");
+    var saveB = txt("button", "fpbtn prim", "Save");
+    acts.appendChild(restore); acts.appendChild(node("span", "fpgrow")); acts.appendChild(cancel); acts.appendChild(saveB);
+    box.appendChild(acts);
+    box.appendChild(txt("p", "fpednote", "The original is always kept. Esc cancels, Ctrl+Enter saves."));
+    wrap.appendChild(box);
+
+    function values() {
+      return { category: sel.value, headline: ttl.value.trim(), source: src.value.trim(), date: dt.value,
+        summary: sum.value.trim(), sourceUrl: url.value.trim() };
+    }
+    function urlOk(v) { return !v || /^https?:\/\/[^\s/?#]+\.[^\s/?#]+(\S*)$/i.test(v); }
+    /* The description grows with its text, in whole lines, up to nine; past that it scrolls and its
+       lower edge fades, so no line is ever sliced through the middle. */
+    function fitSum() {
+      var cs = getComputedStyle(sum), lh = parseFloat(cs.lineHeight) || 21;
+      var pad = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+      sum.style.height = "auto";
+      var lines = Math.max(3, Math.min(9, Math.round((sum.scrollHeight - pad) / lh)));
+      sum.style.height = (lines * lh + pad + 2) + "px";
+      sum.classList.toggle("fpfade", sum.scrollHeight - sum.scrollTop > sum.clientHeight + 2);
+    }
+    sum.addEventListener("input", fitSum);
+    sum.addEventListener("scroll", fitSum);
+    function refresh() {
+      var v = values();
+      FIELDS.forEach(function (f) { marks[f].classList.toggle("on", v[f] !== orig[f]); });
+      var bad = !urlOk(v.sourceUrl);
+      err.textContent = bad ? "Enter a full web address starting with http:// or https://" : "";
+      urlField.classList.toggle("bad", bad);
+      saveB.disabled = bad || !v.headline;
+      restore.disabled = !storyEdit(a) && FIELDS.every(function (f) { return v[f] === orig[f]; });
+    }
+    function doSave() {
+      var v = values();
+      if (!urlOk(v.sourceUrl) || !v.headline) { refresh(); (v.headline ? url : ttl).focus(); return; }
+      var diff = {};
+      FIELDS.forEach(function (f) { if (v[f] !== orig[f]) diff[f] = v[f]; });
+      var changed = Object.keys(diff).length;
+      closeEditor();
+      if (!changed && !storyEdit(a)) { toast("No changes"); return; }
+      setStoryEdit(a, changed ? diff : null);
+      toast(changed ? "Story edited. The original is kept." : "Original restored");
+    }
+    restore.onclick = function () {
+      sel.value = orig.category; ttl.value = orig.headline; src.value = orig.source; dt.value = orig.date;
+      sum.value = orig.summary; url.value = orig.sourceUrl;
+      refresh(); fitSum();
+    };
+    cancel.onclick = closeEditor;
+    saveB.onclick = doSave;
+    wrap.addEventListener("mousedown", function (ev) { if (ev.target === wrap) closeEditor(); });
+    var keys = function (ev) {
+      if (ev.key === "Escape") { ev.preventDefault(); ev.stopImmediatePropagation(); closeEditor(); }
+      else if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)) { ev.preventDefault(); doSave(); }
+    };
+    document.addEventListener("keydown", keys, true);
+    document.body.appendChild(wrap);
+    ED = { wrap: wrap, keys: keys };
+    refresh();
+    fitSum();
+    requestAnimationFrame(function () { wrap.classList.add("in"); ttl.focus(); });
+  }
+
+  /* ================================================================
+     SELECTING (X): Shift-click a card or ⋯ › Select stories; the floating glass toolbar
+     ================================================================ */
+  function selectable(a) {
+    /* In Alerts, Select all skips verified stories (the phone's rule). */
+    return !(feedKind() === "alerts" && verifiedSet().has(key(a.title)));
+  }
+  function startSelect(k) {
+    closeCardMenu(); closeGlassMenu(); closeChipMenu();
+    FP.sel.on = true; FP.sel.tab = S.tab;
+    FP.sel.set = new Set(k ? [k] : []);
+    document.body.classList.add("fp-selecting");
+    render();
+  }
+  function exitSelect(silent) {
+    FP.sel.on = false; FP.sel.tab = null; FP.sel.set = new Set();
+    document.body.classList.remove("fp-selecting");
+    removeSelToolbar();
+    if (!silent) render();
+  }
+  function toggleSel(k) {
+    if (FP.sel.set.has(k)) FP.sel.set.delete(k); else FP.sel.set.add(k);
+    /* Repaint just what changed: the card, the bar and the toolbar. */
+    var n = CARD_NODES[k], a = FP.byKey[k];
+    if (n && a) n.replaceWith(card(a, (document.getElementById("wall") || {})._opts || {}));
+    paintSelBar(); paintSelToolbar();
+  }
+  function selectedStories() {
+    return FP.shown.filter(function (a) { return FP.sel.set.has(key(a.title)); });
+  }
+  function selectionBar() {
+    var bar = node("div", "fpselbar");
+    bar.id = "fpSelBar";
+    var c = txt("button", "fpselcancel", "Cancel");
+    c.onclick = function () { exitSelect(); };
+    bar.appendChild(c);
+    bar.appendChild(txt("span", "fpselcount", ""));
+    var all = txt("button", "fpselall", "Select All");
+    all.onclick = function () {
+      var pool = FP.shown.filter(selectable);
+      var allOn = pool.length && pool.every(function (a) { return FP.sel.set.has(key(a.title)); });
+      FP.sel.set = allOn ? new Set() : new Set(pool.map(function (a) { return key(a.title); }));
+      render();
+    };
+    bar.appendChild(all);
+    return bar;
+  }
+  function paintSelBar() {
+    var bar = document.getElementById("fpSelBar");
+    if (!bar) return;
+    var n = FP.sel.set.size;
+    bar.querySelector(".fpselcount").textContent = n ? n + " Selected" : "Select stories";
+    var pool = FP.shown.filter(selectable);
+    var allOn = pool.length && pool.every(function (a) { return FP.sel.set.has(key(a.title)); });
+    var b = bar.querySelector(".fpselall");
+    b.textContent = allOn ? "Deselect All" : "Select All";
+    b.disabled = !pool.length;
+  }
+  function removeSelToolbar() { var t = document.getElementById("fpSelTools"); if (t) t.remove(); }
+  function paintSelToolbar() {
+    if (!FP.sel.on) { removeSelToolbar(); return; }
+    var t = document.getElementById("fpSelTools");
+    if (!t) { t = node("div", "fptools"); t.id = "fpSelTools"; document.body.appendChild(t); }
+    t.innerHTML = "";
+    var kd = feedKind(), none = !FP.sel.set.size;
+    function cap(label, icon, prim, run) {
+      var b = node("button", "fpcap" + (prim ? " prim" : ""), (icon || "") + "<span>" + label + "</span>");
+      b.disabled = none;
+      b.onclick = run;
+      return b;
+    }
+    function circ(icon, label, red, run) {
+      var b = node("button", "fpcirc" + (red ? " red" : ""), icon);
+      b.title = label; b.setAttribute("aria-label", label);
+      b.disabled = none;
+      b.onclick = run;
+      return b;
+    }
+    var L = node("div", "fptl"), R = node("div", "fptr");
+    var titles = function () { return selectedStories().map(function (a) { return a.title; }); };
+    var verifyRun = function () { var l = titles(); exitSelect(true); requestOps(l, "verify"); };
+    var delRun = function () { deleteStories(selectedStories()); };
+    var exportRun = function () { openExport(selectedStories()); };
+    if (kd === "alerts") {
+      L.appendChild(cap("Verify", I.verify, false, verifyRun));
+      if (phoneArchives()) R.appendChild(cap("Archive", I.archive, true, async function () {
+        var list = titles();
+        if (list.length > 10 && !(await askConfirm({ title: "Archive " + list.length + " stories?",
+          body: "They move to Archive. Your phone applies it on its next sync, and any story can be moved back.", ok: "Archive" }))) return;
+        exitSelect(true); requestOps(list, "archive");
+      }));
+      R.appendChild(circ(I.trash, "Delete", true, delRun));
+    } else if (kd === "archive") {
+      L.appendChild(circ(I.verify, "Verify", false, verifyRun));
+      L.appendChild(circ(I.export, "Export", false, exportRun));
+      R.appendChild(cap("Move to Alerts", I.unarchive, true, function () { var l = titles(); exitSelect(true); requestOps(l, "unarchive"); }));
+      R.appendChild(circ(I.trash, "Delete", true, delRun));
+    } else {
+      R.appendChild(cap("Export", I.export, true, exportRun));
+      if (kd !== "published" || phoneHonoursRequests()) {
+        R.appendChild(circ(I.trash, kd === "saved" ? "Remove from Saved" : kd === "published" ? "Delete from Published" : "Delete", true, delRun));
+      }
+    }
+    if (L.children.length) t.appendChild(L);
+    if (L.children.length && R.children.length) t.appendChild(node("span", "fptgap"));
+    t.appendChild(R);
+    placeToolbar();
+  }
+  /* One frosted capsule, centred on the content column (the phone's floating glass toolbar). */
+  function placeToolbar() {
+    var t = document.getElementById("fpSelTools"), app = document.getElementById("app");
+    if (!t || !app) return;
+    var r = app.getBoundingClientRect();
+    t.style.left = (r.left + r.width / 2) + "px";
+  }
+
+  /* ================================================================
+     EXPORT SHEET (E), docked on the right. Files are named for the PREVIOUS month and carry the
+     EDITED text (no Edited pill in the file).
+     ================================================================ */
+  var EX = null;
+  function closeExport() {
+    if (!EX) return;
+    var e = EX; EX = null;
+    e.wrap.classList.remove("in");
+    document.removeEventListener("keydown", e.keys, true);
+    setTimeout(function () { e.wrap.remove(); }, 260);
+  }
+  function fileTag() { var now = Date.now(); return mrMonth(now) + "_" + mrNewsYear(now); }
+  function openExport(picked) {
+    closeExport(); closeCardMenu(); closeGlassMenu(); closeChipMenu();
+    var base = FP.shown.slice();
+    var newest = function (x, y) { return (dayMs(editedStory(y).date) || 0) - (dayMs(editedStory(x).date) || 0); };
+    var byNewest = base.slice().sort(newest);
+    var n = base.length;
+    var st = { which: picked ? "picked" : "all", fmt: "pdf" };
+
+    var wrap = node("div", "fpexwrap");
+    var sh = node("aside", "fpex");
+    sh.setAttribute("role", "dialog");
+    sh.setAttribute("aria-label", "Export");
+    wrap.appendChild(sh);
+
+    function chosen() {
+      if (st.which === "picked") return picked;
+      if (st.which === "10") return byNewest.slice(0, 10);
+      if (st.which === "25") return byNewest.slice(0, 25);
+      return base;
+    }
+    function paint() {
+      sh.innerHTML = "";
+      var head = node("div", "fpexhead");
+      head.appendChild(txt("h2", null, "Export"));
+      var x = node("button", "fpedx", I.x);
+      x.title = "Close"; x.setAttribute("aria-label", "Close"); x.onclick = closeExport;
+      head.appendChild(x);
+      sh.appendChild(head);
+
+      sh.appendChild(txt("div", "fpsech", "Stories"));
+      var g = node("div", "fpgroup");
+      function row(id, label, val) {
+        var b = node("button", "fprow1" + (st.which === id ? " on" : ""));
+        b.appendChild(txt("span", "fprl", label));
+        b.appendChild(txt("span", "fprv", String(val)));
+        b.appendChild(node("span", "fprc", st.which === id ? I.check : ""));
+        b.onclick = function () { st.which = id; paint(); };
+        g.appendChild(b);
+      }
+      if (picked) row("picked", "Selected stories", picked.length);
+      else {
+        row("all", "All stories", n);
+        if (n > 10) row("10", "Latest 10", 10);
+        if (n > 25) row("25", "Latest 25", 25);
+        var ch = node("button", "fprow1 fpchoose");
+        ch.appendChild(txt("span", "fprl", "Choose stories…"));
+        ch.appendChild(node("span", "fprc", I.chevr));
+        ch.onclick = function () { closeExport(); startSelect(null); };
+        g.appendChild(ch);
+      }
+      sh.appendChild(g);
+      if (!picked) sh.appendChild(txt("p", "fpsecf", "Latest means the newest by the story's date. All means the list as it is filtered on screen."));
+
+      sh.appendChild(txt("div", "fpsech", "Format"));
+      var seg = node("div", "fpseg");
+      [["pdf", "PDF"], ["word", "Word"]].forEach(function (o) {
+        var b = txt("button", st.fmt === o[0] ? "on" : "", o[1]);
+        b.onclick = function () { st.fmt = o[0]; paint(); };
+        seg.appendChild(b);
+      });
+      sh.appendChild(seg);
+      sh.appendChild(txt("p", "fpsecf", st.fmt === "pdf"
+        ? "A print preview opens first; save it as PDF from there."
+        : "A Word document you can edit. It downloads as soon as it is ready."));
+
+      var list = chosen(), c = list.length;
+      var go = txt("button", "fpexgo", c ? "Export " + plural(c, "story", "stories") + " as " + (st.fmt === "pdf" ? "PDF" : "Word") : "Nothing to export");
+      go.disabled = !c;
+      go.onclick = function () { runExport(list, st.fmt); };
+      sh.appendChild(go);
+      /* mrWordDownload writes an HTML-in-Word .doc, not a .docx. */
+      sh.appendChild(txt("p", "fpexfile", "File: Market_Intel_Report_" + fileTag() + (st.fmt === "pdf" ? ".pdf" : ".doc")));
+    }
+    paint();
+    wrap.addEventListener("mousedown", function (ev) { if (ev.target === wrap) closeExport(); });
+    var keys = function (ev) { if (ev.key === "Escape") { ev.preventDefault(); ev.stopImmediatePropagation(); closeExport(); } };
+    document.addEventListener("keydown", keys, true);
+    document.body.appendChild(wrap);
+    EX = { wrap: wrap, keys: keys };
+    requestAnimationFrame(function () { wrap.classList.add("in"); });
+  }
+  /* The Monthly Report's own generators: mrPaginate + mrPrintNode for PDF, mrWordDownload for Word.
+     They lay out editedStory(a) themselves, so the ORIGINAL stories go in. */
+  function runExport(list, fmt) {
+    var now = Date.now();
+    var d = { id: now, createdAtMillis: now, dateLabel: mrDateLabel(now), articles: list.slice(),
+      verifiedTitles: [], marketsCount: arr(S.data && S.data.countries).length, marketsText: "", leftOut: [], published: false, pages: 0 };
+    closeExport();
+    if (FP.sel.on) exitSelect();
+    if (fmt === "word") { mrWordDownload(d); toast("Word file downloading"); return; }
+    /* PDF: lay the pages out off-screen (they need real measurements), then print them. */
+    var meas = node("div", "fpmeasure");
+    var doc = node("div", "rdoc printdoc");
+    var inner = node("div", "rdocin");
+    doc.appendChild(inner); meas.appendChild(doc); document.body.appendChild(meas);
+    mrPaginate(inner, d);
+    meas.remove();
+    setTimeout(function () { mrPrintNode(inner, d, false); }, 60);
+  }
+
+  /* ================================================================
+     THE T1 TOOLBAR'S PIECES: capsule, capsule search, chip menus
+     ================================================================ */
+  /* The page's chip filter, also behind the capsule counts so they use the same rule. A changed
+     category moves the story to that category's filter. */
+  function filterList(list, st) {
+    var pubKeys = publishedSet(), verKeys = verifiedSet();
+    return list.filter(function (a) {
+      var hay = articleHaystack(a);
+      if (st.state.length) {
+        var k = key(a.title), pub = pubKeys.has(k), ver = verKeys.has(k);
+        var hit = st.state.some(function (f) {
+          return f === "published" ? pub : f === "unpublished" ? !pub : f === "verified" ? ver : !ver;
+        });
+        if (!hit) return false;
+      }
+      if (st.chan.length && st.chan.indexOf(editedStory(a).category) < 0) return false;
+      if (st.comp.length) {
+        var t = articleText(a);
+        if (!st.comp.some(function (n) { return compMentioned(t, n); })) return false;
+      }
+      if (st.land.length && !st.land.some(function (n) { return inMarket(a, hay, n); })) return false;
+      return true;
+    });
+  }
+  function byQuery(list, q) {
+    q = String(q || "").trim().toLowerCase();
+    return q ? list.filter(function (a) { return articleHaystack(a).indexOf(q) >= 0; }) : list;
+  }
+  function segCounts(st) {
+    var l = { alerts: alerts(), archive: archived(), published: published() }, out = {};
+    NEWS_TABS.forEach(function (t) { out[t] = byQuery(filterList(l[t], st), st.q).length; });
+    return out;
+  }
+  function capsule(st) {
+    var c = segCounts(st);
+    var seg = node("div", "fp-seg");
+    seg.setAttribute("role", "tablist");
+    [["alerts", "Alerts"], ["archive", "Archive"], ["published", "Published"]].forEach(function (o) {
+      var b = node("button", "fp-segb" + (S.tab === o[0] ? " on" : ""));
+      b.setAttribute("role", "tab");
+      b.setAttribute("aria-selected", S.tab === o[0] ? "true" : "false");
+      b.appendChild(txt("span", "fp-segt", o[1]));
+      var n = txt("span", "fp-segn", String(c[o[0]]));
+      n.dataset.seg = o[0];
+      b.appendChild(n);
+      b.onclick = function () {
+        if (S.tab === o[0]) return;
+        closeChipMenu(); S.tab = o[0]; save(); render(); $("#scroll").scrollTop = 0;
+      };
+      seg.appendChild(b);
+    });
+    return seg;
+  }
+  function refreshCounts() {
+    if (!isNewsTab(S.tab)) return;
+    var c = segCounts(wallState());
+    document.querySelectorAll(".fp-segn").forEach(function (n) { if (n.dataset.seg) n.textContent = String(c[n.dataset.seg]); });
+  }
+  function searchField(st, placeholder) {
+    var f = node("label", "fp-search");
+    f.appendChild(node("span", "fp-mag", ICON_SEARCH));
+    var input = document.createElement("input");
+    input.type = "search"; input.value = st.q; input.placeholder = placeholder;
+    input.setAttribute("aria-label", placeholder);
+    var clr = node("button", "fp-sclear", ICON_X);
+    clr.type = "button"; clr.title = "Clear search"; clr.setAttribute("aria-label", "Clear search");
+    clr.hidden = !st.q;
+    /* Filter as you type: only the wall is rebuilt, so the field keeps its focus and caret. */
+    input.oninput = function () { st.q = input.value; clr.hidden = !st.q; repaintWall(); };
+    clr.onclick = function (e) { e.preventDefault(); st.q = ""; input.value = ""; clr.hidden = true; repaintWall(); input.focus(); };
+    f.appendChild(input); f.appendChild(clr);
+    return f;
+  }
+
+  /* The phone's FilterChipMenu: Competitor, Market and Segment, each a frosted tick list. */
+  var MENU = null;          // { kind, node }
+  var MENU_KEEP = null;     // reopen this chip's menu after a render
+  var shortComp = function (n) { return String(n).replace(/ International\b/g, "").replace(/ Group\b/g, ""); };
+  function closeChipMenu() { if (MENU && MENU.node) MENU.node.remove(); MENU = null; }
+  function openChipMenu(kindName, chip, cfg) {
+    closeChipMenu();
+    var st = wallState();
+    var m = node("div", "fp-menu");
+    m.setAttribute("role", "menu");
+    var sel = st[cfg.field];
+    if (sel.length) {
+      var clr = txt("button", "fp-mrow fp-mclear", "Clear");
+      clr.onclick = function () { sel.length = 0; MENU_KEEP = kindName; render(); };
+      m.appendChild(clr);
+    }
+    if (!cfg.items.length) m.appendChild(txt("div", "fp-mempty", "Nothing in this list"));
+    cfg.items.forEach(function (name) {
+      var r = node("button", "fp-mrow" + (sel.indexOf(name) >= 0 ? " on" : ""));
+      r.setAttribute("role", "menuitemcheckbox");
+      r.setAttribute("aria-checked", sel.indexOf(name) >= 0 ? "true" : "false");
+      r.appendChild(node("span", "fp-mtick", ICON_TICK));
+      r.appendChild(txt("span", "fp-mlbl", cfg.label(name)));
+      r.onclick = function () { toggleIn(sel, name); MENU_KEEP = kindName; render(); };
+      m.appendChild(r);
+    });
+    document.body.appendChild(m);
+    var rc = chip.getBoundingClientRect();
+    var left = Math.min(rc.left, window.innerWidth - m.offsetWidth - 12);
+    m.style.left = Math.max(12, left) + "px";
+    m.style.top = (rc.bottom + 8) + "px";
+    m.style.maxHeight = Math.max(160, Math.min(420, window.innerHeight - rc.bottom - 20)) + "px";
+    MENU = { kind: kindName, node: m };
+  }
+  function chipRow(st, list) {
+    var d = S.data || {};
+    var chanSet = {}, landSet = {};
+    var landNames = arr(d.countries).map(function (c) { return c && c.name; }).filter(Boolean);
+    list.forEach(function (a) {
+      var cat = editedStory(a).category;
+      if (cat) chanSet[cat] = 1;
+      var hay = articleHaystack(a);
+      landNames.forEach(function (n) { if (inMarket(a, hay, n)) landSet[n] = 1; });
+    });
+    /* Every tracked competitor gets a row, as on the phone, so a name can always be found. */
+    var comps = arr(d.competitors).map(function (c) { return c && c.name; }).filter(Boolean)
+      .filter(function (n, i, all) { return all.indexOf(n) === i; }).sort();
+    var cfgs = {
+      comp: { title: "Competitor", field: "comp", items: comps, label: shortComp },
+      land: { title: "Market", field: "land", items: Object.keys(landSet).sort(), label: function (n) { return n; } },
+      chan: { title: "Segment", field: "chan", items: Object.keys(chanSet).sort(), label: catShort }
+    };
+    var row = node("div", "fp-chips");
+    ["comp", "land", "chan"].forEach(function (k) {
+      var cfg = cfgs[k], n = st[cfg.field].length;
+      var b = node("button", "fp-chip" + (n ? " on" : ""));
+      b.type = "button";
+      b.dataset.kind = k;
+      b.setAttribute("aria-haspopup", "menu");
+      b.appendChild(txt("span", null, cfg.title + (n ? " · " + n : "")));
+      b.appendChild(node("span", "fp-chev", I.chevd));
+      b.onclick = function () {
+        if (MENU && MENU.kind === k) { closeChipMenu(); return; }
+        openChipMenu(k, b, cfg);
+      };
+      b._cfg = cfg;
+      row.appendChild(b);
+    });
+    return row;
+  }
+
+  /* ================================================================
+     AROUND render(): before it, leave selection on a tab change and close every pop-over;
+     after it, the "‹ Settings" link, the reopened chip menu and the selection bar.
+     ================================================================ */
+  function beforeRender() {
+    if (FP.sel.on && FP.sel.tab !== S.tab) exitSelect(true);
+    closeCardMenu(); closeGlassMenu(); closeChipMenu();
+    FP.alertKeys = null;
+    var slot = document.getElementById("fpTool");
+    if (slot) slot.innerHTML = "";
+    $("#shell").classList.remove("fp-news");
+  }
+  function afterRender() {
+    var app = $("#app");
+    if (SETTINGS_TABS.indexOf(S.tab) >= 0 && !S.loading && S.data) {
+      var back = txt("button", "mkback fp-back", "‹ Settings");
+      back.onclick = function () { openSettingsPanel(); };
+      app.insertBefore(back, app.firstChild);
+    }
+    if (MENU_KEEP) {
+      var k = MENU_KEEP; MENU_KEEP = null;
+      var chip = document.querySelector('.fp-chip[data-kind="' + k + '"]');
+      if (chip) openChipMenu(k, chip, chip._cfg);
+    }
+    document.body.classList.toggle("fp-selecting", FP.sel.on);
+    if (FP.sel.on) {
+      /* The toolbar row becomes Cancel · N Selected · Select All: search and chips hide (CSS). */
+      var host = document.querySelector(".fp-bar");
+      var sb = selectionBar();
+      if (host) host.appendChild(sb);
+      else app.insertBefore(sb, app.firstChild);
+      paintSelBar(); paintSelToolbar();
+    } else removeSelToolbar();
+  }
+
+  /* Esc closes the innermost thing: a menu, then the selection. The editor and the export sheet
+     catch their own Esc first; a confirm dialog (#ask) handles its own. */
+  document.addEventListener("keydown", function (ev) {
+    if (ev.key !== "Escape") return;
+    if (MENU) { closeChipMenu(); return; }
+    if (CM) { ev.preventDefault(); closeCardMenu(); return; }
+    if (GM) { closeGlassMenu(); return; }
+    var dlg = document.getElementById("ask");
+    if (FP.sel.on && !ED && !EX && (!dlg || dlg.hidden)) exitSelect();
+  });
+  document.addEventListener("pointerdown", function (ev) {
+    if (!MENU) return;
+    if (MENU.node.contains(ev.target) || (ev.target.closest && ev.target.closest(".fp-chip"))) return;
+    closeChipMenu();
+  }, true);
+  window.addEventListener("resize", function () { placeToolbar(); closeCardMenu(); closeGlassMenu(); closeChipMenu(); });
+  var scroller = document.getElementById("scroll");
+  if (scroller) scroller.addEventListener("scroll", function () { if (CM) closeCardMenu(); closeGlassMenu(); }, { passive: true });
+
+  return {
+    card: card, fill: fill, filterList: filterList, byQuery: byQuery, capsule: capsule, searchField: searchField,
+    chipRow: chipRow, refreshCounts: refreshCounts, beforeRender: beforeRender, afterRender: afterRender,
+    dec: dec,
+    /* For tests and the screenshot harness. */
+    openCardMenuFor: function (i) {
+      var c = document.querySelectorAll("#wall .fpcard")[i || 0];
+      if (c) c.querySelector(".fpmore").click();
+    },
+    openEditorFor: function (i) {
+      var c = document.querySelectorAll("#wall .fpcard")[i || 0];
+      if (c && FP.byKey[c.dataset.k]) openEditor(FP.byKey[c.dataset.k]);
+    },
+    startSelect: startSelect, exitSelect: exitSelect, openExport: openExport, state: FP
+  };
+})();
 
 /* ---- Empty-state art (2026-09-25). The engine and the renders are the phone's (EmptyArt.kt draws the same
    ones); wrapped so none of its short names (box, bar, rect...) can meet the page's own. ---- */
@@ -7008,8 +8320,10 @@ function calendarWidget(w) {
   return g;
 }
 
+/* The phone's eight home widgets, as true squares in one row (24 Nov 2026): every drawing at the
+   phone's proportions, scaled together by --u (see .wstrip.sq). The web-only Unverified tile is gone. */
 function renderWidgetStrip(w) {
-  var strip = el("div", "wstrip");
+  var strip = el("div", "wstrip sq");
   var add = function (node) { strip.appendChild(node); };
   var names = function (list) {
     return arr(list).slice(0, 2).map(function (r) { return r.n; }).join(", ");
@@ -7208,41 +8522,6 @@ function renderWidgetStrip(w) {
     if (series.length > 1) {
       f.appendChild(wSpark(series, up ? "var(--good)" : "var(--crit)"));
     }
-    g.appendChild(f);
-    add(g);
-  })();
-
-  /* 8. Unverified. What is sitting in Alerts with no decision on it.
-     No rule under this one: the bars ARE the footer, and a line above them would read as a
-     divider between two things when there is only one. */
-  (function () {
-    var g = el("div", "widget");
-    /* THIS PAGE'S OWN NUMBERS, not the phone's snapshot. The snapshot is the phone's feed
-       as of its last backup; this page hides anything published here since, and counts
-       anything verified here. Showing the phone's figure beside this page's alert list made
-       one screen disagree with itself: "86 of 112" over a sidebar reading 94. */
-    var open = alerts();
-    var vset = verifiedSet();
-    var tot = open.length;
-    var un = open.filter(function (a) { return !vset.has(key(a.title)); }).length;
-    var pct = tot ? Math.round((un / tot) * 100) : 0;
-    g.appendChild(wTop("Unverified"));
-    g.appendChild(wHead(wHero(un, "of " + tot + "<br>in alerts",
-                              pct > 60 ? "var(--warn-ink)" : null)));
-    g.appendChild(wSay(pct + "% of the feed is still undecided."));
-    var f = wFoot();
-    var cmp = el("div", "wcmp");
-    [["Checked", tot - un, "var(--good)"], ["Waiting", un, "var(--warn)"]].forEach(function (r) {
-      cmp.appendChild(el("span", null, r[0]));
-      var bar = el("div", "wbar");
-      var fill = el("span");
-      fill.style.width = (tot ? (r[1] / tot) * 100 : 0) + "%";
-      fill.style.background = r[2];
-      bar.appendChild(fill);
-      cmp.appendChild(bar);
-      cmp.appendChild(el("b", null, String(r[1])));
-    });
-    f.appendChild(cmp);
     g.appendChild(f);
     add(g);
   })();
@@ -12894,7 +14173,7 @@ function renderAsk(app) {
    capped and centred inside it by .chpane: filling 1680px with a chat line would trade one
    bad layout for another, since a 1600px line of body text is unreadable however much room
    there is. Capped and centred is what the reference does too. */
-var WIDE_TABS = ["dashboard", "alerts", "saved", "published", "liked", "disliked",
+var WIDE_TABS = ["dashboard", "alerts", "archive", "saved", "published", "liked", "disliked",
                  "database", "restorepoints", "ask", "reports", "logs"];
 
 /* ============================================================
@@ -13079,6 +14358,7 @@ function measureScrollbar() {
 window.addEventListener("resize", measureScrollbar);
 
 function render() {
+  Feed.beforeRender();
   renderDrawerNav(); renderSyncRow(); renderDrawerSettings(); renderTitle();
   /* Wide is for pages whose content is a grid and genuinely gets better with room. Reports
      and the assistant are prose, and prose has a measure past which it stops being readable,
@@ -13099,9 +14379,9 @@ function render() {
 
   if (S.loading) {
     app.appendChild(skeletonFor(S.tab));
-    refreshReportBar(); return;
+    return;
   }
-  if (!d) { app.appendChild(emptyState("Nothing loaded yet.", "cloud")); refreshReportBar(); return; }
+  if (!d) { app.appendChild(emptyState("Nothing loaded yet.", "cloud")); return; }
 
   if (S.tab === "dashboard") {
     renderDashboard(app, d);
@@ -13117,19 +14397,7 @@ function render() {
        drag-to-push: it is the overview OF this feed, so it belongs above it. */
     var wg = d.widgets || {};
     if (Object.keys(wg).length) app.appendChild(renderWidgetStrip(wg));
-    /* "Archive the rest" (build 110): the monthly review's one click, as on the phone. */
-    if (phoneArchives()) {
-      var rest = archiveRestCandidates();
-      if (rest.length) {
-        var rb = el("div", "archrest");
-        rb.appendChild(el("span", null, rest.length + " unverified " + (rest.length === 1 ? "story" : "stories") +
-          " from before " + new Date().toLocaleDateString("en-GB", { month: "long" })));
-        var rbtn = el("button", "btn sm ghost", "Archive the rest");
-        rbtn.onclick = archiveTheRest;
-        rb.appendChild(rbtn);
-        app.appendChild(rb);
-      }
-    }
+    /* "Archive the rest" (build 110) lives in the month header's ⋯, as on the phone. */
     newsWall(app, alerts(), { verifiable: true, archivable: "in", placeholder: "Search alerts",
       empty: "No alerts. Everything here has been published, or your phone has not backed up yet.", art: "listen" });
   }
@@ -13140,7 +14408,7 @@ function render() {
         : "Archive arrives with phone build 110. Update the phone, then back up.", art: "layers" });
   }
   else if (S.tab === "saved") {
-    newsWall(app, arr(d.savedNews), { placeholder: "Search saved stories",
+    newsWall(app, savedStories(), { placeholder: "Search saved stories",
       empty: "Nothing saved.", art: "saved" });
   }
   else if (S.tab === "published") {
@@ -13151,8 +14419,8 @@ function render() {
     renderReports(app);
   }
   else if (S.tab === "liked" || S.tab === "disliked") {
-    var titles = arr(S.tab === "liked" ? d.likedTitles : d.dislikedTitles).map(key);
-    var pool = arr(d.newsArticles).concat(arr(d.alerts), arr(d.publishedNews), arr(d.savedNews));
+    var titles = tasteTitles(S.tab === "liked" ? "like" : "dislike");
+    var pool = storyPool();
     var seen = new Set(), out = [];
     titles.forEach(function (t) {
       if (seen.has(t)) return;
@@ -13204,7 +14472,7 @@ function render() {
     box.appendChild(c2);
     app.appendChild(box);
   }
-  refreshReportBar();
+  Feed.afterRender();
   measureScrollbar();
 }
 
@@ -13350,11 +14618,6 @@ function renderDatabase(app, d) {
   else app.appendChild(competitorLedger(d, list));
 }
 
-function refreshReportBar() {
-  var n = verifiedArticles().length;
-  $("#vcount").textContent = String(n);
-  $("#repbar").classList.toggle("on", n > 0 && S.tab === "alerts");
-}
 /* Verify / un-verify is now an ASK, not a local edit that hopes to survive a merge. Un-ticking
    writes an explicit `unverify` the phone applies to its own list; the old code just removed the
    title from this page's array, which the union put straight back on the next sync. */
@@ -14017,7 +15280,7 @@ function mrOpenDraft(st) {
 }
 
 function mrCoverHtml(d) {
-  var sources = new Set(d.articles.map(function (a) { return key(a.source); }).filter(Boolean)).size;
+  var sources = new Set(d.articles.map(function (a) { return key(editedStory(a).source); }).filter(Boolean)).size;
   var tiles = [[d.articles.length, "Verified stories"],
     [arr(S.data && S.data.competitors).length, "Competitors tracked"],
     [d.marketsCount, "Markets covered"],
@@ -14046,6 +15309,7 @@ function mrSections(d) {
   var assigned = new Set(), out = [];
   var names = reportMarketList();
   function matches(a, name) {
+    a = editedStory(a);
     var t = decodeEnt(a.title).toLowerCase(), s = decodeEnt(a.summary || "").toLowerCase();
     var n = name.toLowerCase();
     if (t.indexOf(n) >= 0 || s.indexOf(n) >= 0) return true;
@@ -14065,7 +15329,9 @@ function mrSections(d) {
   if (rest.length) out.push(["Global & general", rest]);
   return out;
 }
+/* Every report renderer lays out the EDITED story (the web's Edit story), never the Edited pill. */
 function mrCardNode(a) {
+  a = editedStory(a);
   var c = el("div", "rp-card");
   c.appendChild(el("div", "rp-tag", String(catShort(a.category) || "News").toUpperCase()));
   c.appendChild(el("div", "rp-head", decodeEnt(a.title)));
@@ -14193,12 +15459,16 @@ window.addEventListener("resize", function () {
 function mrPrintDraft(d) {
   var src = document.querySelector("#mrDoc .rdocin");
   if (!src) return false;
+  return mrPrintNode(src.cloneNode(true), d, MR.fmt === "word");
+}
+/* Print laid-out pages (a .rdocin from mrPaginate). Shared by the Monthly Report and the export
+   sheet on Saved, Archive, Published and a selection. */
+function mrPrintNode(inner, d, wordLook) {
   var r = $("#report");
   r.innerHTML = "";
-  var doc = el("div", "rdoc printdoc" + (MR.fmt === "word" ? " word" : ""));
-  var copy = src.cloneNode(true);
-  copy.style.transform = "none";
-  doc.appendChild(copy);
+  var doc = el("div", "rdoc printdoc" + (wordLook ? " word" : ""));
+  inner.style.transform = "none";
+  doc.appendChild(inner);
   r.appendChild(doc);
   var prev = document.title;
   // The print dialogue names the PDF after the page title.
@@ -14211,7 +15481,7 @@ function mrPrintDraft(d) {
    cover, a two-by-two figure table, then a heading and a boxed card per story. */
 function mrWordHtml(d) {
   var font = "font-family:'Arial Nova Light','Arial Nova',Arial,sans-serif;";
-  var sources = new Set(d.articles.map(function (a) { return key(a.source); }).filter(Boolean)).size;
+  var sources = new Set(d.articles.map(function (a) { return key(editedStory(a).source); }).filter(Boolean)).size;
   var tiles = [[d.articles.length, "Verified stories"],
     [arr(S.data && S.data.competitors).length, "Competitors tracked"],
     [d.marketsCount, "Markets covered"], [sources, "Sources cited"]];
@@ -14228,19 +15498,27 @@ function mrWordHtml(d) {
     '<table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse"><tr>' + tile(tiles[0]) + tile(tiles[1]) +
     '</tr><tr>' + tile(tiles[2]) + tile(tiles[3]) + '</tr></table>' +
     '<br clear="all" style="page-break-before:always">';
+  /* THE GAP BETWEEN STORIES. Word ignores a table's CSS margin, so the cards used to run straight
+     into one another. Word also needs a paragraph between two tables or it merges them. The phone's
+     .docx puts an empty paragraph with 7pt after it below every card (w:spacing w:after="140") and
+     one with 18pt (360) before every section after the first; these are those paragraphs. The
+     document has no styles part, so its default text is 10pt, which the empty line uses too. */
+  var gap = function (pt) { return '<p style="margin:0 0 ' + pt + 'pt;font-size:10pt;line-height:normal">&nbsp;</p>'; };
   mrSections(d).forEach(function (sec, i) {
-    body += '<p style="margin:' + (i ? "18pt" : "0") + ' 0 7pt;padding-bottom:3pt;border-bottom:1.5pt solid #247A6A;font-size:18pt;color:#111827;' + font + '">' +
+    if (i) body += gap(18);
+    body += '<p style="margin:0 0 7pt;padding-bottom:3pt;border-bottom:1.5pt solid #247A6A;font-size:18pt;color:#111827;' + font + '">' +
       esc(sec[0]) + '<span style="font-size:10pt;color:#9CA3AF">   ' + mrStories(sec[1].length) + '</span></p>';
     sec[1].forEach(function (a) {
-      var href = sourceHref(a);
-      body += '<table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin:0 0 7pt"><tr>' +
+      var href = storyEdit(a) && storyEdit(a).sourceUrl ? storyEdit(a).sourceUrl : sourceHref(a);
+      a = editedStory(a);
+      body += '<table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse"><tr>' +
         '<td style="background:#FBFBFD;border:.75pt solid #E5E7EB;padding:8.5pt 11pt">' +
         '<p style="margin:0 0 5pt;font-size:8pt;color:#247A6A;' + font + '">' + esc(String(catShort(a.category) || "News").toUpperCase()) + '</p>' +
         '<p style="margin:0 0 2pt;font-size:14pt;color:#111827;' + font + '">' + esc(decodeEnt(a.title)) + '</p>' +
         '<p style="margin:0 0 3pt;font-size:8.5pt;color:#9CA3AF;' + font + '">' +
           (href ? '<a href="' + esc(href) + '" style="color:#1F57F5">Source</a>' : 'Source') + '  ·  ' + esc(newsDate(a.date)) + '</p>' +
         (a.summary ? '<p style="margin:0;font-size:10pt;color:#374151;' + font + '">' + esc(decodeEnt(a.summary)) + '</p>' : '') +
-        '</td></tr></table>';
+        '</td></tr></table>' + gap(7);
     });
   });
   return '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">' +
@@ -14279,8 +15557,8 @@ async function mrPublishDraft() {
     competitorsCount: arr(S.data && S.data.competitors).length,
     countriesCount: d.marketsCount
   });
-  var gone = new Set(list.map(function (a) { return key(a.title); }));
-  var keep = pendingRequests().filter(function (r) { return !gone.has(key(r.title)); });
+  var gone = new Set(list.map(function (a) { return reqKey({ title: a.title, op: "pub" }); }));
+  var keep = pendingRequests().filter(function (r) { return !gone.has(reqKey(r)); });
   list.forEach(function (a) { keep.push({ rid: newRid(), op: "pub", title: a.title, article: a }); });
   S.actions.requests = keep;
   save(); render();
@@ -14305,8 +15583,8 @@ async function mrClearAll(st) {
     ok: "Unverify", danger: true, equal: true
   });
   if (!ok) return;
-  var gone = new Set(list.map(function (a) { return key(a.title); }));
-  var keep = pendingRequests().filter(function (r) { return !gone.has(key(r.title)); });
+  var gone = new Set(list.map(function (a) { return reqKey({ title: a.title, op: "unverify" }); }));
+  var keep = pendingRequests().filter(function (r) { return !gone.has(reqKey(r)); });
   list.forEach(function (a) { keep.push({ rid: newRid(), op: "unverify", title: a.title }); });
   S.actions.requests = keep;
   mrChanged();
@@ -14354,12 +15632,15 @@ async function loadEverything() {
 
     /* Requests merge by STORY, and the receipt filter runs AFTER the merge — filtering only the
        local copy would let the remote entry back in on every load and the loop would never close. */
-    var mineKeys = new Set(pendingRequests().map(function (r) { return key(r.title); }));
+    var mineKeys = new Set(pendingRequests().map(reqKey));
     var done = ackedRids();
     S.actions.requests = arr(remote.requests)
-      .filter(function (r) { return r && r.title && !mineKeys.has(key(r.title)); })
+      .filter(function (r) { return r && r.title && !mineKeys.has(reqKey(r)); })
       .concat(pendingRequests())
       .filter(function (r) { return !done.has(r.rid); });
+    /* Edits and marks made in another browser show here too; newest per story wins. */
+    S.actions.edits = mergeLww(remote.edits, S.actions.edits, editKey);
+    S.actions.marks = mergeLww(remote.marks, S.actions.marks, markKey);
     save();
 
     /* If the phone receipted anything, write the shrunken file back — this page is the only writer
@@ -14571,10 +15852,6 @@ $("#settingsPanel").onclick = function (e) {
   // Backdrop only: a click that started inside the pane must not dismiss it.
   if (e.target === this) closeSettingsPanel();
 };
-$("#openReport").onclick = function () {
-  S.tab = "reports"; save(); render();
-  $("#scroll").scrollTop = 0;
-};
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyTheme);
 
 /* Offline + update. A new version is downloaded quietly and applied only when the
@@ -14615,6 +15892,7 @@ if ("serviceWorker" in navigator && location.protocol === "https:") {
 
 load();
 applyTheme();
+applyFont();
 if (tokenAlive()) start();
 else if (S.email) setGateStatus("Signed in before as " + S.email + ". Press the button to continue — it should not ask again.");
 </script>

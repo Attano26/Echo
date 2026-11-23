@@ -11,7 +11,7 @@
 
    Bump VERSION on every deploy. That is what tells every installed copy that
    something changed. */
-const VERSION = "echo-2026-11-24-prev-month";
+const VERSION = "echo-2026-11-24-redesign";
 
 const ASSETS = [
   "./",
@@ -29,7 +29,13 @@ const ASSETS = [
   // change unless the typeface does.
   "./ArialNova-Light.woff2",
   "./ArialNova.woff2",
-  "./ArialNova-Bold.woff2"
+  "./ArialNova-Bold.woff2",
+  // Inter, the default face since the redesign (24 Nov 2026); Arial Nova stays as the optional one.
+  "./Inter-Light.woff2",
+  "./Inter-Regular.woff2",
+  "./Inter-Medium.woff2",
+  "./Inter-SemiBold.woff2",
+  "./Inter-Bold.woff2"
 ];
 
 /* PAST THE BROWSER'S HTTP CACHE. GitHub Pages serves every file with max-age=600, and a plain fetch
