@@ -2392,7 +2392,10 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
 
 /* ---------- the wall ---------- */
 /* At most three equal columns, fewer when a column would drop under 300px. Rows line up in height. */
-.wall.fpwall{grid-template-columns:repeat(auto-fill,minmax(min(100%,max(300px,calc((100% - 28px) / 3))),1fr));gap:14px;align-items:stretch}
+/* Cards per row follow the screen (user, 24 Nov): a card is never narrower than 290px, so a new column
+   appears only when one more fits, which also keeps a card from growing much past ~390px on a wide screen.
+   A phone gets one full-width column. */
+.wall.fpwall{grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr));gap:14px;align-items:stretch}
 
 /* Month header (FeedMonthHeaderRow) and the one-line section header (FeedSectionSortRow) */
 .fpmonth{grid-column:1/-1;display:flex;align-items:center;gap:6px;padding:2px 0 0 4px;min-height:44px}
@@ -2424,9 +2427,9 @@ button.mkcard:hover{border-color:var(--line);box-shadow:var(--sh-2)}
 .ncard.fpcard:hover{border-color:var(--fc-rim);box-shadow:inset 0 .5px 0 var(--fc-rimtop),0 8px 26px rgba(0,0,0,.14)}
 .ncard.fpcard.picked{box-shadow:inset 0 0 0 2px var(--accent)}
 body.fp-selecting .ncard.fpcard{cursor:pointer;user-select:none}
-.fptop{display:flex;align-items:center;gap:8px;min-width:0;height:44px}
+.fptop{display:flex;align-items:center;gap:8px;min-width:0;height:40px}
 .fptop .sdot{flex:none}
-.fpcat{font-family:var(--fs-title);font-size:12px;font-weight:600;letter-spacing:.5px;color:var(--fc-sec);
+.fpcat{font-family:var(--fs-title);font-size:11px;font-weight:600;letter-spacing:.5px;color:var(--fc-sec);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .fpseal{flex:none;display:inline-grid;place-items:center;color:var(--accent-ink);margin-left:-2px}
 .fpseal svg{width:14px;height:14px}
@@ -2434,25 +2437,25 @@ body.fp-selecting .ncard.fpcard{cursor:pointer;user-select:none}
 .fpselc{flex:none;width:18px;height:18px;border-radius:50%;border:1.5px solid color-mix(in srgb,var(--fc-sec) 70%,transparent);
   display:grid;place-items:center;color:#fff;box-sizing:border-box}
 .fpselc.on{background:var(--accent);border-color:var(--accent)}
-.fpttl{font-family:var(--fs-title);font-size:17px;line-height:22px;letter-spacing:-.2px;font-weight:600;color:var(--ink);
+.fpttl{font-family:var(--fs-title);font-size:15px;line-height:20px;letter-spacing:-.15px;font-weight:600;color:var(--ink);
   margin:2px 12px 0 0}
 :root.font-arialnova .fpttl{font-weight:500}
-.fpmeta{display:flex;align-items:center;gap:6px;margin:6px 12px 0 0;min-width:0;font-size:15px;line-height:20px;color:var(--fc-sec)}
+.fpmeta{display:flex;align-items:center;gap:6px;margin:5px 12px 0 0;min-width:0;font-size:13px;line-height:18px;color:var(--fc-sec)}
 .fpsrc{color:var(--accent-ink);font-weight:500;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .fpsrc:hover{text-decoration:underline}
 .fpdotsep,.fpdate{flex:none;white-space:nowrap}
 /* The violet ✎ Edited pill, after the date. Violet is used for nothing else. */
 .fpedited{flex:none;display:inline-flex;align-items:center;margin-left:4px;padding:1px 8px;border-radius:999px;
   background:var(--fc-violet-wash);color:var(--fc-violet);font-family:var(--fs-title);font-size:11.5px;font-weight:600;line-height:18px;white-space:nowrap}
-.fpsum{font-size:15px;line-height:20px;color:var(--fc-sec);margin:10px 12px 0 0;
+.fpsum{font-size:13.5px;line-height:19px;color:var(--fc-sec);margin:9px 12px 0 0;
   display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
-.fpfoot{margin:auto -4px 0 -16px;display:flex;align-items:stretch;height:48px;flex:none;border-top:.5px solid var(--fc-sep)}
+.fpfoot{margin:auto -4px 0 -16px;display:flex;align-items:stretch;height:42px;flex:none;border-top:.5px solid var(--fc-sep)}
 .fpcard .fpsum{margin-bottom:14px}
 .fpcard.nosum .fpmeta{margin-bottom:14px}
 .fphalf{flex:1 1 0;display:flex;align-items:center;justify-content:center;gap:6px;border:0;background:transparent;
-  font-family:var(--fs-title);font-size:15px;font-weight:500;text-decoration:none;cursor:pointer;color:var(--fc-sec);padding:0 6px;min-width:0}
+  font-family:var(--fs-title);font-size:13.5px;font-weight:500;text-decoration:none;cursor:pointer;color:var(--fc-sec);padding:0 6px;min-width:0}
 .fphalf:hover{text-decoration:none}
-.fphalf svg{width:18px;height:18px;flex:none}
+.fphalf svg{width:16px;height:16px;flex:none}
 .fphalf:hover{background:var(--fc-fill)}
 .fpfact{color:var(--accent-ink);border-bottom-left-radius:26px}
 .fpstate{border-bottom-right-radius:26px}
@@ -2503,12 +2506,15 @@ span.fpstate:hover{background:transparent}
   background:linear-gradient(135deg,var(--fc-sheen),transparent 60%),var(--fc-menu);
   -webkit-backdrop-filter:blur(30px) saturate(1.8);backdrop-filter:blur(30px) saturate(1.8);
   border:.5px solid var(--fc-menu-rim);box-shadow:inset 0 .5px 0 var(--fc-rimtop),0 24px 70px rgba(0,0,0,.4);
-  transform:scale(.96);transition:transform 240ms cubic-bezier(.3,1.3,.5,1)}
+  /* Rises and fades in; no scale bounce (user, 24 Nov: it stuttered). Scaling a 30px backdrop blur
+     re-blurs the page every frame; a short translate + opacity on its own layer stays smooth. */
+  opacity:0;transform:translateY(12px);transition:transform 220ms cubic-bezier(.2,.8,.2,1),opacity 160ms ease-out;
+  will-change:transform,opacity}
 .fped .fpfield input,.fped .fpfield select,.fped .fpfield textarea{background:var(--fc-fill)}
 .fped .fpfield select option{background:var(--fc-sheet);color:var(--ink)}
 .fped .fpfield textarea.fpfade{-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 30px),transparent);
   mask-image:linear-gradient(to bottom,#000 calc(100% - 30px),transparent)}
-.fpedwrap.in .fped{transform:scale(1)}
+.fpedwrap.in .fped{transform:none;opacity:1}
 .fpedhead,.fpexhead{display:flex;align-items:center;justify-content:space-between;margin:0 0 12px}
 .fpedhead h2,.fpexhead h2{font-family:var(--fs-title);font-size:22px;font-weight:700;letter-spacing:-.3px;margin:0}
 .fpedx{width:32px;height:32px;border-radius:50%;border:0;background:var(--fc-fill);color:var(--fc-sec);display:grid;place-items:center;cursor:pointer}
@@ -3241,11 +3247,15 @@ function mergeLww(theirs, mine, keyFn) {
   return Object.keys(by).map(function (k) { return by[k]; });
 }
 /* Lookups, rebuilt only when the array is replaced (every change replaces it). */
-var EM_CACHE = { edits: null, editMap: null, marks: null, markMap: null };
+var EM_CACHE = { edits: null, phoneEdits: null, editMap: null, marks: null, markMap: null };
+/* The phone edits stories too (build 118) and ships every edit it knows as `storyEdits` in
+   echo-data.json, same shape as `edits`. Newest `at` per story wins across both; on a tie this
+   page's own edit wins. A phone "restored" tombstone hides an older web edit, and the other way round. */
 function editMap() {
-  if (EM_CACHE.edits !== S.actions.edits) {
-    EM_CACHE.edits = S.actions.edits; EM_CACHE.editMap = {};
-    arr(S.actions.edits).forEach(function (e) { if (e && e.title && !e.restored) EM_CACHE.editMap[editKey(e)] = e; });
+  var phone = S.data && S.data.storyEdits;
+  if (EM_CACHE.edits !== S.actions.edits || EM_CACHE.phoneEdits !== phone) {
+    EM_CACHE.edits = S.actions.edits; EM_CACHE.phoneEdits = phone; EM_CACHE.editMap = {};
+    mergeLww(phone, S.actions.edits, editKey).forEach(function (e) { if (e && e.title && !e.restored) EM_CACHE.editMap[editKey(e)] = e; });
   }
   return EM_CACHE.editMap;
 }
