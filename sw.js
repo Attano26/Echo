@@ -11,7 +11,7 @@
 
    Bump VERSION on every deploy. That is what tells every installed copy that
    something changed. */
-const VERSION = "echo-2026-10-27-analytics";
+const VERSION = "echo-2026-11-24-prev-month";
 
 const ASSETS = [
   "./",

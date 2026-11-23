@@ -13426,8 +13426,13 @@ function reportPreviewMsg(host, text) {
 }
 
 /* ---- names and dates, as the phone writes them ---- */
-function mrMonth(ms) { return new Date(ms).toLocaleDateString("en-US", { month: "long" }); }
-function mrMonthYear(ms) { return new Date(ms).toLocaleDateString("en-US", { month: "long", year: "numeric" }); }
+/* The newsletter is always for the PREVIOUS month: a month is collected in full, then its newsletter goes out
+   in the next one (user, 23 Nov 2026). So a report made in November is the October report, in its title and
+   its file name; January's is December of the year before. Same rule as newsletterMonthMillis() on the phone. */
+function mrNewsMs(ms) { var d = new Date(ms); return new Date(d.getFullYear(), d.getMonth() - 1, 1).getTime(); }
+function mrNewsYear(ms) { return new Date(mrNewsMs(ms)).getFullYear(); }
+function mrMonth(ms) { return new Date(mrNewsMs(ms)).toLocaleDateString("en-US", { month: "long" }); }
+function mrMonthYear(ms) { return new Date(mrNewsMs(ms)).toLocaleDateString("en-US", { month: "long", year: "numeric" }); }
 function mrReportTitle(ms) { return mrMonth(ms) + " Market Intel Report"; }
 /* "17 Sep 2026", as the phone's SimpleDateFormat writes it (Chrome's en-GB says "Sept"). */
 var MR_MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -13977,7 +13982,7 @@ async function mrDownloadEdition(e, fmt, btn) {
     var a = document.createElement("a");
     a.href = url;
     a.download = "Market_Intel_Report_" + mrMonth(e.createdAtMillis || e.id) + "_" +
-      new Date(e.createdAtMillis || e.id).getFullYear() + (kind === "docx" ? ".docx" : ".pdf");
+      mrNewsYear(e.createdAtMillis || e.id) + (kind === "docx" ? ".docx" : ".pdf");
     document.body.appendChild(a); a.click(); a.remove();
   } finally { btn.disabled = false; btn.textContent = was; }
 }
@@ -14197,7 +14202,7 @@ function mrPrintDraft(d) {
   r.appendChild(doc);
   var prev = document.title;
   // The print dialogue names the PDF after the page title.
-  document.title = "Market_Intel_Report_" + mrMonth(d.createdAtMillis) + "_" + new Date(d.createdAtMillis).getFullYear();
+  document.title = "Market_Intel_Report_" + mrMonth(d.createdAtMillis) + "_" + mrNewsYear(d.createdAtMillis);
   window.print();
   setTimeout(function () { document.title = prev; r.innerHTML = ""; }, 800);
   return true;
@@ -14247,7 +14252,7 @@ function mrWordDownload(d) {
   var blob = new Blob(["﻿", mrWordHtml(d)], { type: "application/msword" });
   var a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "Market_Intel_Report_" + mrMonth(d.createdAtMillis) + "_" + new Date(d.createdAtMillis).getFullYear() + ".doc";
+  a.download = "Market_Intel_Report_" + mrMonth(d.createdAtMillis) + "_" + mrNewsYear(d.createdAtMillis) + ".doc";
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
 }
